@@ -134,7 +134,8 @@
       "我能把需求翻譯成 Source/Destination/Service。",
       "我知道為什麼 Any 規則有風險。",
       "我知道上線後要用 Log 驗證。"
-    ]
+    ],
+    "handson": "家裡沒防火牆？免費方案：pfSense CE（開源防火牆，VirtualBox 就能跑，網路搜 pfSense CE download）。但本章的核心是「把需求翻譯成規則」，紙上就能練熟——以下全部給解答。\n\n【練習任務 1 解答】三個需求翻譯成規則欄位\n需求 A：業務部（10.10.20.0/24）要用內部 ERP 網站（10.30.5.10）\n  Source: 10.10.20.0/24 | Destination: 10.30.5.10 | Service: TCP/443 | Action: Allow | Log: Yes\n需求 B：監控主機（10.250.10.5）要對所有 Server 做 Ping 監控\n  Source: 10.250.10.5 | Destination: 10.20.10.0/24 | Service: ICMP | Action: Allow | Log: No（監控流量記了會塞爆 Log）\n需求 C：DMZ 的 Web Server（10.30.10.8）要連內網資料庫（10.20.10.15）\n  Source: 10.30.10.8 | Destination: 10.20.10.15 | Service: TCP/5432 | Action: Allow | Log: Yes\n  （注意方向：是 DMZ「進」內網，高風險方向，來源目的都要收到最窄）\n\n【練習任務 2 解答】Any-to-Any 改寫\n爛規則：Source: Any | Destination: Any | Service: Any | Allow ← 等於沒有防火牆\n改寫步驟：1) 查 Log 看這條規則實際被誰命中（來源/目的/Port 的真實清單）→ 2) 為每一組真實流量開一條最小規則 → 3) 把 Any 規則改成只記錄不放行觀察一週 → 4) 移除。\n這也是「規則盤點」的標準做法：用命中紀錄反推真實需求。\n\n【練習任務 3 解答】規則順序陷阱\n規則 1：Source 10.10.0.0/16 → Dest Any → Deny（某次事件後加的大範圍封鎖）\n規則 2：Source 10.10.20.50 → Dest 10.30.5.10 TCP/443 → Allow（後來的申請）\n結果：規則 2 永遠不會命中——10.10.20.50 屬於 10.10.0.0/16，在規則 1 就被擋了。\n原則：防火牆由上往下、第一條命中就停。細規則要放在粗規則上面。\n\n【練習任務 4 解答】申請單範本（存起來直接用）\n申請人/部門｜申請日期｜來源 IP 或網段｜目的 IP｜服務與 Port｜方向｜用途說明｜使用期限（永久要主管簽核）｜核准人｜開通後驗證結果（帶時間戳的測試紀錄）"
   },
   "net-firewall-acl-basic": {
     "teachingSteps": [
@@ -156,7 +157,8 @@
       "我知道 ACL 也要遵守最小權限。",
       "我知道 ACL 順序會影響結果。",
       "我能說明 VPN ACL 的用途。"
-    ]
+    ],
+    "handson": "【練習任務 1 解答】VPN 使用者 ACL 設計（完整版）\n情境：VPN Pool 10.90.0.0/24，使用者分兩種——一般員工、IT 維運。\n一般員工群組（對應 AD 群組 VPN-Staff）：\n  允許 10.90.0.0/24 → ERP 10.30.5.10 TCP/443\n  允許 10.90.0.0/24 → 內部 DNS 10.1.1.10 UDP/53\n  拒絕 10.90.0.0/24 → 10.20.10.0/24（Server 區其他主機全擋）\nIT 維運群組（VPN-Admin，另配獨立 Pool 10.90.1.0/24 更好管）：\n  允許 10.90.1.0/24 → 10.20.10.0/24 TCP/22、3389（管理協定）\n  允許 10.90.1.0/24 → 10.250.10.0/24 TCP/443（管理介面）\n設計重點：使用者「不能直連資料庫」——只開應用系統的 Port，資料要透過 ERP 拿。這一條就是最小權限在 VPN 場景的招牌應用。\n\n【練習任務 2 解答】三種 ACL 的使用場景\nRouter ACL：網段之間的粗粒度控制（例如 Guest 網段不准進任何內部網段），規則簡單、效能好。\nSwitch ACL：接取層就地阻擋（例如使用者 VLAN 之間互擋、防印表機被亂連），越靠近來源擋越省頻寬。\nFirewall ACL/Policy：跨安全區域的精細控制＋Log＋稽核（DMZ、VPN、內外網邊界），要留證據的流量都走這裡。\n\n【練習任務 3 解答】過寬 ACL 改寫示範\n原：允許 10.90.0.0/24 → 10.20.10.0/24 Any（「VPN 使用者可連 Server 區」）\n問題：Any 服務 = 資料庫、SSH、檔案分享全開；整個 /24 = 沒分角色。\n改：拆成上面任務 1 的樣子——按群組分來源、按系統列目的、按需要開 Port。\n改寫時的實務步驟：先查這條 ACL 的命中紀錄，看「真實有在用」的流量是哪些，據此收斂，不要憑想像砍。\n\n【練習任務 4 解答】ACL 盤點欄位\n規則編號｜來源｜目的｜服務｜動作｜建立日期與申請單號｜最近命中時間｜命中次數｜負責人｜狀態（使用中/待確認/可移除）\n判斷邏輯：90 天零命中 → 通知負責人 → 兩週無回應 → 先停用（不刪）觀察一個月 → 移除。「先停用再移除」讓誤殺可以秒復原。"
   },
   "net-firewall-deny": {
     "teachingSteps": [
@@ -178,7 +180,8 @@
       "我知道 NAT 可能讓 Log 中 IP 不同。",
       "我能判斷 implicit deny 的意義。",
       "我知道開規則前要確認服務 Port。"
-    ]
+    ],
+    "handson": "【練習任務 1 解答】模擬 Deny Log 判讀（一步步來）\n使用者通報：「我連不上新系統」。你查到這筆 Log：\nTime: 2026-07-05 10:31:22\nSource: 10.10.20.50:52441\nDestination: 10.30.5.10:8443\nProtocol: TCP | Action: Deny | Rule: implicit deny\n判讀四步：\n1. Action=Deny + Rule=implicit deny → 沒有任何規則允許這條流量（不是規則寫錯，是根本沒開）\n2. Destination Port 是 8443 不是 443 → 對照申請單：當初申請的是 443！\n3. 結論：申請單寫錯 Port（或系統實際跑在 8443）——先向系統負責人確認真實 Port，再決定是改申請還是改系統\n4. 排查結論寫法：「流量於 10:31 被 implicit deny 阻擋，目的 Port 8443 與申請單之 443 不符，已請申請人確認實際服務 Port」\n重點心法：Deny Log 不只告訴你「被擋」，Port、方向、NAT 後 IP 每個欄位都是線索。\n\n【練習任務 2 解答】向使用者收集資訊的問題清單（存成範本）\n1. 你的電腦 IP？（教他打 ipconfig）\n2. 要連的系統名稱或網址？幾點幾分測的？\n3. 錯誤畫面長怎樣？（截圖）轉圈圈逾時 vs 立刻被拒，是不同方向的線索\n4. 以前連得上嗎？最後一次成功是什麼時候？\n5. 同部門其他人連得上嗎？（範圍！一人 vs 全部門，方向差很多）\n\n【練習任務 3 解答】防火牆 Deny vs 服務未啟動的分辨\n防火牆 Drop：連線「逾時」（等很久沒回應）＋防火牆有 Deny Log\n防火牆 Reject／服務主機活著但 Port 沒開：「立刻」被拒（connection refused，對方回 RST）\n服務未啟動：防火牆 Log 顯示 Allow（有放行！）但使用者還是連不上 → 到 Server 上查服務\n口訣：「Log 說有放行，問題就在防火牆後面。」這句能幫你少背很多黑鍋。\n\n【練習任務 4 解答】開通驗證紀錄範本\n申請單號｜規則上線時間｜驗證人｜驗證方式：Test-NetConnection 10.30.5.10 -Port 443 → TcpTestSucceeded: True｜防火牆 Log 確認命中新規則（規則名稱＋時間戳）｜使用者確認功能正常｜結案時間\n上線不驗證，等於把問題留給下一張工單。"
   },
   "net-vpn-types": {
     "teachingSteps": [
@@ -200,7 +203,8 @@
       "我知道 VPN 登入成功後還需要路由與 ACL。",
       "我知道 Split Tunnel 和 Full Tunnel 的差異。",
       "我能說明 VPN 與 MFA 的關係。"
-    ]
+    ],
+    "handson": "【練習任務 1 解答】Remote Access VPN 流程圖（畫出這七步）\n1. 員工筆電開 VPN Client 連 vpn.company.com\n2. 驗證帳密（對 AD 查核）\n3. MFA 二次驗證（手機 App 核准）\n4. VPN Gateway 從 Pool 分配 IP（如 10.90.0.25）\n5. 推送路由給筆電（Split：只推內部網段路由／Full：推 0.0.0.0）\n6. 推送內部 DNS 伺服器\n7. 之後的存取受 VPN ACL 控管\n背這七步的價值：VPN 任何故障都能對應到其中一步——登入失敗看 2、3；連不到系統看 5、6、7。\n\n【練習任務 2 解答】Site-to-Site 兩端網段圖\n總部 LAN 10.10.0.0/16 —— 總部防火牆(203.0.113.1) ==IPsec Tunnel== 分公司防火牆(198.51.100.1) —— 分公司 LAN 10.60.0.0/16\n關鍵設定叫「有趣流量」（interesting traffic）：兩端要「鏡像一致」地定義哪些網段互通（總部端寫 10.10→10.60，分公司端寫 10.60→10.10）。不一致 = 隧道建立但流量不走，是 Site-to-Site 最常見的坑。\n\n【練習任務 3 解答】Split vs Full Tunnel 優缺點表\nSplit Tunnel：\n  優——上網走使用者自家線路，公司頻寬省、影音會議不塞\n  缺——上網流量不經公司 Proxy 控管，安全可視性低\nFull Tunnel：\n  優——全部流量進公司，Proxy/資安政策全覆蓋，稽核完整\n  缺——公司出口頻寬加倍吃緊、使用者覺得「開 VPN 網路變慢」\n企業常見選擇：一般員工 Full（管控優先）、影音需求或海外據點 Split＋端點防護補位。面試答「各有取捨＋看資安政策」就對了。\n\n【練習任務 4 解答】VPN 與 AD/MFA 的關係（面試版）\n「VPN 的帳號驗證通常對接 AD——帳號停用、密碼過期、帳號鎖定都會直接反映成 VPN 登不進來，所以排查登入失敗要先查 AD 帳號狀態。MFA 是第二道因子，防密碼外洩後被直接登入；MFA 逾時或手機沒網路是『帳密對但登不進』的常見原因。」"
   },
   "net-vpn-acl-log": {
     "teachingSteps": [
@@ -222,7 +226,8 @@
       "我會查 VPN IP Pool。",
       "我會同時檢查 DNS、路由與 ACL。",
       "我能用 Log 說明連線失敗原因。"
-    ]
+    ],
+    "handson": "【練習任務 1 解答】VPN 使用者權限對應表（範本）\nAD 群組         VPN Pool        可存取系統            允許服務\nVPN-Staff       10.90.0.0/24    ERP(10.30.5.10)       TCP/443\nVPN-Staff       10.90.0.0/24    內部 DNS(10.1.1.10)   UDP/53\nVPN-Vendor      10.90.2.0/24    僅維護對象(10.20.10.30) TCP/22（限工作時段）\nVPN-Admin       10.90.1.0/24    Server 區(10.20.10.0/24) TCP/22、3389\n設計原則：不同角色不同 Pool——Log 裡看到來源 IP 就知道是哪類使用者，排查速度差十倍。\n\n【練習任務 2 解答】DNS 解析失敗情境（完整劇本）\n現象：VPN 已連線，開 erp.company.local 轉圈圈逾時。\n排查：\n> ping 10.30.5.10                     → 通！（IP 可達，路由與 ACL 沒問題）\n> nslookup erp.company.local          → 查無此網域或回了外部 IP\n結論：問題在 DNS——VPN 沒派發內部 DNS，或派了但被本機設定蓋掉。\n驗證：ipconfig /all 看 VPN 介面卡的 DNS 伺服器是不是公司內部 DNS。\n這個「IP 通、名稱不通」的組合，就是 VPN 工單裡最高頻的一種。\n\n【練習任務 3 解答】ACL Deny 的 Log 判讀\nVPN Log：user=jsmith assigned_ip=10.90.0.25 login=success\nFirewall Log：Src 10.90.0.25 → Dst 10.20.10.15:5432 Action=Deny Rule=VPN-Default-Deny\n判讀：登入成功、IP 正常，但他想直連「資料庫」（5432）——ACL 本來就只開 ERP 443。\n回覆使用者的寫法：「VPN 權限僅開放 ERP 系統，資料庫不提供直連；若有維運需求請申請 VPN-Admin 權限」——被 Deny 不一定是故障，可能是政策正常運作，回報時要分清楚。\n\n【練習任務 4 解答】VPN 排查紀錄模板\n通報時間｜使用者/帳號｜VPN 登入狀態（成功/失敗＋Log 佐證）｜分配到的 VPN IP｜目標系統與 Port｜\nnslookup 結果｜ping IP 結果｜Test-NetConnection 結果｜防火牆/ACL Log 查詢結果｜結論與處置｜恢復確認時間\n照表填完，一份工單紀錄就完成了——這格式拿去面試講「你怎麼排查 VPN」也是滿分結構。"
   },
   "net-proxy-forward-reverse": {
     "teachingSteps": [
@@ -244,7 +249,8 @@
       "我知道 Forward Proxy 常用於上網控管。",
       "我知道 Reverse Proxy 常用於服務入口與憑證集中。",
       "我能說明 Proxy 和 Firewall 的差異。"
-    ]
+    ],
+    "handson": "【動手做】用 Docker 十分鐘搭一個 Reverse Proxy（先體感再背理論）\n建一個資料夾放兩個檔案：\ndocker-compose.yml：\nservices:\n  backend:\n    image: nginxdemos/hello\n  proxy:\n    image: nginx:alpine\n    ports: [\"8080:80\"]\n    volumes:\n      - ./proxy.conf:/etc/nginx/conf.d/default.conf\n\nproxy.conf：\nserver {\n  listen 80;\n  location / {\n    proxy_pass http://backend:80;\n    proxy_set_header X-Forwarded-For $remote_addr;\n  }\n}\n\n> docker compose up -d\n瀏覽器開 http://localhost:8080 → 你看到的是 backend 的頁面，但你連的是 proxy——「外部連入口、入口轉後端」就是 Reverse Proxy 的全部本質。\n再做壞實驗：> docker compose stop backend → 重新整理 → 502 Bad Gateway！\n（上一章教的 502 = 代理連不到後端，你剛親手做出來了。docker compose start backend 復原。）\n\n【練習任務 1 解答】兩張流量圖\nForward Proxy：員工 PC → Proxy(代表使用者) → 網際網路的網站\n  問句：「使用者能不能出去？」\nReverse Proxy：外部使用者 → Reverse Proxy(代表服務) → 內部 Web Server\n  問句：「外面能不能進來？」\n方向相反、代理的對象相反——名字裡的 Forward/Reverse 就是這個意思。\n\n【練習任務 2 解答】企業用 Forward Proxy 的四個理由\n1. 上網控管：黑白名單、分類阻擋（賭博、惡意網站）\n2. 稽核紀錄：誰、何時、去了哪個網站（Access Log）\n3. 安全檢查：SSL Inspection 後掃惡意內容\n4. 頻寬與快取：共用快取、控管大流量下載\n\n【練習任務 3 解答】Reverse Proxy 如何保護後端\n隱藏拓樸（外面只看得到入口 IP）、集中憑證（HTTPS 統一在入口處理）、擋掉畸形請求、\n搭配 WAF 過濾攻擊、限流防打掛後端——後端 Server 從頭到尾不直接暴露在網際網路。\n\n【練習任務 4 解答】四元件差異表（背這張）\nFirewall：看「誰連誰、什麼 Port」→ 決定放不放行\nProxy(Forward)：代理使用者上網 → 控管與稽核「出去」的流量\nWAF：看 HTTP「內容」有沒有攻擊特徵 → 保護「進來」的 Web 流量\nLoad Balancer：把進來的流量「分配」給多台後端 → 效能與高可用\n一句總結：Firewall 管方向、Proxy 管出去、WAF 管內容、LB 管分配。"
   },
   "net-proxy-auth-ssl": {
     "teachingSteps": [
@@ -266,7 +272,8 @@
       "我知道 WPAD 是自動發現 Proxy 設定。",
       "我知道 SSL Inspection 會影響憑證信任。",
       "我能說明 Proxy 驗證和 AD/LDAP 的關係。"
-    ]
+    ],
+    "handson": "【練習任務 1 解答】PAC File 完整範例＋逐行讀\nfunction FindProxyForURL(url, host) {\n  // 內部網域直連（不走 Proxy）\n  if (dnsDomainIs(host, \".company.local\")) return \"DIRECT\";\n  // 內部 IP 網段直連\n  if (isInNet(host, \"10.0.0.0\", \"255.0.0.0\")) return \"DIRECT\";\n  // 影音會議直連（走 Proxy 會延遲）\n  if (dnsDomainIs(host, \".zoom.us\")) return \"DIRECT\";\n  // 其他全部走 Proxy，主 Proxy 掛了退到備援\n  return \"PROXY proxy1.company.local:8080; PROXY proxy2.company.local:8080\";\n}\n邏輯追蹤練習（自測）：\nerp.company.local → 第一條命中 → DIRECT\n10.20.5.8 → 第二條 → DIRECT\nwww.google.com → 都不中 → 走 proxy1，proxy1 掛了走 proxy2\n看得懂 PAC 的分支，就能回答「為什麼某些網站不走 Proxy」這類工單。\n\n【練習任務 2 解答】WPAD 沒生效的常見原因\n1. DHCP 沒發 Option 252（PAC 網址）且 DNS 沒有 wpad 主機記錄——兩條自動發現路都斷\n2. 瀏覽器/系統的「自動偵測設定」根本沒勾\n3. PAC 檔網址變了或 Web 伺服器掛了（端點抓不到檔案 → 直連 → 被防火牆擋 → 「不能上網」）\n4. PAC 檔本身有語法錯誤——一個分號就能讓全公司上網異常，改 PAC 要當正式變更管理\n\n【練習任務 3 解答】SSL Inspection 憑證錯誤檢查項目\n使用者回報「每個 HTTPS 網站都跳警告」：\n1. 看警告詳情：簽發者是不是公司的 CA 名稱？是 → 端點沒信任企業根憑證（新電腦沒入域、GPO 沒套到）\n2. 只有特定網站跳？→ 該站可能在例外清單邊緣（金融、醫療常設例外不解密），查 Proxy 例外設定\n3. 特定應用程式壞掉（App 用 certificate pinning，不吃系統信任）→ 加入 SSL Inspection 例外清單\n動手體感：開瀏覽器點鎖頭看任一 HTTPS 網站的簽發者——在家是 DigiCert 之類；在有 SSL Inspection 的公司，會變成公司 CA 的名字。同一個網站、兩種簽發者，就是「重新簽發」的證據。\n\n【練習任務 4 解答】Proxy 驗證失敗排查流程\n1. 症狀確認：跳出帳密視窗一直重複？→ 驗證問題；直接連不上？→ 先回連通性排查\n2. 查 AD 帳號：鎖定？密碼過期？（Proxy 驗證背後就是 AD/LDAP）\n3. 查群組：Proxy 政策綁 AD 群組，換部門沒換群組 = 套錯政策\n4. 查 Proxy 的驗證 Log：看得到失敗原因代碼\n5. 別人正常、只有他壞 → 端點問題（憑證、瀏覽器設定）；一群人壞 → Proxy 或 AD 服務問題"
   },
   "net-proxy-reverse-waf": {
     "teachingSteps": [
@@ -288,7 +295,8 @@
       "我知道 Host Header 錯誤會造成後端判斷異常。",
       "我知道 X-Forwarded-For 用來保留真實來源 IP。",
       "我能說明 WAF 的基本用途。"
-    ]
+    ],
+    "handson": "【動手做】延續 Forward/Reverse 章的 docker compose 環境，把 Header 玩一遍。\n改 proxy.conf 為完整版：\nserver {\n  listen 80;\n  location / {\n    proxy_pass http://backend:80;\n    proxy_set_header Host $host;\n    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n    proxy_set_header X-Real-IP $remote_addr;\n  }\n}\n> docker compose restart proxy\n開 http://localhost:8080 —— nginxdemos/hello 這個測試頁會直接顯示它收到的請求資訊，你可以親眼看到 X-Forwarded-For 帶著你的來源 IP 進到後端。\n把 proxy_set_header 那幾行註解掉再 restart → 後端看到的來源變成 proxy 容器的 IP——「沒保留 XFF，後端 Log 全是代理 IP」的事故現場，你自己做出來了。\n\n【練習任務 1 解答】流量路徑圖\n外部使用者(1.2.3.4)\n → Reverse Proxy/WAF（憑證在這終止；記錄真實來源）\n → 內部 Web Server 10.30.5.20:8080（看到的 TCP 來源是 Proxy IP，真實來源在 XFF Header 裡）\n → 應用程式寫 Log 時應記 XFF，稽核才能對回真人\n\n【練習任務 2 解答】後端無回應的五個檢查點\n1. 後端服務活著嗎？（到後端主機 curl localhost:8080）\n2. Reverse Proxy 到後端的網路通嗎？（從 Proxy 主機測後端 Port——中間可能還有防火牆）\n3. proxy_pass 的目標 IP/Port 寫對嗎？（後端搬家改 Port 沒同步是常客）\n4. Host Header 有轉發嗎？（後端掛多個站台時，沒帶 Host 會回錯站或 404）\n5. 逾時設定：後端要跑 60 秒、Proxy 30 秒就斷 → 504（調 proxy_read_timeout 或修後端效能）\n\n【練習任務 3 解答】WAF 與 Reverse Proxy 的搭配\n串接順序：使用者 → WAF → Reverse Proxy → 後端（或 WAF 內建於 Reverse Proxy，如 Nginx + ModSecurity）。\nWAF 誤擋的排查：使用者操作正常功能卻被擋（403）→ 查 WAF Log 看命中哪條規則 → 確認是誤判（False Positive）→ 對該規則加例外（限定路徑，不要整條規則關掉）。\n\n【練習任務 4 解答】X-Forwarded-For 的稽核用途\n沒有 XFF：資安要查「誰在攻擊」時，Web Log 裡全是 Proxy 的 IP，斷線索。\n有 XFF：Log 可還原真實來源鏈（XFF 可能是一串：client, proxy1, proxy2——最左是原始來源）。\n注意：XFF 是可偽造的 Header，最外層入口要負責「覆寫」而不是「附加」不可信的值——這句講出來就是進階理解。"
   },
   "net-f5-objects": {
     "teachingSteps": [
@@ -310,7 +318,8 @@
       "我知道 Health Check 會影響是否導流。",
       "我知道使用者通常連的是 VIP。",
       "我能用圖說明分流流程。"
-    ]
+    ],
+    "handson": "家裡沒有 F5，但可以用 nginx 模擬 Pool 分流的核心行為（觀念一模一樣）。\n\n【動手做】docker compose 模擬 Virtual Server / Pool / Member\ndocker-compose.yml：\nservices:\n  web1:\n    image: nginxdemos/hello\n  web2:\n    image: nginxdemos/hello\n  lb:\n    image: nginx:alpine\n    ports: [\"8080:80\"]\n    volumes: [\"./lb.conf:/etc/nginx/conf.d/default.conf\"]\n\nlb.conf：\nupstream web_pool {                # ← 對應 F5 的 Pool\n  server web1:80 max_fails=1 fail_timeout=10s;   # ← Pool Member 1\n  server web2:80 max_fails=1 fail_timeout=10s;   # ← Pool Member 2\n}\nserver {\n  listen 80;                       # ← 對應 Virtual Server（入口）\n  location / { proxy_pass http://web_pool; }\n}\n> docker compose up -d\n重新整理 http://localhost:8080 幾次——hello 頁會顯示 Server name，你會看到 web1/web2 輪流出現 = 分流成功。\n\n【動手做】模擬 Member 掛掉（練習任務 2 解答）\n> docker compose stop web1\n再重新整理幾次 → 全部都是 web2，服務不中斷！（nginx 靠 max_fails 把 web1 標為不可用 = F5 Health Check 失敗移出分流的同義行為）\n> docker compose start web1 → 一會兒後 web1 回到輪替。\nF5 與 nginx 的差別：F5 是「主動」健康檢查（定期去探測），開源 nginx 是「被動」（打了才發現壞）——面試講得出主動/被動就是加分題。\n\n【練習任務 1 解答】對應表\nF5 物件          你剛剛做的\nVirtual Server   lb 容器的 listen 80（使用者唯一入口）\nPool             upstream web_pool\nPool Member      server web1:80 / web2:80\nHealth Monitor   max_fails/fail_timeout（F5 是主動探測 HTTPS /health）\n\n【練習任務 3 解答】Health Check 路徑設錯的後果\n監控路徑設 /health 但應用只有 /healthz → 探測全部 404 → F5 判定所有 Member 故障 → 整個 Pool 下線 → 使用者看到服務中斷，但每台後端主機其實都活著。\n教訓：「服務掛了但主機都正常」時，先查 Health Check 的設定與後端實際路徑。\n\n【練習任務 4 解答】F5 排查順序（背這條鏈）\nVirtual Server 狀態 → Pool 狀態 → 各 Member 狀態 → 直接測後端 Port →（都正常才）查憑證/Persistence/SNAT。由外往內、由大到小，不要一開始就跳進單一主機。"
   },
   "net-f5-ssl-persistence": {
     "teachingSteps": [
@@ -332,7 +341,8 @@
       "我知道憑證到期會造成 HTTPS 異常。",
       "我知道 Persistence 用於維持 Session。",
       "我能說明登入狀態異常和分流的關係。"
-    ]
+    ],
+    "handson": "【動手做】親手檢查憑證到期日（維運日常，家裡就能練）\n用 Git Bash（裝 Git 時附的，內含 openssl）：\n> echo | openssl s_client -connect www.google.com:443 2>nul | openssl x509 -noout -dates\n輸出：\nnotBefore=... （生效日）\nnotAfter=...  （到期日）← 憑證監控就是盯這個值\n企業做法：把所有對外站台的到期日列管，30 天前告警——「憑證過期造成全服務中斷」是最不該發生卻年年發生的事故。\n\n【動手做】體驗 Persistence（延續 F5 物件章的 compose 環境）\nlb.conf 的 upstream 里加一行 ip_hash;：\nupstream web_pool {\n  ip_hash;                 # ← 同一來源 IP 固定導到同一台（Persistence 的一種）\n  server web1:80;\n  server web2:80;\n}\n> docker compose restart lb\n再重新整理 → 這次不輪替了，你永遠打到同一台。把 ip_hash 拿掉又恢復輪替。\n這就是 Persistence 的體感：F5 上常用 Cookie Persistence（插一個 Cookie 記住你去哪台），原理相同。\n\n【練習任務 1 解答】SSL Offload 優點與風險\n優點：憑證集中一處管理（換證只換一台）、後端省加解密運算、F5 上能看懂 HTTP 內容做進階分流。\n風險/注意：F5 到後端若走 HTTP，內網段是明文（合規要求高的走 End-to-End SSL）；F5 成為效能瓶頸點；憑證到期影響「全部」掛在上面的服務。\n\n【練習任務 2 解答】憑證到期排查步驟\n症狀：使用者全部跳憑證警告（且警告寫 expired）。\n1. openssl 指令確認 notAfter 是否已過\n2. 確認過期的是站台憑證還是中繼憑證（憑證鏈逐層看）\n3. 換發憑證 → 部署到 F5（Client SSL Profile）→ openssl 再驗一次 notAfter 更新\n4. 事後：把這張憑證納入到期監控。\n\n【練習任務 3 解答】Persistence 與 Session Stickiness 的關係\n同一件事的兩種稱呼：讓同一使用者的請求持續落在同一台後端。\n需要它的原因：傳統應用把登入狀態（Session）存在「自己那台」的記憶體——請求換了後端，新後端不認得你 → 被登出。\n根治法（面試加分）：把 Session 外置到 Redis/資料庫，後端無狀態化，就不再依賴 Persistence。\n\n【練習任務 4 解答】登入異常與分流的關聯判斷\n特徵：使用者「隨機」被登出、重新整理就正常、單人重現不了但抱怨此起彼落 → 高度懷疑 Persistence 沒設或失效（Cookie 被擋、逾時太短）。\n驗證法：查 F5 的 Persistence 紀錄，或讓使用者連續請求看後端 Server 是否跳來跳去（後端 Log 對 XFF）。"
   },
   "net-enterprise-zones": {
     "teachingSteps": [
@@ -354,7 +364,8 @@
       "我能設計基本網段表。",
       "我知道 DMZ 不應和內網混在一起。",
       "我能說明跨區流量需經過控管點。"
-    ]
+    ],
+    "handson": "這是設計章，以下給一份可以直接抄再客製的完整設計（練習任務 1–4 全解）。\n\n【練習任務 1 解答】六個以上的企業網段設計\n區域        網段             Gateway       用途與風險等級\nOffice     10.10.10.0/24    10.10.10.1    員工電腦（中風險：人多、會中毒）\nServer     10.20.10.0/24    10.20.10.1    內部系統主機（高價值）\nDMZ        10.30.10.0/24    10.30.10.1    對外服務（高暴露）\nGuest      10.40.10.0/24    10.40.10.1    訪客 Wi-Fi（不可信，只准上網）\nVPN Pool   10.90.0.0/24     10.90.0.1     遠端使用者（中風險）\nVDI        10.50.10.0/24    10.50.10.1    虛擬桌面（等同辦公區管理）\nMgmt       10.250.10.0/24   10.250.10.1   設備管理介面（最高權限，最嚴管制）\n設計慣例：第二組數字代表區域類型（10=辦公、20=Server、30=DMZ…），看 IP 就知道在哪一區——這個「可讀性」在排查時價值極高。\n\n【練習任務 2 解答】Office 到 DMZ Web 的流量路徑\nOffice PC(10.10.10.25) → Office Gateway → 核心交換器 → 防火牆【控管點：Office→DMZ 允許 TCP/443】→ DMZ Web(10.30.10.8)\n回程原路返回。注意：即使都在公司內部，跨區一定過防火牆——「內部 = 可信」是老舊觀念，現代設計每個跨區都控管。\n\n【練習任務 3 解答】各區域允許/禁止矩陣（核心邏輯）\nOffice → Server：只開應用系統 Port（443 等），禁止直連 DB 與 SSH/RDP\nOffice → DMZ：只開對外服務同樣的 Port\nGuest → 任何內部區：全部禁止（只准出網際網路）\nDMZ → Server：僅限特定應用對特定 DB 的特定 Port（最危險的方向，逐條開）\nMgmt → 各區：管理協定（SSH/RDP/HTTPS 管理介面）；反方向「任何區 → Mgmt」原則上全擋，只准跳板機進\nVPN → 依群組套 ACL（見 VPN 章）\n\n【練習任務 4 解答】設備命名規則範本\n<據點>-<設備類型>-<區域/樓層>-<編號>\n例：TPE-FW-CORE-01（台北核心防火牆 1）、TPE-SW-ACC-3F-02（台北 3 樓接取交換器 2）、TPE-SRV-ERP-01\n價值：Log 與監控畫面裡看到名字就知道位置與角色；命名規則文件化後，新人也能立刻讀懂拓樸。"
   },
   "net-prtg-sensors": {
     "teachingSteps": [
@@ -376,7 +387,8 @@
       "我知道 Port Sensor 可檢查服務是否有回應。",
       "我知道 SNMP/WMI/SSH 適合不同設備。",
       "我能根據告警做初步判斷。"
-    ]
+    ],
+    "handson": "PRTG 有免費版（100 個 Sensor 以內免費，個人練習綽綽有餘）——這章可以真的動手。\n\n【第 1 步】安裝\n到 paessler.com 下載 PRTG，裝在你的 Windows 電腦（它會自帶 Web 介面）。\n裝完瀏覽器開 https://localhost（或安裝程式顯示的網址），預設帳密 prtgadmin/prtgadmin，登入後先改密碼。\n\n【第 2 步】加第一台設備：你家的路由器\nDevices → Add Device → 名稱「Home-Router」、IP 填你的預設閘道（ipconfig 查）。\n對設備 Add Sensor：\n1. Ping Sensor → 立刻變綠，顯示延遲毫秒數\n2. Port Sensor → Port 80 或 443（路由器管理介面）→ 綠 = 服務有回應\n這就是課文說的：「Ping 只代表主機活著，Port 才代表服務有開」——現在是兩顆真實的燈在證明。\n\n【第 3 步】加你自己的電腦（本機就能練 WMI 概念）\nAdd Device → localhost → 加 CPU Load、Memory、Disk Free Sensor。\n看 Disk Free 的圖表跑幾小時，你就有了「正常基準」的概念——沒有基準，就無法定義異常。\n\n【第 4 步／練習任務 3 解答】設定告警門檻\n點 Disk Free Sensor → Settings → Limits：Lower Warning 20%、Lower Error 10%。\n門檻設計的思路：Warning = 「該排時間處理了」、Error = 「現在就要處理」。\n直接設 5% 才叫？那時已經來不及清了——門檻要留「反應時間」。\n\n【第 5 步】模擬告警\n把 Ping Sensor 的目標改成一個不存在的 IP（如 10.99.99.99）→ 幾次探測失敗後 Sensor 變紅、Alarms 頁出現告警。\n改回正確 IP → 恢復綠色。你完成了一次完整的「告警 → 確認 → 恢復」循環。\n\n【練習任務 1、2 解答】Proxy Server / Firewall 的 Sensor 設計\nProxy 五件套：Ping（主機活著）、Port 8080（服務有回應）、CPU、Disk（Log 塞滿磁碟是 Proxy 頭號殺手）、流量 Sensor（異常暴增 = 中毒或濫用）\nFirewall：Ping、SNMP CPU（規則太多或被打會飆高）、SNMP 介面流量（進出對比）、Session 數（連線耗盡前預警）\n\n【練習任務 4 解答】收到告警的第一線 SOP\n1. 看「範圍」：一顆紅 = 單一服務；整台設備全紅 = 主機或網路斷；一整區紅 = 上游設備或線路\n2. 看「時間」：幾點開始？對照最近變更與備份排程\n3. 快速驗證：手動 ping/測 Port 排除誤報\n4. 按事件流程通報與記錄（接到事件處理章）"
   },
   "net-vdi-security": {
     "teachingSteps": [
@@ -398,7 +410,8 @@
       "我知道 VDI 桌面也需要網路與 Proxy 設定。",
       "我能說明 ESXi、vCenter、VM 的關係。",
       "我知道 Snapshot 不能取代正式備份。"
-    ]
+    ],
+    "handson": "家裡沒有 vSphere，但 Snapshot 的行為用 VirtualBox 就能完整體驗（原理相同）。\n\n【動手做】Snapshot 實驗（練習任務核心觀念）\n1. 開你的 VirtualBox Linux 測試機 → 上方選單「機器」→「拍攝快照」，命名 before-change。\n2. 進 VM 亂改東西：刪個資料夾、裝個套件。\n3. 關機 → VirtualBox 快照頁 → 還原到 before-change → 開機 → 剛剛的破壞全部消失。\n這就是「變更前拍 Snapshot」的價值：升級失敗可以秒回。\n再理解為什麼它不是備份：Snapshot 存在「同一台主機的同一顆磁碟」上——主機掛了、磁碟壞了，Snapshot 跟著陪葬；而且掛著快照會持續累積差異檔拖慢效能。備份要在「別的地方」有一份。\n\n【練習任務 1 解答】VDI 登入流程圖\n使用者裝置 → VDI Gateway（HTTPS 入口）→ AD＋MFA 驗證 → Connection Broker 分配桌面 VM →\n使用者進入桌面（VM 位於機房的 VDI 網段）→ 桌面上網走公司 Proxy、存取內部系統走內網路由\n排查對應：登不進 → 查 Gateway/AD/MFA；登入後沒桌面 → 查 Broker 與資源池；桌面內不能上網 → 查 Proxy 設定與 VDI 網段的防火牆。\n\n【練習任務 2 解答】VDI、VPN、Proxy 三者關係\nVPN：把「你的裝置」接進公司網路——資料會下載到你的電腦。\nVDI：把「桌面」留在機房，你只看到畫面——資料不落地，這是它合規上的最大賣點。\nProxy：不管 VPN 還是 VDI，桌面環境上網都可能被導向公司 Proxy 控管。\n經典工單「VDI 可以登入但不能上網」：VDI 桌面的 Proxy 設定（GPO 派送）壞了或 PAC 抓不到——與使用者自己的網路無關。\n\n【練習任務 3 解答】vSphere 名詞表\nESXi：裝在實體主機上的虛擬化系統（地基）｜vCenter：集中管理多台 ESXi 的控制台｜\nVM：虛擬機｜vSwitch/Port Group：虛擬交換器與網段掛接點（VM 接錯 Port Group = 接錯 VLAN）｜\nvMotion：VM 在主機間熱搬移（維護不停機）｜HA：主機掛了 VM 自動在別台重啟\n\n【練習任務 4 解答】VDI 合規檢查清單\n□ 桌面映像的 CVE 修補版本（單一映像修一次、全員生效——VDI 的維運優勢）\n□ 使用者權限：誰有 VDI 資格、閒置多久自動登出\n□ 剪貼簿/USB/檔案傳輸管制設定（資料不落地政策的落實點）\n□ 登入紀錄保存與異常登入告警\n□ Snapshot 盤點：有沒有掛超過 N 天的舊快照（效能與空間殺手）\n□ 桌面 VM 的備份策略與還原演練紀錄"
   },
   "dba-basics-rdbms": {
     "teachingSteps": [
@@ -519,7 +532,8 @@
       "我知道最小權限原則。",
       "我知道正式環境權限要更嚴格。",
       "我能說明權限盤點的目的。"
-    ]
+    ],
+    "handson": "在 PostgreSQL 實際把「角色 → 帳號 → 驗證被拒」做一輪（練習任務 1、2 解答）。\n\n【第 1 步】建三種角色\nCREATE ROLE role_readonly;\nGRANT SELECT ON ALL TABLES IN SCHEMA public TO role_readonly;\n\nCREATE ROLE role_app;\nGRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO role_app;\n-- 注意：沒有 GRANT DROP/ALTER——應用程式帳號永遠不該能改結構\n\nCREATE ROLE role_dba_operator;\n-- 維運角色另外授與必要的管理權限，依平台而異，原則是「列舉授與」而不是 SUPERUSER\n\n【第 2 步】建帳號並掛上角色\nCREATE USER report_user WITH PASSWORD 'Report123';\nGRANT role_readonly TO report_user;\nCREATE USER app_user WITH PASSWORD 'App123';\nGRANT role_app TO app_user;\n\n【第 3 步】親眼看權限被擋（本章的靈魂時刻）\nDBeaver 用 report_user 開一條「新連線」（Host/Port 同、帳密換），執行：\nSELECT * FROM customers;        → 成功（唯讀允許）\nDELETE FROM customers WHERE customer_id = 1;\n→ ERROR: permission denied for table customers\n這行錯誤訊息就是「最小權限」在工作：報表帳號永遠刪不了資料，程式再有 bug、帳號再外洩，傷害就是被鎖在 SELECT。\n\n【練習任務 3 解答】權限異動申請單範本\n申請人與部門｜資料庫/系統名稱｜帳號｜申請角色（不是列權限——申請「角色」才可控）｜\n用途說明｜期限（廠商帳號必填到期日）｜核准人｜開通紀錄｜到期回收紀錄\n\n【練習任務 4 解答】權限盤點表欄位\n帳號｜類型（人員/應用/報表/廠商）｜擁有角色｜授權日期與申請單號｜最近登入時間｜\n負責人｜狀態（使用中/待確認/待停用）\n盤點動作：最近 90 天未登入的人員帳號 → 確認在職與需求 → 停用（先停不刪，同 ACL 盤點邏輯）。\n查「誰有什麼權限」的實用 SQL（PostgreSQL）：\nSELECT grantee, table_name, privilege_type\nFROM information_schema.role_table_grants\nWHERE grantee NOT IN ('postgres','PUBLIC')\nORDER BY grantee, table_name;"
   },
   "dba-migration-flow": {
     "teachingSteps": [
@@ -541,7 +555,8 @@
       "我知道 Rollback Script 也要測試。",
       "我知道 UAT 驗證的重要性。",
       "我能說明上線後要驗證哪些項目。"
-    ]
+    ],
+    "handson": "用練習庫把一次「可回復的 Migration」完整走一遍（練習任務 1–4 全解）。\n情境：orders 表要新增「訂單來源」欄位。\n\n【任務 1 解答】Migration Script（migration_20260705_add_channel.sql）\n-- 目的：orders 新增 channel 欄位，預設 'web'\n-- 影響：orders 表全部資料列；預估執行時間：小表秒級\nBEGIN;\nALTER TABLE orders ADD COLUMN channel VARCHAR(20) NOT NULL DEFAULT 'web';\n-- 驗證（在交易內先看）：\nSELECT COUNT(*) AS rows_after, COUNT(channel) AS channel_filled FROM orders;\nCOMMIT;\n重點手法：包在交易裡，驗證數字不對就 ROLLBACK，整個變更像沒發生過（注意：多數 DDL 在 PostgreSQL 可交易回滾，Oracle/MySQL 的 DDL 不行——所以那些平台更依賴備份與 Rollback Script）。\n\n【任務 2 解答】Rollback Script（rollback_20260705_add_channel.sql）\nBEGIN;\nALTER TABLE orders DROP COLUMN channel;\nSELECT COUNT(*) FROM orders;   -- 應等於變更前筆數\nCOMMIT;\n鐵則：Rollback Script 要「先在測試環境真的執行過」——沒測過的回復計畫等於沒有回復計畫。\n\n【任務 3 解答】Migration 前後驗證清單\n前：上線前備份完成（記備份檔名與時間）｜Script 已在測試環境成功｜Rollback 已測試｜UAT 簽核｜維護窗口核准\n中：記錄開始/結束時間、執行人、輸出訊息\n後：資料筆數比對（變更前後 COUNT 相同）｜新欄位抽查（SELECT channel FROM orders LIMIT 5）｜\n應用程式功能測試（下一筆新訂單寫得進來嗎）｜錯誤 Log 觀察 30 分鐘\n\n【任務 4 解答】正式上線紀錄範本\n變更單號｜執行日期時間：2026-07-05 22:00–22:04｜執行人｜\n備份確認：pg_dump 於 21:55 完成（檔名 orders_20260705.sql）｜\n執行結果：成功，orders 12,345 筆不變，channel 欄位全部填入預設值｜\n上線後驗證：應用程式建立測試訂單成功、30 分鐘無錯誤 Log｜異常：無\n\n【親手練一遍】\n在練習庫依序執行任務 1 的 Script → 驗證 → 再執行任務 2 的 Rollback → 驗證欄位消失、筆數不變。\n跑完這一輪，你就做過一次完整的「上版＋回退」——面試講 Migration 流程時，你講的是做過的事，不是背的流程。"
   },
   "dba-backup-recovery": {
     "teachingSteps": [
@@ -563,7 +578,8 @@
       "我能說明 Full、Incremental、Differential 差異。",
       "我知道 RPO 和 RTO 的意思。",
       "我知道備份檔也需要保護。"
-    ]
+    ],
+    "handson": "用 Docker 的 PostgreSQL 練習庫，把「備份 → 誤刪 → 還原」完整演一次。\n\n【第 1 步】備份（容器版 pg_dump）\n> docker exec pg pg_dump -U postgres postgres > backup_20260705.sql\n（把容器裡的 postgres 資料庫傾印成 SQL 檔存到你電腦）驗證：\n> Get-Item backup_20260705.sql   ← 檔案存在且大小合理\n打開看前幾行——備份檔就是「重建全部資料的 SQL 指令」，看得懂就不神秘了。\n\n【第 2 步】模擬災難（在練習庫放心做）\nDELETE FROM orders;    -- 手滑全刪！\nSELECT COUNT(*) FROM orders;   -- 0 筆，冷汗\n\n【第 3 步】還原演練（練習任務 2 解答）\n最乾淨的做法是還原到「另一個資料庫」再核對（正式環境也是這樣，不直接蓋正式庫）：\n> docker exec pg createdb -U postgres restore_test\n> Get-Content backup_20260705.sql | docker exec -i pg psql -U postgres -d restore_test\n核對：\n> docker exec pg psql -U postgres -d restore_test -c \"SELECT COUNT(*) FROM orders;\"\n→ 筆數回來了。確認無誤後，把資料搬回正式庫或直接切換。\n同時記下兩個數字：還原花了幾分鐘（→ 實測 RTO）、資料回到哪個時間點（備份當下 → 這就是 RPO 的實際意義）。\n\n【練習任務 1 解答】訂單系統備份策略設計\n目標：RPO 15 分鐘、RTO 2 小時（先訂目標再設計，順序不能反）\n策略：每日 02:00 Full Backup ＋ 持續保留 WAL/交易記錄（PostgreSQL 的 PITR；SQL Server = Full＋每 15 分 Log Backup）\n保留：日備 14 天、週備 2 個月、月備 1 年（依稽核要求）\n異地：備份檔另存到第二位置（NAS/雲端）——主機掛掉時本機備份跟著掛\n\n【練習任務 3 解答】RPO/RTO 定義說法\n「RPO 15 分鐘 = 最壞情況丟 15 分鐘的資料，由『備份頻率』決定；RTO 2 小時 = 最久 2 小時要恢復服務，由『還原手段與演練熟練度』決定。兩者都是跟業務談出來的目標，不是 IT 自己拍腦袋。」\n\n【練習任務 4 解答】備份檢查紀錄欄位\n日期｜資料庫｜備份類型（Full/Log）｜開始/結束時間｜檔案大小（突然變小要警覺！）｜\n成功/失敗｜存放位置（本地＋異地）｜保留到期日｜最近一次「還原演練」日期與結果\n最後一欄是靈魂：備份成功 ≠ 還原得回來，演練過的備份才算數。"
   },
   "dba-monitoring-baseline": {
     "teachingSteps": [
@@ -585,7 +601,8 @@
       "我知道 Tablespace 和 Log 空間很重要。",
       "我知道備份狀態也要監控。",
       "我能把告警連回可能原因。"
-    ]
+    ],
+    "handson": "把「每日健康檢查」變成一組可以直接執行的 SQL（PostgreSQL 版，其他平台概念相同、語法查對應系統表）。\n\n【練習任務 1 解答】每日健康檢查 SQL 化\n-- 1. 服務活著嗎（能連進來執行就是活著）＋版本\nSELECT version();\n-- 2. 連線數 vs 上限\nSELECT COUNT(*) AS sessions, (SELECT setting FROM pg_settings WHERE name='max_connections') AS max FROM pg_stat_activity;\n-- 3. 有沒有長交易（超過 5 分鐘）\nSELECT pid, now()-xact_start AS dur, state, LEFT(query,50)\nFROM pg_stat_activity\nWHERE xact_start IS NOT NULL AND now()-xact_start > interval '5 minutes';\n-- 4. 有沒有鎖等待\nSELECT COUNT(*) FROM pg_locks WHERE granted = false;\n-- 5. 資料庫大小（容量趨勢）\nSELECT pg_size_pretty(pg_database_size(current_database()));\n把這五段存成 daily_check.sql，每天跑一次、記下數字——兩週後你就有「正常基準」，之後看一眼就知道今天怪不怪。\n\n【練習任務 2 解答】Tablespace／空間滿的處理步驟\n告警：資料庫空間使用率 85%\n1. 先看「成長速度」：昨天多少？一天長多少？（決定你有幾天反應時間）\n2. 找出誰在長：\nSELECT relname, pg_size_pretty(pg_total_relation_size(relid)) AS size\nFROM pg_catalog.pg_statio_user_tables ORDER BY pg_total_relation_size(relid) DESC LIMIT 10;\n3. 短期：清理可清資料（過期 Log 表、暫存表）、擴充空間\n4. 長期：訂歸檔策略（超過 N 年的資料搬歷史庫）——空間問題的根治永遠是歸檔策略，不是一直加硬碟\n\n【練習任務 3 解答】備份失敗的通知與補救流程\n1. 通知：備份 Job 失敗要「主動告警」（Email/群組），不能靠人每天記得去看\n2. 判斷風險窗口：上次成功備份是何時？→ 現在的 RPO 缺口有多大\n3. 補救：排查失敗原因（空間不足最常見）→ 立即手動補跑一次 Full\n4. 記錄：失敗原因、補跑時間、缺口時段——稽核會問\n\n【練習任務 4 解答】錯誤 Log 常見欄位與判讀\n時間戳｜嚴重度（ERROR/FATAL/PANIC 要立刻看，WARNING 累積看趨勢）｜連線來源｜SQL 摘要｜錯誤代碼\n判讀心法：先看「同一錯誤是否大量重複」（一條 ERROR 重複一千次 = 一個問題，不是一千個問題），再對照時間點與部署/批次排程——「告警時間對變更時間」是資料庫排查的第一直覺。"
   },
   "dba-tuning-plan": {
     "teachingSteps": [
@@ -607,7 +624,8 @@
       "我知道慢查詢不一定只靠加 Index 解決。",
       "我知道統計資訊會影響最佳化器判斷。",
       "我能比較調整前後效能。"
-    ]
+    ],
+    "handson": "這章要玩真的：造十萬筆資料，親眼看 Index 讓查詢從慢變快（練習任務 1、2 完整解答）。\n\n【第 1 步】造大表\nCREATE TABLE big_orders AS\nSELECT\n  gs AS order_id,\n  (random()*10000)::int AS customer_id,\n  DATE '2025-01-01' + (random()*500)::int AS order_date,\n  (random()*5000)::numeric(12,2) AS total_amount\nFROM generate_series(1, 100000) AS gs;\n（generate_series 是 PostgreSQL 的造數神器，一秒十萬筆）\n\n【第 2 步】沒有索引的查詢——記下時間\nEXPLAIN ANALYZE\nSELECT * FROM big_orders WHERE customer_id = 4242;\n輸出重點兩行：\n  Seq Scan on big_orders ...    ← 全表掃描：十萬筆逐筆翻\n  Execution Time: 15.2 ms       ← 記下這個數字（你機器的值會不同）\n\n【第 3 步】加索引再查一次\nCREATE INDEX idx_big_orders_customer ON big_orders (customer_id);\nEXPLAIN ANALYZE\nSELECT * FROM big_orders WHERE customer_id = 4242;\n  Index Scan using idx_big_orders_customer ...   ← 改走索引了！\n  Execution Time: 0.08 ms                        ← 快了兩個數量級\n這一前一後的對比，就是「SQL Tuning 報告」的核心證據——永遠用數字說話，不說「感覺變快了」。\n\n【第 4 步】看統計資訊的影響\nANALYZE big_orders;    -- 更新統計資訊\n統計過舊時，最佳化器會誤判資料量選錯計畫；大量匯入資料後手動 ANALYZE 是 DBA 的反射動作。\n\n【練習任務 3 解答】JOIN 膨脹的效能現場\nEXPLAIN ANALYZE SELECT COUNT(*) FROM big_orders a CROSS JOIN (SELECT * FROM big_orders LIMIT 100) b;\n→ rows 千萬級、時間爆炸。JOIN 條件漏寫在小表看不出來、在大表就是事故——這就是為什麼排查慢查詢「先看筆數再看計畫」。\n\n【練習任務 4 解答】SQL Tuning 報告範本\n問題 SQL｜業務影響（哪個功能慢、多少人受影響）｜\n調整前：Seq Scan、15.2ms、預估掃描 100,000 列｜\n分析：WHERE customer_id 無索引｜\n處置：新增 idx_big_orders_customer｜\n調整後：Index Scan、0.08ms（改善 190 倍）｜\n副作用評估：寫入略增成本、索引占空間 X MB｜驗證人與日期\n收尾清理：DROP TABLE big_orders;（練習庫隨你玩，這就是它存在的意義）"
   },
   "dba-db2-foundation": {
     "teachingSteps": [
@@ -629,7 +647,8 @@
       "我知道 Tablespace 和 Bufferpool 的角色。",
       "我知道 DB2 Backup/Restore 是維運重點。",
       "我能說明 HADR 的基本用途。"
-    ]
+    ],
+    "handson": "想真的摸 DB2：IBM 有免費的 Db2 Community Edition Docker 映像（網路搜「db2 community edition docker」照官方指令跑，需接受授權條款與較多記憶體）。就算不裝，下面的名詞地圖與檢查表也足夠應對維運與面試。\n\n【練習任務 1 解答】DB2 名詞對照表（用 PostgreSQL 對照著記，最快）\nDB2 名詞        白話                              PostgreSQL 對照\nInstance        資料庫引擎的執行個體（一個引擎可管多庫）  一個 postgres 服務\nDatabase        實際的資料庫                       database\nTablespace      資料實體存放的邏輯空間              tablespace\nBufferpool      記憶體快取（命中率高=快）           shared_buffers\ndb2diag.log     診斷日誌（排查第一站）              postgresql log\nHADR            主備同步，主掛切備                  streaming replication\nFix Pack        修補包                             minor version update\n\n【練習任務 2 解答】DB2 每日檢查清單\n□ Instance 與 Database 狀態（db2 list active databases）\n□ 昨夜備份成功？（db2 list history backup all for <db> 看最近一筆）\n□ Tablespace 使用率（db2 list tablespaces show detail，滿了寫不進資料）\n□ Archive Log 空間（滿了資料庫會僵住——DB2 高頻事故）\n□ HADR 狀態（db2pd -hadr：主備角色正確、同步無落後）\n□ db2diag.log 有無 Severe/Critical\n\n【練習任務 3 解答】Archive Log 滿的排查流程\n現象：應用寫入報錯、db2diag.log 出現 log full 相關訊息\n1. 確認 Log 路徑空間使用率（作業系統層 df 或磁碟管理）\n2. 為什麼滿？三個常見原因：歸檔目的地滿了沒人清／某長交易讓 Log 無法釋放（回連線池章的 idle in transaction！）／異常大量寫入\n3. 短期：清理已歸檔舊 Log、擴空間、終止卡住的長交易\n4. 長期：Log 空間監控告警 70%、歸檔清理排程化\n注意順序：先找「為什麼滿」再清——只清不查，明天再滿一次。\n\n【練習任務 4 解答】Fix Pack 更新前檢查\n□ 讀 Fix Pack 的 README 與已知問題清單\n□ 確認應用程式相容性（驅動版本）\n□ 完整備份＋備份驗證\n□ 測試環境先升並跑過應用測試\n□ 維護窗口與回復計畫（還原備份或降版程序）\n□ 升級後驗證：連線、關鍵批次、HADR 重新同步狀態\n（有沒有發現？和 GitLab Upgrade 檢查清單九成相同——「升級的紀律」跨平台通用，學一次用到處。）"
   },
   "dba-oracle-foundation": {
     "teachingSteps": [
@@ -651,7 +670,8 @@
       "我知道 Alert Log 是重要排查來源。",
       "我知道 RMAN 用於備份還原。",
       "我能說明 Data Guard 和 RAC 的基本概念。"
-    ]
+    ],
+    "handson": "想真的摸 Oracle：社群維護的免費映像很好用：\n> docker run -d --name oracle -p 1521:1521 -e ORACLE_PASSWORD=devpass gvenzl/oracle-free\n（gvenzl/oracle-free 是 Oracle Database Free 的社群封裝，DBeaver 連線：Host localhost、Port 1521、Database FREEPDB1、User system、Password devpass）\n連上後跑一句 SELECT * FROM v$version; 你就摸過 Oracle 了。\n\n【練習任務 1 解答】Oracle 名詞對照表\nOracle 名詞     白話                                對照\nInstance        記憶體＋背景程序（引擎的執行態）      postgres 服務\nListener        連線接待員（Port 1521），掛了「庫活著但連不上」  ——\nTNS             用戶端連線設定檔（tnsnames.ora）      連線字串\nTablespace/Datafile  邏輯空間/實體檔案               tablespace\nAlert Log       主要事件日誌（ORA-xxxxx 都在這）      postgresql log\nRMAN            官方備份還原工具                     pg_basebackup\nData Pump       邏輯匯出匯入（搬 Schema/資料）        pg_dump\nData Guard      異地備援庫（主掛切備）                streaming replication\nRAC             多主機同跑一庫（一台掛其他台仍在）     ——（PG 無直接對應）\nAWR/ASH         內建效能報告                         pg_stat_statements\n\n【練習任務 2 解答】Listener 無回應排查流程\n現象：應用報 ORA-12541: TNS:no listener\n1. 分清楚兩件事：Listener 掛 ≠ 資料庫掛（庫可能好好的，只是接待員不在）\n2. 到主機上：lsnrctl status → 看 Listener 是否啟動、監聽哪個 Port、註冊了哪些服務\n3. 沒啟動 → lsnrctl start；有啟動但服務沒註冊 → 查資料庫是否真的開著\n4. 遠端仍連不上 → 回網路排查：Test-NetConnection <主機> -Port 1521（防火牆？）\n看懂了嗎？這條排查鏈一半是資料庫、一半是你在網路路線學的東西——維運本來就是跨領域的。\n\n【練習任務 3 解答】RMAN vs Data Pump\nRMAN：實體備份（整庫的塊層級），支援增量、可還原到任意時間點——災難復原用它。\nData Pump（expdp/impdp）：邏輯匯出（把物件與資料變成檔案），跨版本搬遷、只搬某 Schema——搬家用它。\n一句話：「救命用 RMAN，搬家用 Data Pump」。\n\n【練習任務 4 解答】Data Guard vs RAC\nData Guard：解「機房/主機掛掉」→ 資料同步到異地備庫，主掛了切過去（切換有秒級中斷）→ 這是 DR。\nRAC：解「單台主機故障」→ 多台主機同時服務同一庫，一台掛其他台無縫接手 → 這是 HA。\n企業常兩個都上：RAC 顧本地高可用、Data Guard 顧異地災難——面試答出「兩者解不同層次的問題」就是理解了。"
   },
   "devops-basics-flow": {
     "teachingSteps": [
@@ -765,7 +785,8 @@
       "我知道 Secret Detection 的目的。",
       "我知道掃描報告要保存供稽核。",
       "我能說明安全閘門。"
-    ]
+    ],
+    "handson": "四種掃描各摸一次，全部免費、本機可跑。\n\n【動手做 1】Secret Detection：自己埋雷自己掃\n在一個練習專案裡建檔案 config.py，故意寫入假密鑰：\nAWS_SECRET_KEY = \"AKIAIOSFODNN7EXAMPLE\"\n用 Gitleaks 掃（開源 Secret 掃描器）：\n> docker run -v ${PWD}:/repo ghcr.io/gitleaks/gitleaks:latest detect --source /repo --no-git -v\n→ 報告抓到 config.py 的 AWS key！\n重要觀念複習：如果這個 Secret 已經 commit 過，光刪檔沒用（歷史還在）——正解是輪替金鑰。\n\n【動手做 2】SCA：掃第三方套件弱點\n用 Trivy（開源掃描器，SCA＋Image 掃描都會）掃你的練習專案：\n> docker run -v ${PWD}:/repo aquasec/trivy fs /repo\n它會讀 requirements.txt / package-lock.json 等清單，列出每個套件的已知 CVE、嚴重度與修復版本。\n想看有東西的結果，可以在 requirements.txt 故意放舊版：flask==0.12 再掃一次——CVE 清單瞬間變長。\n\n【動手做 3】SAST 與 DAST\nSAST 用 Bandit（Python Pipeline 章教過：bandit -r .）；DAST 用 ZAP（下一課完整教）。\n到這裡你已經四種都摸過——面試講 SAST/SCA/DAST/Secret Detection 差異時，每一種你都有實際跑過的畫面可以描述。\n\n【練習任務 1 解答】Pipeline 掃描階段設計\nstages: [build, test, security, deploy]\nsecurity 階段四個 Job 平行跑：secret_scan（gitleaks）、dependency_scan（trivy fs）、sast（bandit/SonarQube）、（部署到測試站後）dast（ZAP）\n平行的原因：互不依賴，平行省時間。\n\n【練習任務 2 解答】掃描報告要保存的資訊\n工具與版本｜掃描時間與對象（commit SHA！沒有它就對不回是哪版程式）｜\n弱點清單（ID、嚴重度、位置、修復建議）｜與上次掃描的差異（新增/已修）——稽核最愛問「這個洞多久了」。\n\n【練習任務 3 解答】False Positive 處理流程\n開發者標記誤報＋理由 → 資安或資深工程師覆核 → 加入例外清單（記錄人、理由、到期日）→\n到期自動重新出現，重新評估。缺「到期日」的例外清單會變成永久豁免——這是設計重點。\n\n【練習任務 4 解答】阻擋等級設計\nCritical/High：擋部署（安全閘門 exit 1）｜Medium：不擋但開單限期修（如 30 天）｜Low：記錄、季度清理\n新導入時的過渡技巧：先「只報告不阻擋」跑兩週清存量，再開啟阻擋——一開始就全擋會被整個開發部門圍攻，推行安全也要講策略。"
   },
   "devops-sonar-quality": {
     "teachingSteps": [
@@ -787,7 +808,8 @@
       "我知道 Quality Gate 會影響部署決策。",
       "我能區分 Bugs、Vulnerabilities、Code Smells。",
       "我知道 Coverage 需要測試報告支援。"
-    ]
+    ],
+    "handson": "SonarQube Community 版免費，本機十分鐘架起來完整掃一次。\n\n【第 1 步】啟動 SonarQube\n> docker run -d --name sonar -p 9000:9000 sonarqube:community\n等 1–2 分鐘（docker logs -f sonar 看到 SonarQube is operational）。\n瀏覽器開 http://localhost:9000 → 預設帳密 admin/admin → 登入後改密碼。\n\n【第 2 步】建專案與 Token\nCreate project → Local project → 名稱 demo（Project Key 就是 demo）→\nLocally → Generate token（複製起來，等下要用）。\n\n【第 3 步】掃一個專案（用官方 Scanner 容器，不用安裝）\n在你的練習專案資料夾（有 Python 或 JS 檔的都行）：\n> docker run --rm -v ${PWD}:/usr/src `\n    -e SONAR_HOST_URL=http://host.docker.internal:9000 `\n    -e SONAR_TOKEN=你剛剛的token `\n    sonarsource/sonar-scanner-cli -D sonar.projectKey=demo\n（host.docker.internal = 讓容器連回你電腦上的 SonarQube）\n掃完回瀏覽器 → demo 專案出現 Bugs / Vulnerabilities / Code Smells / Duplications 儀表板。\n點進任何一個 issue 看它的說明——SonarQube 最有價值的其實是「為什麼這樣寫不好＋怎麼改」的教學。\n\n【第 4 步】看 Quality Gate 在哪裡\n專案頁上方那個 Passed/Failed 徽章就是 Quality Gate 結果。\nQuality Gates 選單 → Sonar way（預設門檻）：新程式碼零 Bug、零高風險弱點、Coverage 與重複率達標。\n「新程式碼（New Code）」是精髓：舊債先不擋、新增的碼必須乾淨——讓老專案也推得動品質。\n\n【練習任務 1 解答】Project Key 命名規則\n<群組>-<系統>-<元件>，例如 erp-backend-api、erp-frontend-web。\n規則的意義：Key 是 Pipeline 與 SonarQube 對應的唯一識別，改 Key = 歷史趨勢斷線，所以第一天就要訂好。\n\n【練習任務 2 解答】Quality Gate 條件建議\n新程式碼：Bugs = 0、Vulnerabilities = 0、Security Hotspots 已審查 100%、Coverage ≥ 60%（新團隊從 40% 起步再調高）、重複率 < 3%\n\n【練習任務 3 解答】Coverage 未達標的處理\n1. 先分析缺口：哪些檔案沒測試？（Sonar 的 Coverage 頁直接列）\n2. 補「關鍵路徑」的測試，不是為數字寫無意義測試\n3. 真的來不及：走例外申請（記錄＋期限），不是偷偷調低門檻——門檻一旦被隨意調，Quality Gate 就名存實亡\n\n【練習任務 4 解答】issue 分類表\nBug：會造成錯誤行為的碼（空指標、邏輯錯）→ 修\nVulnerability：安全弱點（注入、硬編碼憑證）→ 優先修\nSecurity Hotspot：需要人判斷的安全敏感點 → 審查標記\nCode Smell：能跑但難維護（過長函式、重複碼）→ 排入重構\n收尾：docker stop sonar（留著下一章還會用）。"
   },
   "devops-zap-dast": {
     "teachingSteps": [
@@ -809,7 +831,8 @@
       "我知道 DAST 需要有可連線的測試站。",
       "我知道 HTML Report 要保存。",
       "我能說明 ZAP 和 OWASP Top 10 的關係。"
-    ]
+    ],
+    "handson": "在家做 DAST 需要一個「可以合法掃的靶站」——OWASP Juice Shop 就是為此而生的練習靶站，跟 ZAP 一起跑，十分鐘完成第一次動態掃描。\n\n【第 1 步】起靶站\n> docker run -d --name juiceshop -p 3000:3000 bkimminich/juice-shop\n瀏覽器開 http://localhost:3000 → 一個故意做得千瘡百孔的購物網站（OWASP 官方教學靶站）。\n重要紀律：DAST 只能掃「你有權掃的目標」——自己的靶站、公司授權的測試站。掃別人的網站是違法行為，不是練習。\n\n【第 2 步】跑 ZAP Baseline Scan\n> docker run --rm -v ${PWD}:/zap/wrk ghcr.io/zaproxy/zaproxy:stable `\n    zap-baseline.py -t http://host.docker.internal:3000 -r zap-report.html\n（host.docker.internal：讓 ZAP 容器連到你電腦上的靶站；跑幾分鐘）\n結束後目前資料夾多了 zap-report.html——雙擊打開。\n\n【第 3 步】讀報告（這是本課的核心能力）\n報告按風險分級：High / Medium / Low / Informational。\n逐項看三個欄位：弱點名稱（如 Missing Anti-clickjacking Header）、受影響網址、Solution（修復建議）。\nBaseline 是「被動」掃描：只觀察回應、不發攻擊——所以它適合每次 CI 都跑，不會把測試站打壞。\n\n【練習任務 1 解答】掃描放在 Pipeline 哪裡\ndeploy_dev（部署到測試站）成功之後 → zap_scan Job：\nzap_scan:\n  stage: dast\n  script:\n    - docker run --rm -v $PWD:/zap/wrk ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t $DEV_URL -r zap-report.html || true\n  artifacts:\n    when: always\n    paths: [zap-report.html]\n（先 || true 只報告；成熟後改成依風險等級決定 exit code = 安全閘門。）\n\n【練習任務 2 解答】測試站要準備的條件\n可從 Runner 連線到的 URL｜部署「完成且啟動」後才掃（掃到一半在部署 = 報告不可信）｜\n用測試資料（掃描可能觸發表單送出）｜通知團隊掃描時段（Log 會多一堆奇怪請求，避免誤判被攻擊）\n\n【練習任務 3 解答】風險分級處理\nHigh：立即開單、本迭代修復、修完重掃驗證\nMedium：開單排program，30 天內\nLow/Info：批次整理，很多是 Header 加固，一次 PR 清一批\n誤報：走 False Positive 流程（前一章教的：標記＋覆核＋到期日）\n\n【練習任務 4 解答】是否阻擋部署的規則\n測試站掃描：High 出現 → 擋晉升到 UAT；正式站只做「定期被動掃」不做主動掃。\n收尾：docker rm -f juiceshop（下一章認證掃描還會再用它）。"
   },
   "devops-dotnet-pipeline": {
     "teachingSteps": [
@@ -877,7 +900,8 @@
       "我知道 Dockerfile 不能放 Secret。",
       "我知道 Multi-stage Build 的好處。",
       "我能用 Image Tag 做版本追蹤。"
-    ]
+    ],
+    "handson": "把「寫 Dockerfile → 建 Image → 掃描 → 推 Registry」完整走一遍，全在本機。\n\n【第 1 步／練習任務 1 解答】寫一個 Multi-stage Dockerfile\n用一個簡單 Node 專案（或就用你的學習平台專案！它就是 Vite 專案）。建 Dockerfile：\n# ---- 建置階段：有完整工具鏈，體積大 ----\nFROM node:20-alpine AS build\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci\nCOPY . .\nRUN npm run build          # 產出 dist/\n\n# ---- 執行階段：只留成品，乾淨又小 ----\nFROM nginx:alpine\nCOPY --from=build /app/dist /usr/share/nginx/html\n關鍵在 --from=build：只把上一階段的成品 dist/ 撿過來，node_modules 和原始碼統統不進最終 Image。\n\n【第 2 步／練習任務 2 解答】建置＋比較體積（親眼看 Multi-stage 的威力）\n> docker build -t mylearn:dev .\n> docker images mylearn\n再故意做一個「單階段」版（直接 FROM node 跑）比較——多階段版通常只有幾十 MB，單階段動輒好幾百 MB。體積小 = 部署快、受攻擊面小。\nTag 命名（練習任務 2）：別用 latest，用可追溯的：\n> docker tag mylearn:dev mylearn:1.0.0\n> docker tag mylearn:dev mylearn:$(git rev-parse --short HEAD)   # 用 commit SHA\n\n【第 3 步／練習任務 4 解答】掃描 Image（複習 Trivy）\n> docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image mylearn:dev\n它會列出「基底映像」帶來的 OS 套件弱點——這就是為什麼要選 alpine/slim 基底、定期更新基底重建。\n\n【第 4 步】推 Registry（用你已有的 GitLab）\nGitLab 每個專案內建 Container Registry：\n> docker login registry.gitlab.com\n> docker tag mylearn:1.0.0 registry.gitlab.com/你的帳號/你的專案/mylearn:1.0.0\n> docker push registry.gitlab.com/你的帳號/你的專案/mylearn:1.0.0\n到 GitLab 專案 → Deploy → Container Registry 看到你推上去的 Image。\n\n【練習任務 3 解答】Secret 不能進 Image 的驗證\n絕不要 COPY .env 或把密碼寫進 Dockerfile——Image 的每一層都可被 docker history 挖出來。\n驗證：> docker history mylearn:dev 看得到每層做了什麼。Secret 應在「執行容器時」用 -e 或掛 secret 注入，不是烤進 Image。\n收尾：docker rmi mylearn:dev mylearn:1.0.0（清掉練習 Image）。"
   },
   "devops-ai-platform": {
     "teachingSteps": [
@@ -899,7 +923,8 @@
       "我知道 RAG 是用文件檢索輔助模型回答。",
       "我知道企業 AI 平台需要 RBAC 與稽核。",
       "我能說明 Reverse Proxy、HTTPS、監控與備份的重要性。"
-    ]
+    ],
+    "handson": "企業 AI 平台的每個元件都能在家用 Docker 跑起來——這章可以真的做出一個能用的私有 AI。\n\n【第 1 步】跑本地模型（Ollama）\n> docker run -d --name ollama -p 11434:11434 -v ollama:/root/.ollama ollama/ollama\n> docker exec ollama ollama pull llama3.2       # 拉一個小模型（幾 GB，看網速）\n測試：> curl http://localhost:11434/api/generate -d '{\"model\":\"llama3.2\",\"prompt\":\"你好\",\"stream\":false}'\n有回應 = 你有一個「資料不出門」的本地模型了。\n\n【第 2 步】接上聊天入口（Open WebUI）\n> docker run -d --name openwebui -p 3000:3000 `\n    --add-host=host.docker.internal:host-gateway `\n    -e OLLAMA_BASE_URL=http://host.docker.internal:11434 `\n    -v openwebui:/app/backend/data ghcr.io/open-webui/open-webui:main\n瀏覽器開 http://localhost:3000 → 註冊第一個帳號（自動成為管理員）→ 選 llama3.2 開始對話。\n你已經有一個像 ChatGPT 但完全私有的介面了。\n\n【第 3 步／體驗 RAG】\nOpen WebUI 左側有「知識庫」功能：上傳幾個 PDF/文字檔 → 在對話中用 # 引用該知識庫發問。\n模型回答時會「先檢索你的文件、再作答」——這就是 RAG，資料是你的、答案有出處。\n觀念複習：文件被切塊 → 轉成向量存進向量庫 → 問問題時找最相關的塊餵給模型。\n\n【練習任務 1 解答】架構圖\n使用者 → Reverse Proxy(HTTPS，如 Nginx) → Open WebUI(入口/RBAC/知識庫) → Ollama(模型)\n                                              ↘ 向量資料庫(RAG 檢索)\n對外一律經 Reverse Proxy 上 HTTPS，模型與向量庫留在內網不直接暴露。\n\n【練習任務 2 解答】角色與模型權限設計\n管理員：管使用者、管模型、看全域 Chat Log｜\n一般使用者：只能用被指派的模型與知識庫｜\n敏感部門群組：專屬知識庫，別組看不到\nOpen WebUI 的 admin 面板可以設使用者群組與模型存取——這就是 AI 平台版的 RBAC。\n\n【練習任務 3 解答】知識庫匯入流程\n文件盤點（哪些可進、有無機敏）→ 清理格式 → 上傳建立知識庫 → 測試問答品質 →\n設定存取權限（誰能用這個知識庫）→ 定期更新與版本控管\n關鍵治理點：進知識庫的文件 = 所有有權限的人都問得到，所以「能不能進庫」本身就是資安決策。\n\n【練習任務 4 解答】AI 平台維運檢查清單\n□ HTTPS 憑證與到期監控 □ 使用者權限盤點 □ Chat Log 保存與敏感詞監控\n□ API Key 管理與輪替 □ 模型更新流程 □ 向量庫與設定備份\n□ 資源監控（模型吃 GPU/記憶體）□ 敏感資料外洩防護（Prompt 注入、輸出過濾）\n收尾：docker rm -f openwebui ollama（模型檔在 volume 裡，下次再開很快）。"
   },
   "net-lab-setup-env": {
     "teachingSteps": [
@@ -1154,7 +1179,8 @@
       "我知道權限應授予群組而非個人。",
       "我知道 GPO 可以派送哪些常見設定。",
       "我能排查帳號鎖定造成的多系統登入異常。"
-    ]
+    ],
+    "handson": "家裡沒有 AD？兩條路：紙上完整解答（下面全給）＋進階選項（VirtualBox 開一台 Windows Server 試用版裝 AD DS，網路搜「Windows Server evaluation」可下載 180 天試用版）。\n\n【練習任務 1 解答】關係圖（照抄再默畫一次）\n網域 company.local\n ├─ OU: 台北總部\n │   ├─ OU: 業務部 → 使用者帳號 jsmith、電腦帳號 TPE-PC-001\n │   └─ OU: 資訊部\n ├─ 群組: VPN-ERP-Users（成員: jsmith）\n └─ GPO: 「Proxy 設定」連結在「台北總部」OU → 底下所有電腦自動套用\n記法：OU 是資料夾（管理用）、群組是名單（授權用）——新手最常把這兩個搞混。\n\n【練習任務 2 解答】ERP 唯讀/管理的群組授權方案\n建兩個群組：GRP-ERP-ReadOnly、GRP-ERP-Admin\nERP 系統端：唯讀角色綁 GRP-ERP-ReadOnly、管理角色綁 GRP-ERP-Admin\n人員異動時：只改群組成員，ERP 端永遠不用動。\n為什麼不直接把權限給個人？離職/調職時要去每套系統逐一清權限，一定漏——這就是「權限授予群組」的理由，面試常考。\n\n【練習任務 3 解答】帳號鎖定排查步驟\n1. 確認現象：是「密碼錯誤」還是「帳號已鎖定」（錯誤訊息不同）\n2. 查 AD 帳號狀態：鎖定時間、鎖定來源電腦（安全性事件 4740）\n3. 九成原因：某個裝置存了舊密碼一直重試——手機郵件、排程工作、對應網路磁碟機、還開著的舊登入工作階段\n4. 處理：找出並更新那個裝置的密碼 → 解鎖帳號 → 觀察是否再鎖\n只解鎖不找來源，五分鐘後又鎖——跟 err-disabled 一樣，先除根因。\n\n【練習任務 4 解答】LDAP 驗證流程（面試版）\n「應用系統用一個服務帳號綁定（bind）AD，先用使用者輸入的帳號查出他的 DN，再拿使用者密碼做第二次 bind——成功即驗證通過，接著讀取群組屬性決定權限。」\n有 Windows 電腦可實測概念：開 PowerShell 打 whoami /groups，看你自己帳號屬於哪些群組——系統做授權判斷時看的就是這份清單。"
   },
   "net-enterprise-dns": {
     "teachingSteps": [
@@ -1176,7 +1202,8 @@
       "我知道 TTL 對變更生效時間的影響。",
       "我能說明 split-horizon DNS 的目的。",
       "我會用 nslookup 指定 DNS Server 做比對。"
-    ]
+    ],
+    "handson": "【第 1 步／練習任務 1 解答】指定不同 DNS 比對（在家就能做）\n> nslookup www.google.com          ← 用你目前的 DNS\n> nslookup www.google.com 8.8.8.8  ← 指定 Google DNS\n> nslookup www.google.com 168.95.1.1  ← 指定中華電信 DNS\n觀察：同一個名稱，不同 DNS 可能回不同 IP（CDN 依地區給最近節點）——這就是「解析結果取決於你問誰」的第一手證據，企業 split-horizon 是同一原理的刻意運用。\n\n【練習任務 2 解答】記錄類型對照表\nA     名稱 → IPv4        www.company.com → 203.0.113.10\nCNAME 別名 → 正名        mail.company.com → outlook.office365.com（改用雲端信箱時只改這筆）\nPTR   IP → 名稱（反查）  203.0.113.10 → www.company.com（郵件伺服器信譽檢查常用）\nMX    郵件路由           company.com 的信 → 送到哪台 mail server（含優先序數字，小的優先）\n加碼實測：\n> nslookup -type=MX gmail.com     ← 看 Google 的郵件路由與優先序\n> nslookup -type=CNAME www.github.com\n\n【練習任務 3 解答】「改了 DNS 卻沒生效」的原因與確認\n原因鏈：舊記錄的 TTL 還沒過期，各層快取（本機 → 公司 DNS → 上游）還在回舊值。\n確認方法：\n1. 直接問權威伺服器：nslookup <名稱> <該網域的 DNS Server> → 如果權威已是新值，就是快取問題\n2. 清本機快取：ipconfig /flushdns 再測\n3. 剩下就是等 TTL 過期。所以企業慣例：計畫性搬遷「前幾天」先把 TTL 調短（如 300 秒），切換後再調回。\n\n【練習任務 4 解答】split-horizon 解析路徑圖\n內部員工 → 公司內部 DNS → erp.company.com = 10.30.5.20（內網 IP，直連）\n外部訪客 → 公網 DNS     → erp.company.com = 203.0.113.50（防火牆對外 IP）\nVPN 使用者的兩種命運：\n- VPN 有派發內部 DNS → 解析到 10.30.5.20 → 走隧道，正常\n- VPN 沒派內部 DNS   → 解析到 203.0.113.50 → 從外面繞，可能被防火牆擋 → 「VPN 連上了系統卻打不開」\n這張圖就是 VPN 排查課「先查 DNS」的原因。"
   },
   "net-incident-mgmt": {
     "teachingSteps": [
@@ -1199,7 +1226,8 @@
       "我知道「先恢復服務、保留證據、事後查根因」的順序。",
       "我能寫出含時間軸的事件紀錄。",
       "我知道變更管理需要哪些必備欄位。"
-    ]
+    ],
+    "handson": "【練習任務 1 解答】模擬事件完整時間軸（拿這份當範本演練一次）\n事件：ERP 系統無回應\n[09:12] 監控告警：ERP Health Check 連續 3 次失敗；同時兩位使用者通報\n[09:14] 初判影響：全公司 ERP 不可用 → 依分級屬 P1 → 立即通報主管與資訊窗口\n[09:16] 保留證據：擷取監控畫面、記下告警時間，先不重啟\n[09:18] 檢查：主機 ping 通、443 Port 無回應 → 服務層問題；查最近變更：昨晚有上版！\n[09:22] 決策：優先恢復 → 依 Rollback 計畫退回前一版\n[09:31] 服務恢復，Health Check 轉綠；通知使用者與主管\n[09:45] 對外結案通知；證據與時間軸歸檔\n[次日] RCA 會議\n注意兩個關鍵動作：「先通報再埋頭修」（09:14）與「保留證據才動手」（09:16）——新手最常反過來。\n\n【練習任務 2 解答】變更單範本（含回復計畫）\n變更主題：防火牆新增 Office→DMZ 443 規則\n申請人/執行人/核准人｜變更時間：7/12（六）22:00–22:30（維護窗口）\n影響評估：不影響既有流量；失敗最壞情況 = 新服務不通，不影響舊服務\n執行步驟：1) 備份現行設定 2) 新增規則 3) 驗證\n驗證項目：Test-NetConnection 成功＋防火牆 Log 命中新規則\n回復計畫：刪除新規則或還原備份設定（預估 5 分鐘）\n回報：完成後 30 分鐘內回報結果至群組\n\n【練習任務 3 解答】事件分級與通報門檻範本\nP1 全公司級服務中斷（ERP 掛、全網斷線）→ 立即口頭＋訊息通報主管，每 30 分鐘更新\nP2 部門級或重要功能異常 → 15 分鐘內通報窗口\nP3 個人問題（單人連不上）→ 正常工單流程\n判斷第一問永遠是「影響範圍多大」——它同時決定分級、通報對象與你的處理節奏。\n\n【練習任務 4 解答】RCA 報告範本\n標題與日期｜影響摘要（多少人、多久、哪些功能）｜時間軸（引用任務 1 那份）｜\n根本原因：昨晚上版的設定檔缺少資料庫連線參數（不是「系統掛了」——那是現象，不是原因）｜\n短期修補：Rollback 完成｜\n長期改善：1) 上版檢查清單加入設定檔比對 2) 部署後自動打 Health Check 才收工 3) 監控加告警\n寫 RCA 的鐵則：對事不對人——目標是讓流程接住錯誤，不是找戰犯；這句放在面試裡講也加分。"
   },
   "dba-lab-setup-env": {
     "teachingSteps": [
@@ -1337,7 +1365,8 @@
       "我知道「重啟就恢復」暗示連線洩漏。",
       "我能查出目前 Session 的來源分佈。",
       "我知道 idle in transaction 的危害。"
-    ]
+    ],
+    "handson": "【練習任務 1 解答】查連線數與上限\nSELECT COUNT(*) AS current_sessions FROM pg_stat_activity;\nSHOW max_connections;    -- 預設 100\n兩個數字的差距就是「餘裕」。監控告警通常設在使用率 80%。\n\n【練習任務 2 解答】親手製造並抓出 idle in transaction\n視窗 A（模擬有問題的應用程式）：\nBEGIN;\nUPDATE customers SET customer_name = customer_name WHERE customer_id = 1;\n-- 然後放著不 COMMIT，假裝程式忘了收尾\n視窗 B（你是 DBA，來抓人）：\nSELECT pid, usename, application_name, state,\n       now() - xact_start AS transaction_age,\n       LEFT(query, 60) AS last_query\nFROM pg_stat_activity\nWHERE state = 'idle in transaction'\nORDER BY transaction_age DESC;\n→ 看到視窗 A 那條連線：state = idle in transaction、交易齡一直在長。\n它的危害雙重：佔著連線（Pool 資源）＋持有鎖（別人更新同筆資料會卡住）。\n處置（先溝通後動手）：確認來源應用 → 請對方修正程式 →緊急時強制中斷：\nSELECT pg_terminate_backend(<pid>);\n（正式環境開槍前要記錄：pid、來源、卡了多久、影響誰。）\n\n【練習任務 3 解答】連線耗盡排查步驟清單\n1. 確認現象：應用報 too many connections / timeout\n2. 查來源分佈：pg_stat_activity 按 application_name / client_addr 分組 → 誰佔最多？\n3. 查狀態分佈：active 多 = 真的忙（查慢查詢）；idle 多 = Pool 設太大；idle in transaction 多 = 程式漏收尾\n4. 短期止血：終止最老的 idle in transaction、重啟嫌疑應用\n5. 長期：修程式（using/finally 關連線）、對帳 Pool 總和 vs max_connections\n\n【練習任務 4 解答】兩個應用共用一套 DB 的 Pool 分配\nmax_connections = 100\n保留給 DBA 與監控：10\n可分配：90 → App A（高流量）上限 60、App B（後台批次）上限 30\n原則：所有應用 Pool max 總和 ≤ 可分配額度，並在各應用設「連線等待逾時」——寧可個別請求排隊，不要整庫被打滿。把這個分配表寫進維運文件，出事時第一時間就知道嫌疑人是誰。"
   },
   "dba-mssql-foundation": {
     "teachingSteps": [
@@ -1359,7 +1388,8 @@
       "我能說明 Simple 與 Full Recovery 的差異。",
       "我知道 Full Recovery 必須搭配 Log 備份。",
       "我能說明 AlwaysOn 的基本用途。"
-    ]
+    ],
+    "handson": "SQL Server 用 Docker 就能完整練（第 0 課教過啟動指令，沒啟動先回去跑）。DBeaver 連線：Host localhost、Port 1433、User sa、Password 你設定的。\n\n【練習任務 1、2 解答】連線並查 Recovery Model\nSELECT name, recovery_model_desc FROM sys.databases;\n→ master/msdb 是 SIMPLE、model 是 FULL——新建資料庫會繼承 model 的設定，所以很多庫「不小心」就是 FULL。\n建個練習庫玩：\nCREATE DATABASE practice;\nALTER DATABASE practice SET RECOVERY FULL;\n\n【動手做】親手備份三件組（T-SQL 直接跑）\n-- Full Backup\nBACKUP DATABASE practice TO DISK = '/var/opt/mssql/data/practice_full.bak';\n-- 交易記錄備份（FULL 模式的救命關鍵）\nBACKUP LOG practice TO DISK = '/var/opt/mssql/data/practice_log.trn';\n跑第二句時如果報「尚未有完整備份」→ 順序錯了：Log 備份必須在第一次 Full 之後——這個報錯本身就是重要知識。\n查備份歷史（維運檢查用）：\nSELECT database_name, type, backup_finish_date\nFROM msdb.dbo.backupset ORDER BY backup_finish_date DESC;\n（type：D=Full、L=Log、I=Differential）\n\n【練習任務 3 解答】備份排程與 RPO 對應\nRPO 15 分鐘 → 每日 02:00 Full ＋ 每 15 分鐘 Log Backup（SQL Server Agent 排程）\n還原順序（面試常考）：最近的 Full → （有差異備就接 Differential）→ 依序套用之後「每一個」Log 備份 → 到目標時間點\nLog 備份鏈斷一個，後面的全部作廢——所以備份監控要盯「每一次」Log 備份成功。\n\n【練習任務 4 解答】ldf 暴漲排查步驟（完整版）\n1. 確認元凶：SELECT name, recovery_model_desc FROM sys.databases; → 嫌疑庫是 FULL？\n2. 查 Log 為何不能截斷：SELECT name, log_reuse_wait_desc FROM sys.databases;\n   → LOG_BACKUP = 沒排 Log 備份（最常見）；ACTIVE_TRANSACTION = 有長交易卡住（又是它！）\n3. 立即止血：補一次 BACKUP LOG（釋放可重用空間）\n4. 長期：依 RPO 排 Log 備份排程；或業務接受只還原到備份點 → 改 SIMPLE\n5. 絕對不要做的事：直接刪 ldf 檔——資料庫會直接損毀，這是 DBA 界的著名自殺動作\n收尾：DROP DATABASE practice;"
   },
   "devops-lab-setup-env": {
     "teachingSteps": [
@@ -1428,7 +1458,8 @@
       "我知道 NuGet/pip 抓不到套件時該檢查來源設定。",
       "我知道上游代理與快取的運作方式。",
       "我知道內部快取套件也要掃弱點。"
-    ]
+    ],
+    "handson": "企業級套件庫 Nexus 有免費版，Docker 一行就能在家跑起來——這章可以完整動手。\n\n【第 1 步】啟動 Nexus\n> docker run -d --name nexus -p 8081:8081 -v nexus-data:/nexus-data sonatype/nexus3\n啟動要等 1–2 分鐘（docker logs -f nexus 看到 Started Sonatype Nexus 即可）。\n瀏覽器開 http://localhost:8081 → Sign in → 帳號 admin，密碼在容器裡：\n> docker exec nexus cat /nexus-data/admin.password\n登入後照精靈改密碼。\n\n【第 2 步】看懂它內建的三種倉庫（左側 Browse）\nmaven-central / nuget.org-proxy 這類 = proxy 倉庫（上游代理：第一次代抓、之後快取）\nhosted = 放公司自己寫的套件\ngroup = 把 proxy＋hosted 綁成一個網址給大家用（用戶端只要記一個來源）\n這三個概念就是所有企業套件庫（Nexus/Artifactory）的全部骨架。\n\n【第 3 步】親手走一次「pip 透過內部庫抓套件」\nNexus 建 PyPI proxy：Settings（齒輪）→ Repositories → Create repository → pypi (proxy) →\nName: pypi-proxy、Remote storage: https://pypi.org → Create。\n然後用它安裝套件：\n> pip install requests --index-url http://localhost:8081/repository/pypi-proxy/simple --trusted-host localhost\n成功後到 Browse → pypi-proxy → 看到 requests 被快取進來了！\n再裝一次同套件 → 這次由快取供應。你剛剛完整重現了企業內網抓套件的機制。\n\n【練習任務 1 解答】流量圖\n開發機/建置機 → 內部套件庫（group 網址）→ 命中快取直接回／未命中 → 由 proxy 代抓官方源 → 快取 → 回應\n公司防火牆只需放行「套件庫 → 官方源」一條路，所有端點不需直連網際網路。\n\n【練習任務 3 解答】代理 vs 純快取\nproxy 倉庫 = 快取＋治理入口（可設封鎖清單、掃描、稽核誰抓了什麼）；\n單純本機 cache（pip 自己的快取）只加速自己一台，沒有集中控管——企業要的是前者。\n\n【練習任務 4 解答】套件庫維運項目\n磁碟空間（快取會一直長，設清理策略 Cleanup Policies）｜上游連線健康｜\n帳號與匿名存取設定｜備份 nexus-data｜對快取套件排程 SCA 掃描｜升級（一樣走備份→測試→窗口流程）\n收尾：docker stop nexus（保留著之後還能玩）或 docker rm -f nexus。"
   },
   "devops-zap-advanced": {
     "teachingSteps": [
@@ -1450,7 +1481,8 @@
       "我能設定至少一種 ZAP 認證方式。",
       "我知道如何驗證掃描真的進到登入後頁面。",
       "我知道 API 掃描需要 OpenAPI 定義與 Token。"
-    ]
+    ],
+    "handson": "延續上一課的 Juice Shop 靶站，親眼證明「未認證掃描的盲區」。\n\n【第 1 步／練習任務 1 的證據】先跑一次未認證掃描當對照\n（上一課的 zap-baseline 結果就是未認證版）它掃到的多半是登入頁與公開頁的問題——因為 ZAP 沒有帳號，進不去會員中心、購物車、後台。\n這就是盲區：報告「乾淨」可能只是因為掃描根本沒進到有料的地方。\n\n【第 2 步】理解認證掃描要餵什麼\nZAP 要能「帶著身分」掃，需要三選一：\n- 表單登入：給登入頁 URL、帳號欄位名、密碼欄位名、一組測試帳密\n- Token/Header：先登入拿到 Bearer Token，讓 ZAP 每個請求都帶 Authorization Header（API 常用）\n- Context 檔：ZAP Desktop 錄製登入流程存成 context，掃描時載入\n\n【第 3 步】API 掃描（Juice Shop 有 REST API）\nJuice Shop 的 API 可用 zap-api-scan。概念指令：\n> docker run --rm -v ${PWD}:/zap/wrk ghcr.io/zaproxy/zaproxy:stable `\n    zap-api-scan.py -t http://host.docker.internal:3000/api-docs -f openapi -r api-report.html\n（-f openapi 告訴 ZAP 用 OpenAPI 定義枚舉端點；沒有定義檔，ZAP 不知道有哪些 API 可測）\n\n【第 4 步／練習任務 3 的核心】驗證「真的掃進去了」\n掃完別只看結論，打開報告或 ZAP 的請求記錄，確認裡面出現了「登入後才有的網址」（如 /rest/basket、/api/orders）。\n如果從頭到尾只有登入頁與首頁 → 認證沒生效，這輪掃描白做——這個驗證動作是認證掃描的靈魂，沒做等於自我感覺良好。\n\n【練習任務 2 解答】設定認證的注意事項\n用「專用測試帳號」（不要用真人帳號）｜用可拋棄的測試資料（主動掃描會送出表單、可能改資料）｜\n注意 Session 逾時（掃到一半登出 → 後半段又在掃登入頁）｜掃描帳號權限剛好夠測就好，別給 admin 去掃正式資料\n\n【練習任務 4 解答】認證掃描檢核清單\n□ 帳號：專用測試帳號、非正式資料環境\n□ 資料：可拋棄、掃前有備份或用獨立測試庫\n□ 範圍：限定測試站 URL，設定 exclude 排除「登出」連結（免得一點就掉登入）\n□ 證據：掃描記錄中確認出現登入後端點\n□ 通知：掃描時段告知團隊（避免 Log 異常被當成真攻擊）\n收尾：docker rm -f juiceshop；docker stop sonar nexus（全部練習環境收工）。"
   },
   "devops-k8s-awareness": {
     "teachingSteps": [
@@ -1472,7 +1504,8 @@
       "我能解釋 Pod、Deployment、Service 的角色。",
       "我知道宣告式與命令式管理的差異。",
       "我知道不是所有系統都需要 Kubernetes。"
-    ]
+    ],
+    "handson": "這是「認知課」——目標是講得清楚、不是會操作。但想摸真的：Docker Desktop 內建可一鍵開啟單機 Kubernetes（Settings → Kubernetes → Enable），或用 kind（Kubernetes in Docker）。以下重點是把觀念鎖死。\n\n【練習任務 1 解答】Docker → Kubernetes 概念對照（背這張就懂一半）\n你會的 Docker              Kubernetes\ndocker run 一個容器         Pod（最小執行單位，可含 1+ 容器）\n手動維持 3 個容器活著        Deployment（宣告 replicas: 3，掛了自動補）\n記容器 IP 去連它            Service（給一組 Pod 一個穩定名稱與虛擬 IP）\nNginx 反代對外              Ingress（依網址/路徑對外路由到不同 Service）\ndocker run -e 環境變數       ConfigMap / Secret\n\n【練習任務 2 解答】四物件一句話\nPod：跑你容器的最小單位，會生會死、IP 會變（所以不能直接連它）\nDeployment：確保「永遠有 N 個健康的 Pod」，負責滾動更新與自動補位\nService：一個不變的入口，把流量分給背後那組會變動的 Pod\nIngress：站在最外面，依 www.a.com / www.b.com 把請求送到對的 Service\n\n【動手做（選做）】感受宣告式\n若開了單機 K8s，存一個 deploy.yaml：\napiVersion: apps/v1\nkind: Deployment\nmetadata: { name: web }\nspec:\n  replicas: 3\n  selector: { matchLabels: { app: web } }\n  template:\n    metadata: { labels: { app: web } }\n    spec:\n      containers:\n      - { name: web, image: nginx:alpine }\n> kubectl apply -f deploy.yaml\n> kubectl get pods            # 三個 Pod 起來了\n> kubectl delete pod <任一個> # 刪掉一個\n> kubectl get pods            # 幾秒後又變回三個！\n這個「你刪它補」就是宣告式的精髓：你描述「要 3 個」，K8s 負責讓現實永遠符合。\n\n【練習任務 3 解答】滾動更新與回滾\n改 image 版本 → kubectl apply → Deployment 逐一換掉 Pod（舊的先留著、新的健康了才換下一個，服務不中斷）。\n新版壞了：kubectl rollout undo deployment/web → 退回上一版。這是宣告式的紅利：回滾就是「宣告要舊版」。\n\n【練習任務 4 解答】適合 vs 不適合上 K8s\n適合：多服務、要自動擴縮、要高可用、團隊有維運量能\n不適合：單一小網站、流量平穩、團隊沒人懂 K8s——這種上 K8s 是「用航空母艦載一箱貨」，Docker Compose 更務實\n面試金句：「K8s 解決的是規模與韌性問題，代價是維運複雜度；沒有那個規模，複雜度就是純負債。」"
   },
   "devops-ansible-basics": {
     "teachingSteps": [
@@ -1495,7 +1528,8 @@
       "我能寫出基本的 Playbook。",
       "我能解釋冪等性並用執行結果證明。",
       "我知道 --check 模式的用途。"
-    ]
+    ],
+    "handson": "不想弄真的被管理主機？用 Docker 起一台「可 SSH 的 Ubuntu」當練習標靶，Ansible 從你電腦控它。\n\n【第 1 步】起一台標靶容器\n> docker run -d --name target -p 2222:22 rastasheep/ubuntu-sshd:18.04\n（這映像預裝 sshd，預設帳密 root/root）驗證能連：\n> ssh root@localhost -p 2222   （密碼 root，第一次問指紋打 yes；連進去確認後 exit）\n\n【第 2 步】裝 Ansible（用容器跑，免污染電腦）\n最省事：把 Ansible 也跑在容器裡，或在 WSL/Linux 直接 pip install ansible。以下假設你有 ansible 指令。\n\n【第 3 步／練習任務 1 解答】Inventory\n建 hosts.ini：\n[web]\ntarget ansible_host=localhost ansible_port=2222 ansible_user=root ansible_ssh_pass=root ansible_ssh_common_args='-o StrictHostKeyChecking=no'\n驗證通道：\n> ansible -i hosts.ini web -m ping\n→ 回 \"ping\": \"pong\" = Ansible 打得到標靶。\n\n【第 4 步／練習任務 2 解答】Playbook\n建 site.yml：\n- hosts: web\n  tasks:\n    - name: 安裝 nginx\n      apt: { name: nginx, state: present, update_cache: yes }\n    - name: 放一個首頁\n      copy: { content: \"hello from ansible\\n\", dest: /var/www/html/index.html }\n    - name: 確保 nginx 啟動\n      service: { name: nginx, state: started }\n先演練再執行：\n> ansible-playbook -i hosts.ini site.yml --check    # --check：只說會做什麼，不真的改\n> ansible-playbook -i hosts.ini site.yml            # 真的執行\n\n【第 5 步／練習任務 3 解答——冪等性的親眼證明】\n再執行「同一條」指令一次：\n> ansible-playbook -i hosts.ini site.yml\n看最後的 recap：第一次是 changed=3，第二次變成 changed=0 ok=3！\n因為三件事都已達成目標狀態，Ansible 判斷「不用做」——這就是冪等性：跑一百次結果都一樣。\n手寫 shell script 做不到這點（apt install 跑第二次會再折騰一遍）。\n\n【練習任務 4 解答】把手動步驟改寫成 Playbook\n原手動清單：登入 → apt update → apt install nginx → 編輯首頁 → systemctl start nginx\n對應模組：update_cache=yes → apt 模組 → copy 模組 → service 模組\n改寫原則：能用「模組」就別用 shell（模組才有冪等性）；shell 是最後手段。\n收尾：docker rm -f target。"
   },
   "devops-terraform-concept": {
     "teachingSteps": [
@@ -1517,7 +1551,8 @@
       "我知道 init / plan / apply 各做什麼。",
       "我知道 state 檔的重要性與保管方式。",
       "我能說明 Terraform 與 Ansible 的分工。"
-    ]
+    ],
+    "handson": "Terraform 可以用「Docker provider」在本機練——不用開雲端帳號、不花錢，就能完整體驗 plan/apply/state/drift。\n\n【第 1 步】裝 Terraform\n到 developer.hashicorp.com/terraform 下載，解壓到 PATH。驗證：terraform version。\n\n【第 2 步／練習任務 1 解答】寫第一份 .tf\n建資料夾放 main.tf：\nterraform {\n  required_providers {\n    docker = { source = \"kreuzwerker/docker\" }\n  }\n}\nprovider \"docker\" {}\n\nresource \"docker_image\" \"nginx\" {\n  name = \"nginx:alpine\"\n}\nresource \"docker_container\" \"web\" {\n  name  = \"tf-web\"\n  image = docker_image.nginx.image_id\n  ports {\n    internal = 80\n    external = 8088\n  }\n}\n\n【第 3 步】三步循環（本課核心）\n> terraform init      # 下載 docker provider\n> terraform plan      # 預覽：會顯示 + 2 resources to add（還沒真的做）\n> terraform apply     # 打 yes → 真的建出容器\n瀏覽器開 http://localhost:8088 → nginx 頁面。你用「宣告檔」建出了基礎設施。\n\n【第 4 步／親眼看 drift——這是 Terraform 的殺手鐧】\n手動把容器砍掉（模擬有人繞過流程亂動）：\n> docker rm -f tf-web\n再問 Terraform：\n> terraform plan\n→ 它偵測到「現實少了一個容器」，顯示要重建！這就是 drift 偵測：Terraform 記得「應該長怎樣」，能抓出被手動改動的偏差。\n> terraform apply 又把它拉回宣告的狀態。\n\n【第 5 步／練習任務 3 解答】看 state\n> cat terraform.tfstate\n這個 JSON 就是 Terraform 的「記憶」——它記得建了哪些東西、ID 是什麼。\n為什麼重要：刪了它 = Terraform 失憶，會以為什麼都沒建、再 apply 就重複建立或衝突。\n團隊做法：state 放遠端（S3、Terraform Cloud）並「加鎖」，避免兩人同時 apply 打架。\n\n【練習任務 2 解答】drift 的日常意義\n定期 terraform plan（不 apply）就是一次「環境體檢」：有沒有人手動改了防火牆、開了不該開的 Port。plan 顯示差異 = 有人繞過流程，該去問清楚。\n\n【練習任務 4 解答】Terraform vs Ansible 分工\nTerraform：建「基礎設施本身」——VM、網路、雲資源、容器（宣告式，管 state）\nAnsible：管「主機內部」——裝軟體、改設定、部署應用（程序式偏多，重冪等）\n典型流程：Terraform 開出三台 VM → Ansible 進去把服務裝好設定好。\n一句話：Terraform 蓋房子，Ansible 裝潢——面試這樣答最好記。\n收尾：terraform destroy（一鍵拆掉所有它建的東西——這也是宣告式的好處）。"
   },
   "devops-app-monitoring": {
     "teachingSteps": [
@@ -1539,6 +1574,7 @@
       "我知道 healthcheck 要反映依賴狀態。",
       "我能列出四個黃金訊號。",
       "我知道告警要對症狀而不是只對資源。"
-    ]
+    ],
+    "handson": "用 Docker 把「Prometheus 收指標 → Grafana 畫圖」這套業界標準組合在本機跑起來。\n\n【第 1 步／練習任務 1 解答——healthcheck】\n先給服務一個健康檢查。以你的學習平台或任一容器為例，compose 加：\nhealthcheck:\n  test: [\"CMD\", \"wget\", \"-q\", \"--spider\", \"http://localhost/\"]\n  interval: 30s\n  timeout: 3s\n  retries: 3\n> docker ps 的 STATUS 欄會顯示 (healthy)/(unhealthy)——負載平衡器與監控就是靠這個判斷死活。\nhealthcheck 的靈魂：要反映「依賴」狀態（連得到資料庫嗎），不是只回 200。\n\n【第 2 步】跑 Prometheus + Grafana + 一個 exporter\ndocker-compose.yml：\nservices:\n  node-exporter:\n    image: prom/node-exporter\n    ports: [\"9100:9100\"]\n  prometheus:\n    image: prom/prometheus\n    ports: [\"9090:9090\"]\n    volumes: [\"./prometheus.yml:/etc/prometheus/prometheus.yml\"]\n  grafana:\n    image: grafana/grafana\n    ports: [\"3001:3000\"]\nprometheus.yml：\nglobal: { scrape_interval: 15s }\nscrape_configs:\n  - job_name: node\n    static_configs:\n      - targets: ['node-exporter:9100']\n> docker compose up -d\n\n【第 3 步】看指標\nhttp://localhost:9090 （Prometheus）→ 上方查詢框打 node_memory_MemAvailable_bytes → Execute → Graph。\n你看到的是「隨時間變化的數值」= Metric，這就是 Metrics 和 Log（一行行事件）的根本差別。\n\n【第 4 步】Grafana 儀表板\nhttp://localhost:3001 （admin/admin）→ Add data source → Prometheus → URL 填 http://prometheus:9090 → Save。\nDashboards → Import → 輸入編號 1860（社群現成的 Node Exporter 儀表板）→ 選 Prometheus → Import。\n瞬間得到一整片 CPU/記憶體/磁碟/網路的專業儀表板。\n\n【練習任務 2 解答】Web 服務告警清單（症狀優先）\n錯誤率：5xx / 總請求 > 1%（持續 5 分鐘）｜延遲：P95 > 800ms｜\n可用性：healthcheck 連續 3 次失敗｜飽和：磁碟 > 80%、記憶體持續 > 90%\n重點：前兩個是「使用者痛不痛」（症狀），後兩個才是資源——只監控 CPU，服務掛了你還不知道。\n\n【練習任務 3 解答】Log 格式約定\n統一 JSON：{ time, level, service, trace_id, message }。\ntrace_id 讓你把「一個請求跨多個服務」的 Log 串起來——出事時的救命稻草。\n\n【練習任務 4 解答】用一次模擬故障檢討\n停掉某個後端 → 觀察：告警多久觸發？儀表板看得出來嗎？Log 找得到根因嗎？\n每次事後問「監控能不能更早、更準地告訴我」，缺什麼補什麼——監控是養出來的，不是一次設完。\n收尾：docker compose down。\n\n恭喜——走到這裡，三條路線 68 章的手把手你全部做完了。你現在不只「讀過」企業 IT 維運，而是每一項都親手在自己的環境跑過一遍。"
   }
 }
