@@ -1,0 +1,212 @@
+[
+  {
+    "id": "job-network-monitoring",
+    "pathId": "network",
+    "requirement": "網路設備日常監控與告警處理",
+    "relatedSkills": ["skill-network-prtg", "skill-network-prtg-alert"],
+    "relatedCourses": ["net-vdi-prtg-security"],
+    "relatedLabs": ["lab-network-prtg"],
+    "learningGoal": "能建立設備與服務監控，並依告警做初步判斷。",
+    "interviewStatement": "我能用 PRTG 建立 Ping、Port、SNMP、WMI/SSH 與流量監控，並依告警比對設備 Log 與服務狀態。"
+  },
+  {
+    "id": "job-network-troubleshooting",
+    "pathId": "network",
+    "requirement": "網路異常分析與排除",
+    "relatedSkills": ["skill-network-topology", "skill-network-tcp-port", "skill-network-packet-capture", "skill-network-firewall-rule", "skill-network-vpn-troubleshoot", "skill-network-proxy-issue"],
+    "relatedCourses": ["net-basics", "net-troubleshoot-basics", "net-firewall-acl", "net-vpn", "net-proxy"],
+    "relatedLabs": ["lab-network-packet-capture", "lab-network-firewall-request", "lab-network-vpn", "lab-network-proxy-reverse"],
+    "learningGoal": "能依 OSI、TCP/IP、路由、DNS、防火牆、VPN 與 Proxy 分層排查，必要時以封包擷取佐證。",
+    "interviewStatement": "我會先收集來源、目的、時間與服務 Port，再分層檢查 DNS、路由、防火牆 Log、VPN ACL 與 Proxy Log，必要時用 Wireshark 取得封包證據。"
+  },
+  {
+    "id": "job-network-firewall",
+    "pathId": "network",
+    "requirement": "Firewall / ACL 管理",
+    "relatedSkills": ["skill-network-firewall-rule", "skill-network-acl", "skill-network-iso"],
+    "relatedCourses": ["net-firewall-acl"],
+    "relatedLabs": ["lab-network-firewall-request"],
+    "learningGoal": "能建立最小權限規則、查詢 Deny Log 並做規則盤點。",
+    "interviewStatement": "我能讀懂 Source、Destination、Service、Action 與 Deny Log，並以最小權限原則提出規則。"
+  },
+  {
+    "id": "job-network-proxy",
+    "pathId": "network",
+    "requirement": "Proxy / Reverse Proxy 管理",
+    "relatedSkills": ["skill-network-proxy-diff", "skill-network-proxy-log", "skill-network-proxy-issue"],
+    "relatedCourses": ["net-proxy"],
+    "relatedLabs": ["lab-network-proxy-reverse"],
+    "learningGoal": "能理解企業上網控管與 Web 入口轉發，並排查 PAC/WPAD、SSL Inspection、Header 與後端服務問題。",
+    "interviewStatement": "我能說明 Forward Proxy 與 Reverse Proxy 差異，也能從 Proxy Log、PAC/WPAD、憑證與後端 Port 排查問題。"
+  },
+  {
+    "id": "job-network-vpn",
+    "pathId": "network",
+    "requirement": "VPN 管理",
+    "relatedSkills": ["skill-network-vpn-flow", "skill-network-vpn-troubleshoot"],
+    "relatedCourses": ["net-vpn"],
+    "relatedLabs": ["lab-network-vpn"],
+    "learningGoal": "能處理 Remote Access VPN、Site-to-Site VPN、AD/MFA、IP Pool、DNS 與 ACL 問題。",
+    "interviewStatement": "VPN 登入成功但連不到內部系統時，我會檢查使用者群組、IP Pool、DNS、路由與 VPN ACL。"
+  },
+  {
+    "id": "job-network-load-balancer",
+    "pathId": "network",
+    "requirement": "F5 / Load Balancer 管理",
+    "relatedSkills": ["skill-network-f5-objects", "skill-network-lb-health"],
+    "relatedCourses": ["net-f5"],
+    "relatedLabs": ["lab-network-f5-health"],
+    "learningGoal": "能理解 Virtual Server、Pool、Member、Health Check、SSL Offload 與 Persistence。",
+    "interviewStatement": "我能說明 F5 如何把使用者流量導到健康的後端服務，也能排查 Health Check 與 Session 問題。"
+  },
+  {
+    "id": "job-network-security",
+    "pathId": "network",
+    "requirement": "CVE 更新與 ISO 27001 合規",
+    "relatedSkills": ["skill-network-cve", "skill-network-iso"],
+    "relatedCourses": ["net-vdi-prtg-security"],
+    "relatedLabs": ["lab-network-prtg", "lab-network-firewall-request"],
+    "learningGoal": "能執行弱點盤點、測試、更新與稽核紀錄。",
+    "interviewStatement": "我理解 CVE 更新需要先評估影響、測試、安排維護窗口、更新並保留回報與稽核紀錄。"
+  },
+  {
+    "id": "job-dba-schema",
+    "pathId": "dba",
+    "requirement": "資料結構設定與 SQL 查詢",
+    "relatedSkills": ["skill-dba-sql", "skill-dba-join", "skill-dba-table-design", "skill-dba-key", "skill-dba-index"],
+    "relatedCourses": ["dba-sql-schema"],
+    "relatedLabs": ["lab-dba-schema"],
+    "learningGoal": "能設計基本資料表、Key、Constraint、Index 並寫查詢。",
+    "interviewStatement": "我能建立基本 Schema，使用 Primary Key、Foreign Key、Index 維持資料關聯與查詢效率。"
+  },
+  {
+    "id": "job-dba-permission",
+    "pathId": "dba",
+    "requirement": "資料庫帳號權限控管",
+    "relatedSkills": ["skill-dba-permission", "skill-dba-least-privilege", "skill-dba-security"],
+    "relatedCourses": ["dba-permissions"],
+    "relatedLabs": ["lab-dba-permission"],
+    "learningGoal": "能建立角色、授權與權限盤點流程。",
+    "interviewStatement": "我會依 Read Only、Application、報表、維運與 DBA 角色做權限切分，並定期盤點權限。"
+  },
+  {
+    "id": "job-dba-migration",
+    "pathId": "dba",
+    "requirement": "DB Migration 與 Rollback",
+    "relatedSkills": ["skill-dba-migration", "skill-dba-rollback"],
+    "relatedCourses": ["dba-migration-backup"],
+    "relatedLabs": ["lab-dba-migration-rollback"],
+    "learningGoal": "能規劃 Migration Script、Rollback Script、備份與上線驗證。",
+    "interviewStatement": "正式 Migration 前我會準備影響評估、備份、測試驗證、Rollback Script 與上線後檢查。"
+  },
+  {
+    "id": "job-dba-backup",
+    "pathId": "dba",
+    "requirement": "備份還原與 DR",
+    "relatedSkills": ["skill-dba-backup", "skill-dba-rpo-rto"],
+    "relatedCourses": ["dba-migration-backup"],
+    "relatedLabs": ["lab-dba-backup-restore"],
+    "learningGoal": "能建立備份排程、保留週期、還原演練與 RPO/RTO 觀念。",
+    "interviewStatement": "我不只確認備份成功，也會做還原演練，並依 RPO/RTO 設計備份與 DR 策略。"
+  },
+  {
+    "id": "job-dba-tuning",
+    "pathId": "dba",
+    "requirement": "資料庫監控與效能調教",
+    "relatedSkills": ["skill-dba-slow-query", "skill-dba-execution-plan"],
+    "relatedCourses": ["dba-monitoring-tuning"],
+    "relatedLabs": ["lab-dba-monitoring", "lab-dba-sql-tuning"],
+    "learningGoal": "能監控 DB 指標並使用 Execution Plan 分析慢查詢。",
+    "interviewStatement": "遇到慢查詢時，我會看 SQL、資料量、Execution Plan、索引、統計資訊、Lock 與系統資源。"
+  },
+  {
+    "id": "job-dba-db2-oracle",
+    "pathId": "dba",
+    "requirement": "DB2 / Oracle / SQL Server 基礎維運",
+    "relatedSkills": ["skill-dba-db2", "skill-dba-oracle", "skill-dba-mssql"],
+    "relatedCourses": ["dba-db2-oracle"],
+    "relatedLabs": ["lab-dba-db2-oracle"],
+    "learningGoal": "能理解 DB2、Oracle 與 SQL Server 常見物件、Log、備份與 Patch 項目。",
+    "interviewStatement": "我能說明 DB2 Instance/Tablespace/HADR、Oracle Listener/TNS/RMAN/Data Guard，以及 SQL Server Recovery Model 與 AlwaysOn 等基礎維運項目。"
+  },
+  {
+    "id": "job-devops-gitlab-governance",
+    "pathId": "devops",
+    "requirement": "GitLab 管控與權限治理",
+    "relatedSkills": ["skill-devops-gitlab-project", "skill-devops-branch-strategy", "skill-devops-protected-branch", "skill-devops-mr"],
+    "relatedCourses": ["devops-gitlab"],
+    "relatedLabs": ["lab-devops-gitlab-project"],
+    "learningGoal": "能建立專案、分支策略、MR 流程、審核規則與權限盤點。",
+    "interviewStatement": "我能用 Protected Branch 與 Merge Request 流程避免主線直接修改，並保留 Code Review 紀錄。"
+  },
+  {
+    "id": "job-devops-cicd",
+    "pathId": "devops",
+    "requirement": "CI/CD Pipeline 建置與排查",
+    "relatedSkills": ["skill-devops-ci-yml", "skill-devops-build-test-deploy", "skill-devops-runner", "skill-devops-pipeline-fail"],
+    "relatedCourses": ["devops-cicd"],
+    "relatedLabs": ["lab-devops-runner-cicd"],
+    "learningGoal": "能撰寫 .gitlab-ci.yml，建立 build/test/deploy 與排查 Pipeline 失敗。",
+    "interviewStatement": "Pipeline 失敗時，我會看 Job Log、Runner tag、Variables、Cache、Artifact 與網路 Proxy。"
+  },
+  {
+    "id": "job-devsecops",
+    "pathId": "devops",
+    "requirement": "DevSecOps 掃描與安全閘門",
+    "relatedSkills": ["skill-devops-sonar", "skill-devops-quality-gate", "skill-devops-zap", "skill-devops-nuget-audit", "skill-devops-python-audit"],
+    "relatedCourses": ["devops-devsecops", "devops-sonar-zap"],
+    "relatedLabs": ["lab-devsecops-scans"],
+    "learningGoal": "能整合 SAST、SCA、DAST、SonarQube、ZAP 與弱點報告保存。",
+    "interviewStatement": "我能把掃描報告保存成 Artifact，並用安全閘門阻擋中高風險部署。"
+  },
+  {
+    "id": "job-devops-dotnet-python",
+    "pathId": "devops",
+    "requirement": ".NET / Python Pipeline",
+    "relatedSkills": ["skill-devops-nuget-audit", "skill-devops-python-audit", "skill-devops-build-test-deploy"],
+    "relatedCourses": ["devops-dotnet-python"],
+    "relatedLabs": ["lab-devops-dotnet-pipeline", "lab-devops-python-pipeline"],
+    "learningGoal": "能支援 ASP.NET Framework、.NET 10 與 Python 的建置、測試與弱點掃描。",
+    "interviewStatement": "我能依技術棧選擇 MSBuild、dotnet CLI 或 pytest/ruff/pip-audit，並整合到 Pipeline。"
+  },
+  {
+    "id": "job-devops-docker",
+    "pathId": "devops",
+    "requirement": "Docker / Container 部署",
+    "relatedSkills": ["skill-devops-docker", "skill-devops-deploy-test", "skill-devops-rollback"],
+    "relatedCourses": ["devops-docker-ai"],
+    "relatedLabs": ["lab-devops-docker-image"],
+    "learningGoal": "能建立 Docker Image、推送 Registry、掃描弱點並設計 Rollback。",
+    "interviewStatement": "我能用 Multi-stage Build 建立 Image，推送 Registry，掃描 Image，並用 Tag 設計 Rollback。"
+  },
+  {
+    "id": "job-devops-ai-platform",
+    "pathId": "devops",
+    "requirement": "企業 AI 平台落地與治理",
+    "relatedSkills": ["skill-devops-open-webui", "skill-devops-ai-governance"],
+    "relatedCourses": ["devops-docker-ai"],
+    "relatedLabs": ["lab-devops-ai-platform"],
+    "learningGoal": "能規劃 Open WebUI、模型 API、RAG、RBAC、Reverse Proxy、HTTPS、監控與備份。",
+    "interviewStatement": "我能說明企業 AI 平台需要模型權限、知識庫權限、敏感資料控管、使用稽核、監控與備份。"
+  },
+  {
+    "id": "job-devops-iac",
+    "pathId": "devops",
+    "requirement": "IaC / 自動化部署",
+    "relatedSkills": ["skill-devops-ansible", "skill-devops-rollback"],
+    "relatedCourses": ["devops-iac"],
+    "relatedLabs": ["lab-devops-ansible-deploy"],
+    "learningGoal": "能用 Ansible 做設定管理與自動化部署，並說明 Terraform 的定位與分工。",
+    "interviewStatement": "我能用 Ansible Inventory 與 Playbook 對多台主機做一致的部署，先以 --check 演練並利用冪等性確保可重複執行。"
+  },
+  {
+    "id": "job-devops-monitoring",
+    "pathId": "devops",
+    "requirement": "服務監控與營運",
+    "relatedSkills": ["skill-devops-app-monitoring"],
+    "relatedCourses": ["devops-monitoring"],
+    "relatedLabs": ["lab-devops-docker-image"],
+    "learningGoal": "能為服務規劃 healthcheck、Log 收集、指標與症狀導向的告警。",
+    "interviewStatement": "我會為服務設計 healthcheck 與四個黃金訊號的監控，把告警設在錯誤率與延遲等症狀上，而不是只看資源使用率。"
+  }
+]

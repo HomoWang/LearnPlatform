@@ -1,0 +1,392 @@
+[
+  {
+    "id": "interview-network-subnet-judge",
+    "pathId": "network",
+    "type": "basic",
+    "question": "192.168.10.20/24 和 192.168.11.30/24 是同網段嗎？你怎麼判斷？",
+    "referenceAnswer": "不是。/24 代表遮罩 255.255.255.0，網路位址分別是 192.168.10.0 與 192.168.11.0，不同網段。判斷方式是把 IP 和 Subnet Mask 做 AND 運算取得網路位址再比較；跨網段通訊必須經過 Gateway。",
+    "tags": ["Subnet", "Basic"],
+    "relatedCourses": ["net-basics"],
+    "relatedLabs": ["lab-network-topology"]
+  },
+  {
+    "id": "interview-network-tcp-handshake",
+    "pathId": "network",
+    "type": "basic",
+    "question": "說明 TCP 三向交握，以及「Port 通」代表什麼？",
+    "referenceAnswer": "Client 送 SYN、Server 回 SYN-ACK、Client 回 ACK，連線建立後才開始傳資料。Port 測試成功代表路徑可達且服務有監聽，但不代表應用程式邏輯正常，所以 Port 通仍可能出現 500 錯誤。",
+    "tags": ["TCP", "Basic"],
+    "relatedCourses": ["net-troubleshoot-basics"],
+    "relatedLabs": ["lab-network-packet-capture"]
+  },
+  {
+    "id": "interview-network-502-504",
+    "pathId": "network",
+    "type": "troubleshooting",
+    "question": "使用者反映網站出現 502，和 504 有什麼不同？你會怎麼查？",
+    "referenceAnswer": "502 是代理收到後端無效回應或連不到後端，先查後端服務是否活著、Port 是否正確；504 是後端處理逾時，先查後端效能、資料庫與慢查詢。兩者都發生在 Reverse Proxy / Load Balancer 之後，要對照 Proxy Log 與後端 Log 的時間。",
+    "tags": ["HTTP", "Reverse Proxy", "Troubleshooting"],
+    "relatedCourses": ["net-troubleshoot-basics", "net-proxy"],
+    "relatedLabs": ["lab-network-proxy-reverse"]
+  },
+  {
+    "id": "interview-network-vlan-no-dhcp",
+    "pathId": "network",
+    "type": "troubleshooting",
+    "question": "新建的 VLAN 整個網段都拿不到 DHCP，你會怎麼查？",
+    "referenceAnswer": "整段拿不到通常是基礎設施問題：先確認該 VLAN Gateway 上的 DHCP Relay（helper-address）是否設定，再確認 DHCP Server 是否建立對應網段的 Scope、位址池是否耗盡，最後確認沿途 Trunk 是否 allowed 該 VLAN 與防火牆是否放行。",
+    "tags": ["DHCP", "VLAN", "Troubleshooting"],
+    "relatedCourses": ["net-switch-ops"],
+    "relatedLabs": ["lab-network-topology"]
+  },
+  {
+    "id": "interview-network-wireshark",
+    "pathId": "network",
+    "type": "scenario",
+    "question": "排查連線問題時你會用 Wireshark 看什麼？",
+    "referenceAnswer": "先用 IP 與 Port 過濾，確認三向交握是否完成：SYN 無回應代表被防火牆丟棄或服務未監聽；收到 RST 代表主機活著但 Port 沒開或連線被拒；大量 Retransmission 代表路徑丟包。也會看 DNS 查詢與回應是否正確。封包是排查的最終證據。",
+    "tags": ["Wireshark", "Packet Capture"],
+    "relatedCourses": ["net-troubleshoot-basics"],
+    "relatedLabs": ["lab-network-packet-capture"]
+  },
+  {
+    "id": "interview-network-dns-records",
+    "pathId": "network",
+    "type": "basic",
+    "question": "A、CNAME、PTR、MX 記錄各是什麼？企業為什麼要內外部 DNS 分離？",
+    "referenceAnswer": "A 是名稱對 IP，CNAME 是別名，PTR 是 IP 反查名稱，MX 指定郵件伺服器。企業用 split-horizon 讓同一名稱內部解析到內網 IP、外部解析到公網 IP，兼顧安全與存取路徑；排查時要用 nslookup 指定不同 DNS Server 比對結果。",
+    "tags": ["DNS", "Split-horizon"],
+    "relatedCourses": ["net-ad-dns"],
+    "relatedLabs": ["lab-network-vpn"]
+  },
+  {
+    "id": "interview-network-incident",
+    "pathId": "network",
+    "type": "scenario",
+    "question": "接到「全公司不能上網」的通報，你的完整處理流程是什麼？",
+    "referenceAnswer": "先確認影響範圍與開始時間並立即通報窗口與主管；優先恢復服務（檢查 Proxy、防火牆、DNS、對外線路與最近變更），處理過程記錄時間軸與操作；恢復後對使用者公告，事後撰寫 RCA 包含根因、時間軸與長短期改善，並存入知識庫。",
+    "tags": ["Incident", "RCA"],
+    "relatedCourses": ["net-vdi-prtg-security"],
+    "relatedLabs": ["lab-network-prtg"]
+  },
+  {
+    "id": "interview-network-proxy-what",
+    "pathId": "network",
+    "type": "basic",
+    "question": "Proxy 是什麼？",
+    "referenceAnswer": "Proxy 是位於使用者與目標服務之間的代理元件。Forward Proxy 代表使用者對外連線，常用於上網控管、Log 與稽核；Reverse Proxy 則代表後端服務對外提供入口，常用於隱藏後端 Server、集中處理憑證與流量轉發。",
+    "tags": ["Proxy", "Basic"],
+    "relatedCourses": ["net-proxy"],
+    "relatedLabs": ["lab-network-proxy-reverse"]
+  },
+  {
+    "id": "interview-network-forward-reverse",
+    "pathId": "network",
+    "type": "basic",
+    "question": "Forward Proxy 和 Reverse Proxy 差在哪？",
+    "referenceAnswer": "Forward Proxy 站在使用者端，代理使用者去連外部網站；Reverse Proxy 站在服務端，代理外部流量進入內部服務。前者常做上網控管與稽核，後者常做憑證集中、路徑轉發、WAF 或負載平衡整合。",
+    "tags": ["Proxy", "Reverse Proxy"],
+    "relatedCourses": ["net-proxy"],
+    "relatedLabs": ["lab-network-proxy-reverse"]
+  },
+  {
+    "id": "interview-network-proxy-firewall",
+    "pathId": "network",
+    "type": "basic",
+    "question": "Proxy 和 Firewall 差在哪？",
+    "referenceAnswer": "Firewall 主要依來源、目的、服務與安全規則控管流量；Proxy 則通常理解應用層請求，可以做使用者驗證、網址分類、內容稽核與快取。兩者可搭配使用。",
+    "tags": ["Proxy", "Firewall"],
+    "relatedCourses": ["net-proxy", "net-firewall-acl"],
+    "relatedLabs": ["lab-network-proxy-reverse", "lab-network-firewall-request"]
+  },
+  {
+    "id": "interview-network-website-blocked",
+    "pathId": "network",
+    "type": "troubleshooting",
+    "question": "使用者說某網站不能開，你會怎麼查？",
+    "referenceAnswer": "先確認範圍與時間，再檢查 DNS、Proxy 設定、Proxy Log、分類或黑白名單、使用者權限、SSL Inspection 憑證、Firewall 對外規則，必要時比較不走 Proxy 的測試結果。",
+    "tags": ["Proxy", "Troubleshooting"],
+    "relatedCourses": ["net-proxy", "net-troubleshoot-basics"],
+    "relatedLabs": ["lab-network-proxy-reverse"]
+  },
+  {
+    "id": "interview-network-https-cert",
+    "pathId": "network",
+    "type": "troubleshooting",
+    "question": "為什麼 HTTPS 會因為 Proxy 發生憑證錯誤？",
+    "referenceAnswer": "企業做 SSL Inspection 時，Proxy 會攔截並重新簽發網站憑證。若端點不信任企業根憑證、站台未加入例外或憑證鏈不完整，就可能出現 HTTPS 憑證錯誤。",
+    "tags": ["Proxy", "SSL Inspection"],
+    "relatedCourses": ["net-proxy", "net-troubleshoot-basics"],
+    "relatedLabs": ["lab-network-proxy-reverse"]
+  },
+  {
+    "id": "interview-network-pac-wpad",
+    "pathId": "network",
+    "type": "basic",
+    "question": "PAC File 和 WPAD 是什麼？",
+    "referenceAnswer": "PAC File 是瀏覽器或系統用來判斷哪些網址要走 Proxy 的腳本；WPAD 是自動發現 PAC 設定的機制。企業用它們降低端點手動設定成本。",
+    "tags": ["PAC", "WPAD"],
+    "relatedCourses": ["net-proxy"],
+    "relatedLabs": ["lab-network-proxy-reverse"]
+  },
+  {
+    "id": "interview-network-vpn-access",
+    "pathId": "network",
+    "type": "troubleshooting",
+    "question": "VPN 可以登入但連不到內部系統，你會怎麼查？",
+    "referenceAnswer": "確認使用者群組、VPN IP Pool、路由、DNS、VPN ACL、防火牆 Log 與目標 Server Port。登入成功只代表 VPN 建立，不代表有權限或路由可達。",
+    "tags": ["VPN", "ACL"],
+    "relatedCourses": ["net-vpn", "net-ad-dns"],
+    "relatedLabs": ["lab-network-vpn"]
+  },
+  {
+    "id": "interview-network-f5-health",
+    "pathId": "network",
+    "type": "scenario",
+    "question": "F5 Health Check 失敗導致服務無法連線，你會怎麼處理？",
+    "referenceAnswer": "先查看 Virtual Server、Pool 與 Member 狀態，確認 Health Check 目標路徑與 Port，直接測試後端服務，檢查憑證、SNAT、Firewall 與後端 Log，確認是否需暫時下線故障 Member。",
+    "tags": ["F5", "Load Balancer"],
+    "relatedCourses": ["net-f5"],
+    "relatedLabs": ["lab-network-f5-health"]
+  },
+  {
+    "id": "interview-network-prtg-alert",
+    "pathId": "network",
+    "type": "scenario",
+    "question": "PRTG 告警顯示 Proxy Port 無回應，你會怎麼查？",
+    "referenceAnswer": "先確認告警範圍與時間，測試 Proxy 主機 Ping、服務 Port、服務狀態、CPU/Memory/Disk、Proxy Log、防火牆規則與近期變更，並確認是否影響使用者上網。",
+    "tags": ["PRTG", "Proxy"],
+    "relatedCourses": ["net-vdi-prtg-security", "net-proxy"],
+    "relatedLabs": ["lab-network-prtg"]
+  },
+  {
+    "id": "interview-dba-pk-fk",
+    "pathId": "dba",
+    "type": "basic",
+    "question": "Primary Key 和 Foreign Key 差在哪？",
+    "referenceAnswer": "Primary Key 用來唯一識別一筆資料；Foreign Key 用來建立資料表之間的關聯並維持參照完整性。兩者共同協助資料一致性與查詢關聯。",
+    "tags": ["SQL", "Schema"],
+    "relatedCourses": ["dba-basics", "dba-sql-schema"],
+    "relatedLabs": ["lab-dba-schema"]
+  },
+  {
+    "id": "interview-dba-index",
+    "pathId": "dba",
+    "type": "basic",
+    "question": "Index 是什麼？什麼時候不該亂加？",
+    "referenceAnswer": "Index 可加速查詢，但會增加寫入成本與儲存空間。若欄位選擇性低、查詢不使用該欄位、資料表很小或更新頻繁，就不應盲目增加索引。",
+    "tags": ["Index", "SQL Tuning"],
+    "relatedCourses": ["dba-sql-schema", "dba-monitoring-tuning"],
+    "relatedLabs": ["lab-dba-sql-tuning"]
+  },
+  {
+    "id": "interview-dba-isolation",
+    "pathId": "dba",
+    "type": "basic",
+    "question": "說明四種交易隔離層級，以及各自防止什麼問題？",
+    "referenceAnswer": "Read Uncommitted 允許 Dirty Read；Read Committed 防止 Dirty Read，但允許 Non-repeatable Read；Repeatable Read 保證重複讀取一致，但可能有 Phantom Read；Serializable 全部防止但併發最差。多數企業資料庫預設 Read Committed，調高層級要付出鎖等待的代價。",
+    "tags": ["Isolation Level", "Transaction"],
+    "relatedCourses": ["dba-basics"],
+    "relatedLabs": ["lab-dba-lock-isolation"]
+  },
+  {
+    "id": "interview-dba-deadlock",
+    "pathId": "dba",
+    "type": "troubleshooting",
+    "question": "系統反覆出現 Deadlock，你會怎麼查、怎麼減少？",
+    "referenceAnswer": "先從資料庫的 Deadlock 紀錄找出互鎖的 SQL 與資源，分析兩個交易的存取順序。減少的方向：讓交易以一致的順序存取資料表、縮短交易長度、補上適當索引減少鎖範圍、必要時調整重試機制。",
+    "tags": ["Deadlock", "Lock"],
+    "relatedCourses": ["dba-basics", "dba-monitoring-tuning"],
+    "relatedLabs": ["lab-dba-lock-isolation"]
+  },
+  {
+    "id": "interview-dba-where-having",
+    "pathId": "dba",
+    "type": "basic",
+    "question": "WHERE 和 HAVING 差在哪？怎麼用 SQL 找出重複資料？",
+    "referenceAnswer": "WHERE 在分組前過濾資料列，HAVING 在分組後過濾聚合結果。找重複資料用 GROUP BY 目標欄位再 HAVING COUNT(*) > 1，例如以 email 分組找出重複的客戶資料。",
+    "tags": ["SQL", "GROUP BY"],
+    "relatedCourses": ["dba-sql-schema"],
+    "relatedLabs": ["lab-dba-schema"]
+  },
+  {
+    "id": "interview-dba-null-trap",
+    "pathId": "dba",
+    "type": "basic",
+    "question": "NOT IN 子查詢遇到 NULL 會發生什麼事？為什麼？",
+    "referenceAnswer": "如果子查詢結果含 NULL，整個 NOT IN 查詢會回傳空集合，因為與 NULL 比較的結果是 UNKNOWN，無法確定「不等於」成立。解法是改寫成 NOT EXISTS，或在子查詢排除 NULL。這也是資料悄悄漏掉的常見原因。",
+    "tags": ["SQL", "NULL"],
+    "relatedCourses": ["dba-sql-schema"],
+    "relatedLabs": ["lab-dba-schema"]
+  },
+  {
+    "id": "interview-dba-migration",
+    "pathId": "dba",
+    "type": "scenario",
+    "question": "正式環境要做 DB Migration，你會準備哪些事項？",
+    "referenceAnswer": "準備變更單、影響評估、Migration Script、Rollback Script、上線前備份、測試環境與 UAT 驗證、正式上線窗口、上線後驗證、監控與回報紀錄。",
+    "tags": ["Migration", "Rollback"],
+    "relatedCourses": ["dba-migration-backup"],
+    "relatedLabs": ["lab-dba-migration-rollback"]
+  },
+  {
+    "id": "interview-dba-rpo-rto",
+    "pathId": "dba",
+    "type": "basic",
+    "question": "RPO 和 RTO 是什麼？",
+    "referenceAnswer": "RPO 是可接受的資料損失時間點，RTO 是可接受的服務恢復時間。兩者會影響備份頻率、還原策略、HA/DR 架構與演練要求。",
+    "tags": ["Backup", "DR"],
+    "relatedCourses": ["dba-migration-backup"],
+    "relatedLabs": ["lab-dba-backup-restore"]
+  },
+  {
+    "id": "interview-dba-slow-query",
+    "pathId": "dba",
+    "type": "troubleshooting",
+    "question": "資料庫慢查詢你會怎麼查？",
+    "referenceAnswer": "先確認慢查詢 SQL、資料量、執行時間與影響範圍，再查看 Execution Plan、索引使用、統計資訊、Lock、CPU/IO、Connection Pool 與近期資料或版本變更。",
+    "tags": ["SQL Tuning", "Execution Plan"],
+    "relatedCourses": ["dba-monitoring-tuning"],
+    "relatedLabs": ["lab-dba-sql-tuning"]
+  },
+  {
+    "id": "interview-dba-mssql",
+    "pathId": "dba",
+    "type": "troubleshooting",
+    "question": "SQL Server 的 ldf 檔暴漲塞滿磁碟，最可能的原因是什麼？",
+    "referenceAnswer": "最常見原因是資料庫設定為 Full Recovery，但只排了 Full Backup、沒有排交易記錄檔備份，導致交易記錄永遠不截斷。處理方式是立即補一次 Log Backup 釋放空間，長期依 RPO 決定 Log 備份頻率，或在可接受的情況下改用 Simple Recovery。",
+    "tags": ["SQL Server", "Backup"],
+    "relatedCourses": ["dba-db2-oracle", "dba-migration-backup"],
+    "relatedLabs": ["lab-dba-db2-oracle"]
+  },
+  {
+    "id": "interview-dba-db2-oracle",
+    "pathId": "dba",
+    "type": "basic",
+    "question": "DB2 / Oracle 基本維運會看哪些項目？",
+    "referenceAnswer": "DB2 可看 Instance、Database、Tablespace、Bufferpool、Backup、Archive Log、HADR 與 Fix Pack；Oracle 可看 Listener、TNS、Alert Log、Tablespace、Datafile、RMAN、Data Guard、RAC 與 Patch。",
+    "tags": ["DB2", "Oracle"],
+    "relatedCourses": ["dba-db2-oracle"],
+    "relatedLabs": ["lab-dba-db2-oracle"]
+  },
+  {
+    "id": "interview-devops-ci-cd",
+    "pathId": "devops",
+    "type": "basic",
+    "question": "CI 和 CD 是什麼？",
+    "referenceAnswer": "CI 是持續整合，透過自動建置與測試及早發現問題；CD 是持續交付或部署，將可用 Artifact 以可追蹤流程部署到不同環境。",
+    "tags": ["CI/CD"],
+    "relatedCourses": ["devops-basics", "devops-cicd"],
+    "relatedLabs": ["lab-devops-runner-cicd"]
+  },
+  {
+    "id": "interview-devops-merge-rebase",
+    "pathId": "devops",
+    "type": "basic",
+    "question": "merge 和 rebase 差在哪？遇到衝突你怎麼處理？",
+    "referenceAnswer": "merge 保留分支歷史並產生合併 commit；rebase 把 commit 重新接到目標分支上，歷史變直線但被改寫，已推送的共享分支不應 rebase。衝突時看標記區塊，理解兩邊的意圖後保留正確內容，再 add 與 commit 完成，必要時與對方確認。",
+    "tags": ["Git", "Merge"],
+    "relatedCourses": ["devops-basics"],
+    "relatedLabs": ["lab-devops-gitlab-project"]
+  },
+  {
+    "id": "interview-devops-pipeline-fail",
+    "pathId": "devops",
+    "type": "troubleshooting",
+    "question": "GitLab Pipeline 卡住或失敗，你會怎麼查？",
+    "referenceAnswer": "查看 Job Log、Runner 狀態與 tag、CI/CD Variables、Cache、Artifact 路徑、依賴下載、權限 Token、網路 Proxy 與近期 .gitlab-ci.yml 變更。",
+    "tags": ["GitLab", "Pipeline"],
+    "relatedCourses": ["devops-cicd", "devops-gitlab"],
+    "relatedLabs": ["lab-devops-runner-cicd"]
+  },
+  {
+    "id": "interview-devops-protected-branch",
+    "pathId": "devops",
+    "type": "scenario",
+    "question": "為什麼企業要設定 Protected Branch？",
+    "referenceAnswer": "Protected Branch 可避免主線被直接推送，要求 Merge Request、Code Review 與 Approval Rule，保留審核紀錄並降低未檢查程式碼進入正式分支的風險。",
+    "tags": ["GitLab", "Governance"],
+    "relatedCourses": ["devops-gitlab"],
+    "relatedLabs": ["lab-devops-gitlab-project"]
+  },
+  {
+    "id": "interview-devops-artifact-repo",
+    "pathId": "devops",
+    "type": "scenario",
+    "question": "建置機在內網抓不到 NuGet / pip 套件，正規的企業解法是什麼？",
+    "referenceAnswer": "自建私有套件庫（Nexus、Artifactory 或 GitLab Package Registry）作為上游代理：第一次由套件庫代抓並快取，之後從內部取得。用戶端把 NuGet.config 或 pip index-url 指向內部來源，同時可控管允許的套件版本，內部快取也要納入 SCA 掃描。",
+    "tags": ["Nexus", "NuGet", "pip"],
+    "relatedCourses": ["devops-cicd", "devops-dotnet-python"],
+    "relatedLabs": ["lab-devops-dotnet-pipeline"]
+  },
+  {
+    "id": "interview-devsecops-sast-sca-dast",
+    "pathId": "devops",
+    "type": "basic",
+    "question": "SAST、SCA、DAST 差在哪？",
+    "referenceAnswer": "SAST 分析程式碼，SCA 檢查第三方套件與授權，DAST 對部署後的網站或 API 做動態掃描。三者互補，適合放在不同 Pipeline 階段。",
+    "tags": ["DevSecOps", "Security Scan"],
+    "relatedCourses": ["devops-devsecops"],
+    "relatedLabs": ["lab-devsecops-scans"]
+  },
+  {
+    "id": "interview-devsecops-quality-gate",
+    "pathId": "devops",
+    "type": "scenario",
+    "question": "掃描發現中高風險弱點時，Pipeline 應該怎麼處理？",
+    "referenceAnswer": "應依風險等級套用安全閘門，中高風險可阻擋部署並要求修補、例外申請、到期日與責任人。掃描報告需保存為 Artifact 供稽核。",
+    "tags": ["DevSecOps", "Security Gate"],
+    "relatedCourses": ["devops-devsecops", "devops-sonar-zap"],
+    "relatedLabs": ["lab-devsecops-scans"]
+  },
+  {
+    "id": "interview-devops-docker",
+    "pathId": "devops",
+    "type": "basic",
+    "question": "Docker Image 和 Container 差在哪？",
+    "referenceAnswer": "Image 是不可變的執行樣板，Container 是由 Image 啟動的執行個體。Image 可標記版本並推送 Registry，Container 執行時可掛載環境變數、Volume 與 Network。",
+    "tags": ["Docker"],
+    "relatedCourses": ["devops-docker-ai"],
+    "relatedLabs": ["lab-devops-docker-image"]
+  },
+  {
+    "id": "interview-devops-ansible",
+    "pathId": "devops",
+    "type": "basic",
+    "question": "Ansible 的冪等性是什麼？它和手動 Script 差在哪？",
+    "referenceAnswer": "冪等性指同一份 Playbook 執行多次結果一致：已符合目標狀態的 task 回報 ok 而不重複執行。與手動 Script 的差異在於 Ansible 描述「目標狀態」而非「動作序列」，加上 Inventory 分群、--check 演練與執行紀錄，讓大量主機的變更可重複、可審查。",
+    "tags": ["Ansible", "IaC"],
+    "relatedCourses": ["devops-iac"],
+    "relatedLabs": ["lab-devops-ansible-deploy"]
+  },
+  {
+    "id": "interview-devops-monitoring",
+    "pathId": "devops",
+    "type": "scenario",
+    "question": "一個 Web 服務上線後，你會規劃哪些監控與告警？",
+    "referenceAnswer": "基本面：healthcheck 端點（反映資料庫等依賴狀態）、集中 Log、容器與主機資源。指標面：流量、錯誤率、延遲、飽和度四個黃金訊號。告警設在症狀上：5xx 錯誤率超標、P95 延遲超標、healthcheck 連續失敗、磁碟超過八成，避免只監控 CPU 造成服務掛了卻沒發現。",
+    "tags": ["Monitoring", "Alert"],
+    "relatedCourses": ["devops-monitoring"],
+    "relatedLabs": ["lab-devops-docker-image"]
+  },
+  {
+    "id": "interview-ai-platform-governance",
+    "pathId": "devops",
+    "type": "project",
+    "question": "企業內部 AI 平台落地要注意哪些治理重點？",
+    "referenceAnswer": "需要注意 SSO/AD/LDAP、RBAC、模型權限、知識庫權限、敏感資料控管、Chat Log、API Key、使用稽核、Reverse Proxy/HTTPS、監控、備份、模型更新與維運文件。",
+    "tags": ["AI Platform", "Governance"],
+    "relatedCourses": ["devops-docker-ai"],
+    "relatedLabs": ["lab-devops-ai-platform"]
+  },
+  {
+    "id": "interview-ai-platform-rag",
+    "pathId": "devops",
+    "type": "basic",
+    "question": "RAG 是什麼？企業內部知識庫為什麼常用 RAG？",
+    "referenceAnswer": "RAG 是檢索增強生成，先從知識庫找相關內容，再提供給模型回答。企業用 RAG 可讓模型依內部文件回答，降低直接微調模型的成本與維運風險。",
+    "tags": ["RAG", "AI Platform"],
+    "relatedCourses": ["devops-docker-ai"],
+    "relatedLabs": ["lab-devops-ai-platform"]
+  }
+]

@@ -1,0 +1,1544 @@
+{
+  "net-basics-osi": {
+    "teachingSteps": [
+      "先把網路問題拆成層次：線路與網卡、IP 與路由、Port 與 Session、應用程式回應。",
+      "用 OSI 七層當檢查表，不需要背死名詞，而是要知道每一層可用什麼工具驗證。",
+      "遇到連線問題時，先確認本機 IP、Gateway、DNS，再測 Ping、Port 與服務回應。",
+      "練習把同一個問題用兩種說法描述：OSI 分層說法與企業維運說法。",
+      "最後整理一份自己的網路排查 SOP，讓每次排查都能依序收斂。"
+    ],
+    "example": "情境：使用者說內部網站打不開\n1. L1/L2：確認網路線、Wi-Fi、網卡是否正常\n2. L3：ipconfig /all，確認 IP、Subnet、Gateway\n3. L3：ping gateway，確認能到預設閘道\n4. L3/L4：Test-NetConnection intranet.company.local -Port 443\n5. L7：確認網站服務與瀏覽器錯誤訊息",
+    "practiceTasks": [
+      "找一台電腦執行 ipconfig /all，標出 IP、Subnet、Gateway、DNS。",
+      "測試 ping gateway、ping 8.8.8.8、nslookup 一個網站，觀察差異。",
+      "用 Test-NetConnection 或 telnet 測試 TCP Port。",
+      "把測試結果整理成一份分層排查紀錄。"
+    ],
+    "beginnerChecklist": [
+      "我能用 OSI 分層描述排查順序。",
+      "我知道 Ping 成功不代表應用程式一定可用。",
+      "我知道 DNS 解析和 IP 連通是兩件事。",
+      "我能說明 TCP Port 測試的用途。"
+    ],
+    "handson": "準備：一台 Windows 電腦，按開始鍵 → 輸入 powershell → Enter，開啟終端機。\n\n【第 1 步】看自己的網路設定\n> ipconfig /all\n在輸出中找到你正在用的網卡（Wi-Fi 或乙太網路），抄下四個值：\n- IPv4 位址：例如 192.168.1.23 → 你電腦的 IP\n- 子網路遮罩：例如 255.255.255.0 → 決定同網段範圍\n- 預設閘道：例如 192.168.1.1 → 出門的第一站（通常是家裡的路由器）\n- DNS 伺服器：例如 168.95.1.1 → 幫你把網址翻譯成 IP 的服務\n\n【第 2 步】測到閘道通不通（內網）\n> ping 192.168.1.1   ← 換成你自己的預設閘道\n成功：「回覆自 192.168.1.1: 位元組=32 時間=1ms」\n失敗：「要求等候逾時」→ 連家裡路由器都到不了，問題在線路、Wi-Fi 或網卡。\n\n【第 3 步】測到外網通不通\n> ping 8.8.8.8\n這是 Google 的公用 DNS 主機。如果閘道通、但 8.8.8.8 不通 → 問題在對外線路（數據機或 ISP）。\n\n【第 4 步】測 DNS 正不正常\n> nslookup www.google.com\n成功會回一組 IP。如果 ping 8.8.8.8 通、但 nslookup 失敗 → 網路是通的，壞的是 DNS（名稱翻譯）。這就是「DNS 解析」和「IP 連通」是兩件事的意思。\n\n【第 5 步】測服務 Port\n> Test-NetConnection www.google.com -Port 443\n看最後一行 TcpTestSucceeded : True → 到對方 443 Port 的 TCP 連線建立成功。\n如果 ping 通但這裡 False → 主機活著，但服務沒開或被防火牆擋。\n\n【第 6 步／練習任務 4 的解答】分層排查紀錄範本\nL1/L2 網卡：ipconfig 有拿到 IP？\nL3 內網：ping <閘道> 通？\nL3 外網：ping 8.8.8.8 通？\nDNS：nslookup <網址> 正常？\nL4 服務：Test-NetConnection <網址> -Port 443 為 True？\n照這五行由上往下填結果，就是一份合格的分層排查紀錄。"
+  },
+  "net-basics-ip-subnet": {
+    "teachingSteps": [
+      "先理解 IP 是主機位址，Subnet 決定同網段範圍，Gateway 是跨網段出口。",
+      "用幾組常見網段練習，例如 192.168.1.0/24、10.10.0.0/16、172.16.10.0/24。",
+      "判斷兩台主機是否同網段：先看 IP，再看 Mask，不要只看前三段。",
+      "理解同網段走交換器，跨網段一定要經過 Gateway 或三層設備。",
+      "把企業網段分成辦公、Server、DMZ、VPN、管理區，思考每區的 Gateway 在哪。"
+    ],
+    "example": "IP: 192.168.10.25\nMask: 255.255.255.0 (/24)\nNetwork: 192.168.10.0\nUsable: 192.168.10.1 - 192.168.10.254\nGateway 常見設定：192.168.10.1\n\n判斷：192.168.10.50 同網段；192.168.11.50 不同網段。",
+    "practiceTasks": [
+      "列出 192.168.20.0/24 的可用 IP 範圍。",
+      "判斷 10.1.2.10/16 和 10.1.9.20/16 是否同網段。",
+      "畫出使用者電腦連到 Server 網段時經過 Gateway 的路徑。",
+      "整理一張企業網段規劃表。"
+    ],
+    "beginnerChecklist": [
+      "我知道 IP、Subnet、Gateway 各自用途。",
+      "我能判斷兩台主機是否同網段。",
+      "我知道跨網段連線需要 Gateway。",
+      "我能看懂 /24、/16 這類 CIDR 表示法。"
+    ],
+    "handson": "【練習任務 1 解答】192.168.20.0/24 的可用範圍\n/24 = 遮罩 255.255.255.0：前三段固定、最後一段變化。\n- 網路位址（不能用）：192.168.20.0\n- 可用範圍：192.168.20.1 ～ 192.168.20.254\n- 廣播位址（不能用）：192.168.20.255\n慣例上 Gateway 常設 .1 或 .254。\n\n【練習任務 2 解答】10.1.2.10/16 和 10.1.9.20/16 同網段嗎？\n/16 = 遮罩 255.255.0.0 → 只比前兩段。\n兩個 IP 前兩段都是 10.1 → 同網段。第三段不同沒關係，因為 /16 根本不看第三段。\n陷阱：如果換成 /24，10.1.2.x 和 10.1.9.x 就是不同網段了。判斷永遠看遮罩，不要憑感覺看前三段像不像。\n\n【練習任務 3 解答】跨網段路徑\n使用者電腦(10.10.10.25) → 辦公區 Gateway(10.10.10.1) → 核心路由/防火牆 → Server 區 Gateway(10.20.10.1) → Server(10.20.10.5)\n重點：跨網段的封包一定先送到「自己的」Gateway，再由三層設備一路轉送過去。\n\n【練習任務 4 解答】企業網段規劃表範例\n辦公區    10.10.10.0/24   Gateway 10.10.10.1\nServer 區 10.20.10.0/24   Gateway 10.20.10.1\nDMZ       10.30.10.0/24   Gateway 10.30.10.1\nVPN 使用者 10.90.10.0/24  Gateway 10.90.10.1\n管理區    10.250.10.0/24  Gateway 10.250.10.1\n\n【快速換算表（背這四個就夠用）】\n/24 = 255.255.255.0（254 個可用 IP，最常見）\n/16 = 255.255.0.0（65534 個）\n/25 = 255.255.255.128（126 個）\n/30 = 255.255.255.252（2 個，設備對接專用）"
+  },
+  "net-basics-services": {
+    "teachingSteps": [
+      "先把 DNS、DHCP、VLAN、NAT 分成四種不同角色：名稱解析、自動發 IP、二層切分、位址轉換。",
+      "DNS 排查先看能不能解析名稱，再看解析到的 IP 是否正確。",
+      "DHCP 排查先看租約、租期、Gateway、DNS 是否拿到正確值。",
+      "VLAN 排查要看交換器 Port、端點所在網段與 Gateway 是否一致。",
+      "NAT 排查要看轉換前後的 IP，以及防火牆 Log 顯示的是原始 IP 還是 NAT 後 IP。"
+    ],
+    "example": "DNS 測試：\nnslookup intranet.company.local\n\nDHCP 檢查：\nipconfig /all\nipconfig /release\nipconfig /renew\n\nNAT 觀念：\n內部 10.10.10.25 出口轉成 203.0.113.10，外部網站只看到 203.0.113.10。",
+    "practiceTasks": [
+      "用 nslookup 查同一個網域，記錄解析結果。",
+      "查本機 DHCP 租約與 DNS Server。",
+      "設計兩個 VLAN：辦公區與 Server 區，說明為什麼要切開。",
+      "畫出一個內部 IP 經 NAT 出網際網路的流程。"
+    ],
+    "beginnerChecklist": [
+      "我知道 DNS 解析失敗會讓名稱無法連線。",
+      "我知道 DHCP 發的不只 IP，還可能包含 Gateway 與 DNS。",
+      "我知道 VLAN 可以切分不同網路區域。",
+      "我知道 NAT 會讓 Log 中看到的 IP 可能不是原始主機 IP。"
+    ],
+    "handson": "【第 1 步】DNS 實測\n> nslookup www.google.com\n輸出分兩段：上半是「幫你查的 DNS 伺服器」，下半是「查到的答案」。\n再指定不同 DNS 伺服器查同一個名稱：\n> nslookup www.google.com 8.8.8.8\n在公司環境查內部網域時，公司 DNS 和 8.8.8.8 查出的結果會不同——這就是內外部 DNS 分離（split-horizon）。\n\n【第 2 步】DHCP 租約\n> ipconfig /all\n找三行：「DHCP 已啟用：是」「租約取得」「租約到期」→ 代表你的 IP 是 DHCP 發的。\n在家練習重新要一次 IP（公司電腦不要亂跑）：\n> ipconfig /release   ← 放掉現在的 IP（網路會暫時斷線，正常）\n> ipconfig /renew     ← 重新要一個\n觀察：拿回來的不只 IP，還有 Gateway 和 DNS——這就是「DHCP 發的不只 IP」。\n\n【練習任務 3 解答】兩個 VLAN 為什麼要切開\n設計：辦公區 VLAN 10（10.10.10.0/24）、Server 區 VLAN 20（10.20.10.0/24）。\n理由三個：\n1. 廣播隔離——辦公區幾百台電腦的廣播不會吵到 Server。\n2. 安全控管——跨 VLAN 流量必須經過三層設備，才有地方放防火牆規則（例如：辦公區不准直連資料庫）。\n3. 縮小故障範圍——一區中毒或迴圈，不會直接掃到另一區。\n\n【練習任務 4 解答】NAT 流程圖\n內部電腦 10.10.10.25 → Gateway → 防火牆 NAT（來源換成 203.0.113.10）→ 網際網路 → 目標網站\n目標網站看到的來源是 203.0.113.10，不是 10.10.10.25。\n實務意義：查外部網站 Log 時整間公司都是同一個 IP；要對回「是哪台內部電腦」必須查防火牆的 NAT Log。"
+  },
+  "net-basics-routing": {
+    "teachingSteps": [
+      "先理解路由表是一張下一站對照表：要去某個網段，就送往哪個 Gateway。",
+      "分清楚 Static Route 與 Dynamic Routing：前者手動設定，後者由協定交換路由。",
+      "練習看 tracert / traceroute，觀察封包每一跳經過哪裡。",
+      "理解 DMZ 是對外服務常放的位置，必須用防火牆限制它和內網的連線。",
+      "排查跨網段問題時要檢查去程路由、回程路由與防火牆規則。"
+    ],
+    "example": "Windows 看路由：\nroute print\n\n追蹤路徑：\ntracert 10.20.30.40\n\n常見問題：A 能送到 B，但 B 回程不知道怎麼回 A，造成連線失敗。",
+    "practiceTasks": [
+      "查看本機 route table，找出 default route。",
+      "追蹤一個內部 IP 或外部網站的路徑。",
+      "畫出 LAN 到 DMZ Server 的流量路徑。",
+      "寫出跨網段連線排查要檢查的三件事。"
+    ],
+    "beginnerChecklist": [
+      "我知道 default route 的用途。",
+      "我知道去程和回程路由都要正確。",
+      "我能說明 DMZ 的基本用途。",
+      "我知道路由和防火牆規則是不同層面的設定。"
+    ],
+    "handson": "【第 1 步／練習任務 1 解答】看本機路由表\n> route print\n找「IPv4 路由表」最上面這行：\n  0.0.0.0    0.0.0.0    192.168.1.1    192.168.1.23\n0.0.0.0 就是 default route：「其他規則都不符合的封包，全部交給 192.168.1.1（你的閘道）」。\nLinux 版：ip route，第一行 default via 192.168.1.1 意思相同。\n\n【第 2 步／練習任務 2 解答】追蹤路徑\n> tracert 8.8.8.8\n每一行是一「跳」（一台路由器）：\n  1   1ms   192.168.1.1    ← 第一跳一定是你的閘道\n  2   5ms   ISP 的設備\n  …\n  N         8.8.8.8        ← 到達目標\n判讀：\n- 斷在第幾跳，問題就在那一段之後。\n- 第 1 跳就 * * * = 連閘道都到不了，回頭查本機與線路。\n- 中間某幾跳顯示 * 但最後有到 = 那台設備不回 ICMP 而已，不是故障。\n\n【練習任務 3 解答】LAN 到 DMZ 的流量路徑\n使用者 PC(10.10.10.25)\n → 辦公區 Gateway(10.10.10.1，通常在核心交換器)\n → 防火牆（檢查 Policy：辦公區 → DMZ 是否允許）\n → DMZ Web Server(10.30.10.8)\n重點：回程封包走反向路徑，所以「去程通、回程路由缺」一樣連不上——這是跨網段問題最容易漏查的一半。\n\n【練習任務 4 解答】跨網段連線排查三件事\n1. 去程路由：來源端（或它的閘道）知不知道怎麼去目標網段？→ 看路由表\n2. 回程路由：目標端知不知道怎麼回來？→ 最常被漏掉，典型症狀是「A 連 B 不通，但 B 的設定看起來都對」\n3. 中間的防火牆：路由都對還要有規則允許 → 查 Policy 與 Deny Log\n背法：「去程、回程、防火牆」——跨網段不通就唸這三個。"
+  },
+  "net-basics-devices": {
+    "teachingSteps": [
+      "先用一句話區分設備：Switch 連同網段設備，Router 負責跨網段，Firewall 負責允許或阻擋流量。",
+      "把一條使用者到系統的連線畫出來，標出經過 Switch、Router、Firewall 的位置。",
+      "學會從拓樸圖判斷問題應該查哪台設備，而不是所有設備都查。",
+      "理解企業常會把 Firewall 放在不同安全區域之間，並用 Policy 管控。",
+      "練習用面試語言描述三種設備差異。"
+    ],
+    "example": "使用者電腦 -> Access Switch -> Core Switch/Router -> Firewall -> Server VLAN\n\nSwitch：處理 VLAN 與二層轉送\nRouter：決定跨網段下一站\nFirewall：依 Policy 控管 Source、Destination、Service",
+    "practiceTasks": [
+      "畫出使用者連到 Server 的設備路徑。",
+      "列出 Switch、Router、Firewall 各三個常見維運項目。",
+      "用同一個連線問題，分別說明三種設備可能造成的原因。",
+      "整理一份設備差異面試回答。"
+    ],
+    "beginnerChecklist": [
+      "我能說明 Switch、Router、Firewall 差異。",
+      "我知道 VLAN 通常和 Switch 有關。",
+      "我知道跨網段通常要經過 Router 或三層設備。",
+      "我知道 Firewall Policy 控管流量是否允許。"
+    ],
+    "handson": "【練習任務 1 解答】使用者連到 Server 的設備路徑（照抄再改成你的環境）\nPC → Access Switch（接使用者的交換器）\n   → Core Switch / Router（三層，負責跨 VLAN 路由）\n   → Firewall（檢查 Policy）\n   → Server 區 Switch → Server\n每一段的驗證方法：到 Access Switch 看網卡燈與 Port 狀態；到 Gateway 用 ping；過防火牆看 Policy 與 Log；到 Server 用 Test-NetConnection 測 Port。\n\n【練習任務 2 解答】三種設備各三個常見維運項目\nSwitch：Port 狀態與燈號、VLAN 配置、err-disabled 處理\nRouter / 三層：路由表維護、介面狀態、跨網段連通確認\nFirewall：Policy 增修、Deny Log 判讀、規則定期盤點\n\n【練習任務 3 解答】同一個問題、三種設備的可能原因\n問題：「使用者連不上內部系統 10.30.5.10」\n- Switch 層的原因：Port 沒起來、VLAN 配錯、Port Security 鎖住\n  → 症狀特徵：連自己的 Gateway 都 ping 不到\n- Router 層的原因：路由缺漏或指錯下一跳\n  → 症狀特徵：同網段通、跨網段不通，tracert 斷在某一跳\n- Firewall 層的原因：Policy 沒開、規則順序錯\n  → 症狀特徵：tracert 走到防火牆後消失，防火牆查得到 Deny Log\n把「症狀對設備」記起來，排查就不用每台都查——這就是分層排查的實戰版。\n\n【練習任務 4 解答】面試回答範本（直接背）\n「Switch 負責二層，同網段設備靠它轉送、也做 VLAN 切分；Router 負責三層，依路由表做跨網段轉送；Firewall 依 Policy 決定流量允不允許並留下 Log。以使用者連內部系統為例，我會先確認 Port 與 VLAN，再看路由是否可達，最後查防火牆規則與 Deny Log。」"
+  },
+  "net-firewall-policy": {
+    "teachingSteps": [
+      "先學會讀一條規則：Source、Destination、Service、Action、Log、Schedule。",
+      "把需求翻譯成規則，例如誰要連到哪台 Server 的哪個 Port。",
+      "套用最小權限，只開必要來源、目的與服務，不用 Any 取代不確定資訊。",
+      "理解規則順序會影響命中結果，上方規則可能先攔截。",
+      "上線後用 Log 驗證是否命中正確規則。"
+    ],
+    "example": "需求：10.10.20.50 要連 10.30.5.10 的 HTTPS\nSource: 10.10.20.50\nDestination: 10.30.5.10\nService: TCP/443\nAction: Allow\nLog: Enable\nReason: 使用者需存取內部 Web 系統",
+    "practiceTasks": [
+      "把三個連線需求寫成防火牆規則欄位。",
+      "把一條 Any-to-Any 規則改成最小權限版本。",
+      "模擬規則順序錯誤，說明為什麼會命中錯規則。",
+      "寫一份防火牆規則申請單範例。"
+    ],
+    "beginnerChecklist": [
+      "我知道一條 Firewall Rule 的主要欄位。",
+      "我能把需求翻譯成 Source/Destination/Service。",
+      "我知道為什麼 Any 規則有風險。",
+      "我知道上線後要用 Log 驗證。"
+    ]
+  },
+  "net-firewall-acl-basic": {
+    "teachingSteps": [
+      "先理解 ACL 是允許或拒絕流量的清單，可出現在 Router、Switch 或 Firewall。",
+      "分清楚 ACL 和 Firewall Policy：概念相近，但所在設備與功能深度可能不同。",
+      "用 VPN 使用者權限當例子，理解 ACL 如何限制可連哪些內部系統。",
+      "學會檢查 ACL 命中順序，因為前面的條件可能先匹配。",
+      "建立定期盤點習慣，移除不再使用或開太大的 ACL。"
+    ],
+    "example": "ACL 思考方式：\n允許 VPN 使用者 10.90.0.0/24 連到 ERP Server TCP/443\n拒絕 VPN 使用者直接連到 Database TCP/1521\n\n這樣使用者只能透過應用系統存取資料，不直接碰資料庫。",
+    "practiceTasks": [
+      "設計一組 VPN 使用者 ACL。",
+      "列出 Router ACL、Switch ACL、Firewall ACL 可能使用的場景。",
+      "找出一條過寬 ACL，改成較精準的版本。",
+      "寫出 ACL 盤點時要看哪些欄位。"
+    ],
+    "beginnerChecklist": [
+      "我知道 ACL 是用來允許或拒絕流量。",
+      "我知道 ACL 也要遵守最小權限。",
+      "我知道 ACL 順序會影響結果。",
+      "我能說明 VPN ACL 的用途。"
+    ]
+  },
+  "net-firewall-deny": {
+    "teachingSteps": [
+      "先收集完整資訊：使用者、來源 IP、目的 IP、Port、測試時間與錯誤畫面。",
+      "到防火牆查 Deny Log，確認是否真的被防火牆阻擋。",
+      "比對 Log 中的 NAT 後 IP，避免用錯來源或目的。",
+      "確認目的 Server 的服務 Port 是否真的有啟動。",
+      "如果要開規則，先確認需求合理性，再依最小權限建立。"
+    ],
+    "example": "Deny Log 判讀：\nTime: 2026-07-04 10:30\nSource: 10.10.20.50\nDestination: 10.30.5.10\nService: TCP/443\nAction: Deny\nRule: implicit deny\n\n判斷：目前沒有允許這條流量的規則。",
+    "practiceTasks": [
+      "用一筆模擬 Deny Log 寫出排查結論。",
+      "列出向使用者收集資訊的問題清單。",
+      "區分防火牆 Deny 與 Server 服務未啟動的不同現象。",
+      "撰寫一份規則開通後驗證紀錄。"
+    ],
+    "beginnerChecklist": [
+      "我知道查 Deny Log 前要先收集時間和 IP。",
+      "我知道 NAT 可能讓 Log 中 IP 不同。",
+      "我能判斷 implicit deny 的意義。",
+      "我知道開規則前要確認服務 Port。"
+    ]
+  },
+  "net-vpn-types": {
+    "teachingSteps": [
+      "先區分 Remote Access VPN 與 Site-to-Site VPN：一個給個人，一個連兩個網路。",
+      "理解 SSL VPN 常用在使用者遠端辦公，IPsec VPN 常用在站台互連。",
+      "學 VPN 流程：驗證使用者、分配 IP、套用路由、套用 ACL、產生日誌。",
+      "比較 Split Tunnel 與 Full Tunnel 對流量路徑與 Proxy 的影響。",
+      "用企業情境描述員工、分公司、廠商三種 VPN 使用方式。"
+    ],
+    "example": "Remote Access VPN：員工筆電 -> VPN Gateway -> 取得 VPN IP -> 存取內部系統\nSite-to-Site VPN：分公司網段 <-> VPN Tunnel <-> 總公司網段\n\nSplit Tunnel：只有內部流量走 VPN\nFull Tunnel：所有流量都走 VPN",
+    "practiceTasks": [
+      "畫出 Remote Access VPN 流程圖。",
+      "畫出 Site-to-Site VPN 兩端網段。",
+      "列出 Split Tunnel 和 Full Tunnel 的優缺點。",
+      "整理 VPN 與 AD/MFA 的關係。"
+    ],
+    "beginnerChecklist": [
+      "我能說明 Remote Access VPN 與 Site-to-Site VPN 差異。",
+      "我知道 VPN 登入成功後還需要路由與 ACL。",
+      "我知道 Split Tunnel 和 Full Tunnel 的差異。",
+      "我能說明 VPN 與 MFA 的關係。"
+    ]
+  },
+  "net-vpn-acl-log": {
+    "teachingSteps": [
+      "先確認 VPN 登入是否成功，再確認使用者拿到哪個 VPN IP。",
+      "檢查使用者群組是否對應到正確 ACL 或 Policy。",
+      "測試目的系統 IP 是否可達，再測 FQDN DNS 解析是否正確。",
+      "查 VPN Log 與 Firewall Log，看是驗證失敗、路由不通還是 ACL Deny。",
+      "整理一份 VPN 可登入但連不到系統的排查決策樹。"
+    ],
+    "example": "排查順序：\n1. VPN 登入紀錄成功\n2. VPN IP: 10.90.1.25\n3. nslookup erp.company.local\n4. Test-NetConnection erp.company.local -Port 443\n5. 查 VPN ACL 是否允許 10.90.1.25 -> ERP TCP/443",
+    "practiceTasks": [
+      "設計一個 VPN 使用者權限對應表。",
+      "模擬 DNS 解析失敗造成 VPN 可登入但系統打不開。",
+      "模擬 ACL Deny，寫出 Log 判讀。",
+      "整理 VPN 排查紀錄模板。"
+    ],
+    "beginnerChecklist": [
+      "我知道 VPN 可登入不代表可連所有內部系統。",
+      "我會查 VPN IP Pool。",
+      "我會同時檢查 DNS、路由與 ACL。",
+      "我能用 Log 說明連線失敗原因。"
+    ]
+  },
+  "net-proxy-forward-reverse": {
+    "teachingSteps": [
+      "先用方向理解：Forward Proxy 代表使用者出去，Reverse Proxy 代表服務入口進來。",
+      "用員工上網控管理解 Forward Proxy，用對外 Web 系統入口理解 Reverse Proxy。",
+      "比較 Proxy、NAT、Firewall、WAF、Load Balancer 的責任邊界。",
+      "看 Log 時分清楚使用者來源、Proxy 位址、後端 Server 與真實來源 IP。",
+      "用一個網站不能開的案例練習判斷問題可能在哪一段。"
+    ],
+    "example": "Forward Proxy：Client -> Proxy -> Internet\nReverse Proxy：Internet/User -> Reverse Proxy -> Internal Web Server\n\nForward Proxy 問：使用者能不能上網？\nReverse Proxy 問：外部能不能進到內部服務？",
+    "practiceTasks": [
+      "畫出 Forward Proxy 與 Reverse Proxy 流量圖。",
+      "列出企業使用 Forward Proxy 的四個理由。",
+      "列出 Reverse Proxy 如何保護後端 Server。",
+      "整理 Proxy、Firewall、WAF、Load Balancer 差異表。"
+    ],
+    "beginnerChecklist": [
+      "我能說明 Forward Proxy 和 Reverse Proxy 差異。",
+      "我知道 Forward Proxy 常用於上網控管。",
+      "我知道 Reverse Proxy 常用於服務入口與憑證集中。",
+      "我能說明 Proxy 和 Firewall 的差異。"
+    ]
+  },
+  "net-proxy-auth-ssl": {
+    "teachingSteps": [
+      "先理解企業 Proxy 可能需要使用者驗證，常與 AD 或 LDAP 串接。",
+      "學 PAC File：它是決定哪些網址要走 Proxy 的腳本。",
+      "學 WPAD：它讓端點自動找到 PAC 設定。",
+      "理解 SSL Inspection：Proxy 會解密檢查再重新簽發憑證。",
+      "排查 HTTPS 錯誤時要檢查端點是否信任企業根憑證，以及是否需要例外。"
+    ],
+    "example": "PAC 概念範例：\nfunction FindProxyForURL(url, host) {\n  if (dnsDomainIs(host, '.company.local')) return 'DIRECT';\n  return 'PROXY proxy.company.local:8080';\n}\n\n意思：內部網域直連，其他網站走 Proxy。",
+    "practiceTasks": [
+      "寫出 PAC File 的基本判斷邏輯。",
+      "列出 WPAD 可能沒有生效的原因。",
+      "模擬 HTTPS 憑證錯誤，寫出檢查項目。",
+      "整理 Proxy 驗證失敗的排查流程。"
+    ],
+    "beginnerChecklist": [
+      "我知道 PAC File 的用途。",
+      "我知道 WPAD 是自動發現 Proxy 設定。",
+      "我知道 SSL Inspection 會影響憑證信任。",
+      "我能說明 Proxy 驗證和 AD/LDAP 的關係。"
+    ]
+  },
+  "net-proxy-reverse-waf": {
+    "teachingSteps": [
+      "先建立 Reverse Proxy 的核心概念：外部請求先到代理，再轉到內部 Web Server。",
+      "理解 Host Header、X-Forwarded-For 與後端服務取得真實來源 IP 的關係。",
+      "學 WAF 的角色：檢查 Web 攻擊特徵，不等於一般防火牆。",
+      "排查後端無回應時，先測 Reverse Proxy 到後端 Port，再看 Nginx/WAF/Server Log。",
+      "理解憑證可能在 Reverse Proxy 終止，也可能再加密到後端。"
+    ],
+    "example": "Nginx Reverse Proxy 概念：\nlocation / {\n  proxy_pass http://10.30.5.20:8080;\n  proxy_set_header Host $host;\n  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n}\n\n重點：保留 Host 與來源 IP 資訊。",
+    "practiceTasks": [
+      "畫出 Reverse Proxy 到後端 Web Server 的流量路徑。",
+      "列出後端服務無回應的五個檢查點。",
+      "說明 WAF 與 Reverse Proxy 的搭配方式。",
+      "整理 X-Forwarded-For 對稽核的用途。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Reverse Proxy 如何隱藏後端 Server。",
+      "我知道 Host Header 錯誤會造成後端判斷異常。",
+      "我知道 X-Forwarded-For 用來保留真實來源 IP。",
+      "我能說明 WAF 的基本用途。"
+    ]
+  },
+  "net-f5-objects": {
+    "teachingSteps": [
+      "先把 F5 物件關係記成：Virtual Server 是入口，Pool 是後端群組，Member 是實際 Server。",
+      "理解使用者連到 Virtual Server IP/Port，不是直接連後端 Server。",
+      "學 Health Check 如何決定 Pool Member 是否可被導流。",
+      "排查時先看 Virtual Server 狀態，再看 Pool 與 Member 狀態。",
+      "把一個網站分流到兩台 Web Server 的流程畫出來。"
+    ],
+    "example": "Virtual Server: 203.0.113.10:443\nPool: web_pool\nMembers:\n- 10.30.5.21:443\n- 10.30.5.22:443\nMonitor: HTTPS /health\n\n使用者只連 203.0.113.10，由 F5 導流到健康的 Member。",
+    "practiceTasks": [
+      "設計一個 Virtual Server / Pool / Member 對應表。",
+      "模擬其中一台 Member 掛掉，說明 F5 應如何反應。",
+      "列出 Health Check 檢查路徑設錯會造成的問題。",
+      "整理 F5 基本排查順序。"
+    ],
+    "beginnerChecklist": [
+      "我能說明 Virtual Server、Pool、Member。",
+      "我知道 Health Check 會影響是否導流。",
+      "我知道使用者通常連的是 VIP。",
+      "我能用圖說明分流流程。"
+    ]
+  },
+  "net-f5-ssl-persistence": {
+    "teachingSteps": [
+      "先理解 SSL Offload：憑證由 F5 集中處理，後端可以走 HTTP 或 HTTPS。",
+      "學憑證到期、憑證鏈不完整、SNI 設定錯誤造成的常見症狀。",
+      "理解 Persistence：同一使用者在一段時間內導到同一台後端。",
+      "用登入系統當例子，理解 Session 沒保持為什麼會一直登出或狀態錯亂。",
+      "排查時同時看 F5 設定、瀏覽器憑證錯誤與後端 Session Log。"
+    ],
+    "example": "SSL Offload：Client --HTTPS--> F5 --HTTP--> Web Server\nEnd-to-End SSL：Client --HTTPS--> F5 --HTTPS--> Web Server\n\nPersistence 用途：確保同一個使用者持續打到同一台 Web Server。",
+    "practiceTasks": [
+      "列出 SSL Offload 的優點與風險。",
+      "模擬憑證到期，寫出排查步驟。",
+      "說明 Persistence 和 Session Stickiness 的關係。",
+      "整理登入異常和 Load Balancer 的可能關聯。"
+    ],
+    "beginnerChecklist": [
+      "我知道 SSL Offload 是什麼。",
+      "我知道憑證到期會造成 HTTPS 異常。",
+      "我知道 Persistence 用於維持 Session。",
+      "我能說明登入狀態異常和分流的關係。"
+    ]
+  },
+  "net-enterprise-zones": {
+    "teachingSteps": [
+      "先列出企業常見區域：辦公、Server、DMZ、Guest、VPN、VDI、管理、Proxy。",
+      "為每個區域定義用途、使用者、系統與風險等級。",
+      "設計網段與 Gateway，避免把不同風險的設備混在同一區。",
+      "決定哪些跨區流量需要經過 Firewall，並寫出允許原則。",
+      "完成拓樸圖、網段表、命名規則與維運文件。"
+    ],
+    "example": "區域規劃範例：\nOffice VLAN: 10.10.10.0/24\nServer VLAN: 10.20.10.0/24\nDMZ VLAN: 10.30.10.0/24\nVPN Pool: 10.90.10.0/24\nManagement: 10.250.10.0/24\n\n原則：Office 不能直接連 DB，需透過應用服務。",
+    "practiceTasks": [
+      "設計至少六個企業網段。",
+      "畫出 Office 到 DMZ Web 的流量路徑。",
+      "列出每個區域允許與禁止的連線。",
+      "建立一份網路設備命名規則。"
+    ],
+    "beginnerChecklist": [
+      "我知道企業為什麼要切安全區域。",
+      "我能設計基本網段表。",
+      "我知道 DMZ 不應和內網混在一起。",
+      "我能說明跨區流量需經過控管點。"
+    ]
+  },
+  "net-prtg-sensors": {
+    "teachingSteps": [
+      "先理解 Sensor 是一個監控項目，例如 Ping、Port、CPU、Disk、Interface 流量。",
+      "設備監控不要只看 Ping，還要看關鍵服務 Port 與資源狀態。",
+      "依設備類型選 Sensor：Router/Switch 常用 SNMP，Windows 常用 WMI，Linux 常用 SSH。",
+      "設定告警門檻時要先了解正常基準，避免太敏感造成告警疲勞。",
+      "告警發生後要能連回排查 SOP，而不是只知道紅燈。"
+    ],
+    "example": "Proxy Server 監控：\n- Ping Sensor：主機是否可達\n- Port Sensor TCP/8080：Proxy 服務是否有回應\n- Disk Sensor：Log 是否塞滿磁碟\n- CPU/RAM Sensor：是否資源耗盡\n- Traffic Sensor：流量是否異常暴增",
+    "practiceTasks": [
+      "為一台 Proxy Server 設計 5 個 Sensor。",
+      "為一台 Firewall 設計介面流量與 CPU 監控。",
+      "設定一個磁碟空間不足告警門檻。",
+      "寫出收到告警後的第一線檢查流程。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Ping Sensor 只能代表主機可達。",
+      "我知道 Port Sensor 可檢查服務是否有回應。",
+      "我知道 SNMP/WMI/SSH 適合不同設備。",
+      "我能根據告警做初步判斷。"
+    ]
+  },
+  "net-vdi-security": {
+    "teachingSteps": [
+      "先理解 VDI 是集中管理的虛擬桌面，使用者透過 Client 登入遠端桌面環境。",
+      "學 VDI 與 VPN 的差異：VPN 是網路通道，VDI 是桌面環境。",
+      "理解 VDI 和 Proxy 的關係：VDI 內部上網仍可能走企業 Proxy。",
+      "學 vSphere 基本物件：ESXi、vCenter、VM、vSwitch、Port Group、Snapshot。",
+      "把合規工作接到維運：帳號權限、備份、弱點修補、稽核紀錄。"
+    ],
+    "example": "VDI 登入流程：\n使用者 -> VDI Gateway -> 驗證 AD/MFA -> 分配桌面 VM -> 進入企業網段 -> 上網走 Proxy / 存取內部系統\n\n常見問題：VDI 可登入但無法上網，可能是 Proxy 或 DNS 設定問題。",
+    "practiceTasks": [
+      "畫出 VDI 登入流程。",
+      "列出 VDI、VPN、Proxy 三者關係。",
+      "整理 vSphere 物件名詞表。",
+      "設計一份 VDI 合規檢查清單。"
+    ],
+    "beginnerChecklist": [
+      "我知道 VDI 和 VPN 不是同一件事。",
+      "我知道 VDI 桌面也需要網路與 Proxy 設定。",
+      "我能說明 ESXi、vCenter、VM 的關係。",
+      "我知道 Snapshot 不能取代正式備份。"
+    ]
+  },
+  "dba-basics-rdbms": {
+    "teachingSteps": [
+      "先把 Database 想成資料集合，Table 是分類保存資料的表格。",
+      "理解 Row 是一筆資料，Column 是欄位，Data Type 限制欄位可放什麼。",
+      "學 Primary Key 保證每筆資料唯一，Foreign Key 保證資料表之間的關聯。",
+      "理解 Constraint 和 Index 的差異：Constraint 保護資料規則，Index 幫助查詢速度。",
+      "用一個訂單系統練習拆出客戶、訂單、訂單明細、商品。"
+    ],
+    "example": "訂單系統資料表：\ncustomers(customer_id, customer_name)\norders(order_id, customer_id, order_date)\norder_items(order_id, product_id, qty, price)\nproducts(product_id, product_name)\n\n關聯：orders.customer_id -> customers.customer_id",
+    "practiceTasks": [
+      "設計一個圖書借閱系統的資料表。",
+      "標出每張表的 Primary Key。",
+      "找出哪些欄位適合作為 Foreign Key。",
+      "說明哪幾個欄位可能需要 Index。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Table、Row、Column 的意思。",
+      "我知道 Primary Key 用來唯一識別資料。",
+      "我知道 Foreign Key 用來維持資料關聯。",
+      "我能說明 Index 的基本用途。"
+    ],
+    "handson": "用上一課建好的 PostgreSQL + DBeaver，把「圖書借閱系統」真的做出來（練習任務完整解答）。\n\n【第 1 步】建三張表（貼進 SQL 編輯器執行）\nCREATE TABLE members (\n  member_id INT PRIMARY KEY,        -- 借閱者編號：主鍵，每人唯一\n  member_name VARCHAR(100) NOT NULL -- 姓名：NOT NULL 表示必填\n);\nCREATE TABLE books (\n  book_id INT PRIMARY KEY,\n  title VARCHAR(200) NOT NULL\n);\nCREATE TABLE loans (\n  loan_id INT PRIMARY KEY,\n  member_id INT NOT NULL REFERENCES members(member_id), -- 外鍵：必須是存在的會員\n  book_id INT NOT NULL REFERENCES books(book_id),       -- 外鍵：必須是存在的書\n  loan_date DATE NOT NULL\n);\n\n【第 2 步】塞測試資料\nINSERT INTO members VALUES (1, '小明'), (2, '小華');\nINSERT INTO books VALUES (10, 'SQL 入門'), (11, '網路概論');\nINSERT INTO loans VALUES (100, 1, 10, '2026-07-01');\n\n【第 3 步】體驗 Key 在保護你（本課核心）\n執行這行（故意重複主鍵）：\nINSERT INTO members VALUES (1, '小王');\n→ 報錯 duplicate key value violates unique constraint\n這就是 Primary Key：同一個編號不可能有兩筆。\n再執行這行（故意用不存在的會員 99）：\nINSERT INTO loans VALUES (101, 99, 10, '2026-07-02');\n→ 報錯 violates foreign key constraint\n這就是 Foreign Key：不存在的會員不能借書。\n親眼看過這兩個錯誤訊息，你就真的懂 Key 的用途了——它們不是理論，是資料庫在幫你擋髒資料。\n\n【第 4 步／練習任務 4 解答】哪些欄位需要 Index？\nloans.member_id 和 loans.book_id——因為常會查「某人借了什麼」「這本書被誰借走」：\nCREATE INDEX idx_loans_member ON loans (member_id);\nCREATE INDEX idx_loans_book ON loans (book_id);\n原則：常出現在 WHERE / JOIN 的欄位才建；這種幾筆資料的小表其實不建也沒差，但養成思考習慣。"
+  },
+  "dba-basics-transaction": {
+    "teachingSteps": [
+      "先理解 Transaction 是一組必須一起成功或一起失敗的操作。",
+      "學 Commit 代表確認寫入，Rollback 代表取消未提交異動。",
+      "理解 Lock 是資料庫保護資料一致性的機制，但可能造成等待。",
+      "學 Deadlock：兩個交易互相等待對方釋放資源，最後資料庫會中止其中一方。",
+      "排查時要找出長交易、鎖定來源、SQL 順序與索引是否造成大量等待。"
+    ],
+    "example": "交易範例：\nBEGIN;\nUPDATE accounts SET balance = balance - 100 WHERE account_id = 1;\nUPDATE accounts SET balance = balance + 100 WHERE account_id = 2;\nCOMMIT;\n\n如果第二步失敗，就應 Rollback，避免只扣款沒有入帳。",
+    "practiceTasks": [
+      "寫一個轉帳交易流程。",
+      "說明 Commit 和 Rollback 的差異。",
+      "模擬兩個 Session 更新同一筆資料，觀察 Lock 等待。",
+      "整理 Deadlock 發生時的排查資料。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Transaction 是為了資料一致性。",
+      "我知道 Commit 和 Rollback 的用途。",
+      "我知道 Lock 可能造成等待。",
+      "我能用例子說明 Deadlock。"
+    ],
+    "handson": "目標：親手重現「轉帳一半取消」「兩個人互相卡住」「死結」三件事。\n\n【準備】\nCREATE TABLE accounts (account_id INT PRIMARY KEY, balance INT NOT NULL);\nINSERT INTO accounts VALUES (1, 1000), (2, 1000);\n\n【實驗 1】Rollback 保護一致性（練習任務 1、2 解答）\nBEGIN;\nUPDATE accounts SET balance = balance - 100 WHERE account_id = 1;\nSELECT * FROM accounts;   -- 1 號變 900（目前只有你這個交易看得到）\nROLLBACK;\nSELECT * FROM accounts;   -- 回到 1000，扣款像沒發生過\n把 ROLLBACK 換成 COMMIT 才會真正生效。這就是「一起成功或一起失敗」的具體樣子。\n\n【實驗 2】Lock 等待（練習任務 3 解答，需要兩個視窗）\n在 DBeaver 開第二個 SQL 編輯器，並確認兩個編輯器用「各自獨立的連線」（編輯器右鍵 → 連線設定，或直接複製一條新連線），這樣才是兩個 Session。\n視窗 A：\nBEGIN;\nUPDATE accounts SET balance = 900 WHERE account_id = 1;   -- 故意不 COMMIT\n視窗 B：\nUPDATE accounts SET balance = 800 WHERE account_id = 1;\n→ B 會卡住轉圈圈——它在等 A 放鎖。\n回視窗 A 執行 COMMIT，B 立刻完成。\n這就是「長交易卡住其他人」的最小重現：正式環境有人開著交易去吃午餐，全公司的該筆資料就鎖到他回來。\n\n【實驗 3】Deadlock 死結（練習任務 4 解答）\n視窗 A：\nBEGIN;\nUPDATE accounts SET balance = balance - 10 WHERE account_id = 1;\n視窗 B：\nBEGIN;\nUPDATE accounts SET balance = balance - 10 WHERE account_id = 2;\n視窗 A（會卡住，正常）：\nUPDATE accounts SET balance = balance + 10 WHERE account_id = 2;\n視窗 B（引爆點）：\nUPDATE accounts SET balance = balance + 10 WHERE account_id = 1;\n幾秒內資料庫回報：ERROR: deadlock detected，並強制其中一邊失敗（犧牲者），另一邊繼續。\n面試就用這個例子講：兩個交易以「相反順序」鎖資源 → 解法是規定大家按同一順序更新（都先 1 再 2），死結就不會發生。\n最後記得兩個視窗都 COMMIT 或 ROLLBACK 收尾。"
+  },
+  "dba-sql-join": {
+    "teachingSteps": [
+      "先把資料表想成 Excel 工作表：一列是一筆資料，一欄是一種屬性。",
+      "先練 SELECT / FROM / WHERE，只查一張表，確認自己能用條件縮小資料範圍。",
+      "再練 ORDER BY 與 LIMIT / FETCH FIRST，學會排序與控制回傳筆數。",
+      "開始 JOIN 前，先找出兩張表的關聯欄位，通常是一邊的 Primary Key 對另一邊的 Foreign Key。",
+      "用 INNER JOIN 查出兩邊都有對應資料的結果；用 LEFT JOIN 保留左表資料，找出右表缺資料的情境。",
+      "維運排查時先確認資料筆數，再檢查 JOIN 條件，最後才看 Execution Plan 與 Index。"
+    ],
+    "example": "-- 查詢訂單與客戶名稱\nSELECT\n  o.order_id,\n  o.order_date,\n  c.customer_name,\n  o.total_amount\nFROM orders o\nINNER JOIN customers c\n  ON o.customer_id = c.customer_id\nWHERE o.order_date >= '2026-01-01'\nORDER BY o.order_date DESC;\n\n-- 找出沒有訂單的客戶\nSELECT\n  c.customer_id,\n  c.customer_name\nFROM customers c\nLEFT JOIN orders o\n  ON c.customer_id = o.customer_id\nWHERE o.order_id IS NULL;",
+    "practiceTasks": [
+      "建立 customers 與 orders 兩張練習表，讓 orders.customer_id 對應 customers.customer_id。",
+      "寫一個 INNER JOIN 查詢：列出有下單的客戶與訂單金額。",
+      "寫一個 LEFT JOIN 查詢：找出尚未下單的客戶。",
+      "故意拿掉 JOIN 條件觀察資料筆數變化，理解資料膨脹的原因。",
+      "替 WHERE 條件欄位建立 Index，觀察 Execution Plan 是否改變。"
+    ],
+    "beginnerChecklist": [
+      "我知道 SELECT、FROM、WHERE 各自負責什麼。",
+      "我知道 INNER JOIN 只保留兩邊都有對應資料的結果。",
+      "我知道 LEFT JOIN 可以用來找右表不存在的資料。",
+      "我知道 JOIN 條件漏寫會造成資料筆數異常放大。",
+      "我知道排查慢查詢時要先看資料量與 Execution Plan。"
+    ],
+    "handson": "練習任務完整解答（在 PostgreSQL + DBeaver 執行）。\n\n【第 0 步／任務 1】建練習資料\nCREATE TABLE customers (customer_id INT PRIMARY KEY, customer_name VARCHAR(100));\nCREATE TABLE orders (\n  order_id INT PRIMARY KEY,\n  customer_id INT REFERENCES customers(customer_id),\n  order_date DATE,\n  total_amount DECIMAL(12,2)\n);\nINSERT INTO customers VALUES (1,'小明'),(2,'小華'),(3,'小美');\nINSERT INTO orders VALUES\n  (101,1,'2026-07-01',500),\n  (102,1,'2026-07-02',300),\n  (103,2,'2026-07-03',800);\n注意：小美（3 號）沒有任何訂單——這是故意的，等下用她驗證 LEFT JOIN。\n\n【任務 2 解答】INNER JOIN\nSELECT c.customer_name, o.order_id, o.total_amount\nFROM orders o\nINNER JOIN customers c ON o.customer_id = c.customer_id;\n結果 3 筆：小明兩筆、小華一筆。小美消失了——INNER JOIN 只保留兩邊都對得上的。\n\n【任務 3 解答】LEFT JOIN 找沒下單的客戶\nSELECT c.customer_id, c.customer_name\nFROM customers c\nLEFT JOIN orders o ON c.customer_id = o.customer_id\nWHERE o.order_id IS NULL;\n結果 1 筆：小美。原理：LEFT JOIN 保留左表（customers）全部，右表對不到的欄位是 NULL，再用 IS NULL 撈出來。這是維運找「缺資料」的萬用句型。\n\n【任務 4 解答】資料膨脹實驗\nSELECT COUNT(*) FROM orders o INNER JOIN customers c ON o.customer_id = c.customer_id;\n→ 3（正確）\nSELECT COUNT(*) FROM orders o CROSS JOIN customers c;   -- 等同忘了寫 JOIN 條件\n→ 9（3 筆訂單 × 3 個客戶，每筆訂單配上每個客戶）\n想像正式環境：百萬筆 × 十萬筆 = 一千億筆，查詢直接把資料庫拖垮。所以「筆數怎麼暴增了」第一件事就是檢查 JOIN 條件。\n\n【任務 5 解答】看 Execution Plan\nEXPLAIN SELECT * FROM orders WHERE customer_id = 1;\n→ 看到 Seq Scan on orders（全表掃描）。\n建索引再看一次：\nCREATE INDEX idx_orders_customer ON orders (customer_id);\nEXPLAIN SELECT * FROM orders WHERE customer_id = 1;\n可能還是 Seq Scan！因為只有 3 筆資料，資料庫判斷掃全表更快。這本身就是本課重點：索引不是有建就會被用，資料量與統計資訊都會影響——大表才看得出索引的威力。"
+  },
+  "dba-schema-design": {
+    "teachingSteps": [
+      "先從業務名詞拆資料：例如客戶、訂單、訂單明細、商品，通常就是資料表候選。",
+      "每張表先找 Primary Key，確保每筆資料都有唯一識別。",
+      "把重複出現的資料拆出去，讓主檔與明細檔分工清楚，這就是正規化的基本精神。",
+      "欄位型別要貼近用途：日期用 date / timestamp，金額用 decimal，狀態用 code 或小型字串，不要全部用 varchar。",
+      "用 Constraint 保護資料品質，例如 NOT NULL、UNIQUE、CHECK、Foreign Key。",
+      "針對常被 WHERE、JOIN、ORDER BY 使用的欄位評估 Index，但不要盲目替所有欄位加 Index。",
+      "正式系統要預留 created_at、updated_at、created_by、updated_by，必要時再加 Log Table 或 Audit Table。"
+    ],
+    "example": "-- 客戶主檔\nCREATE TABLE customers (\n  customer_id INT PRIMARY KEY,\n  customer_name VARCHAR(100) NOT NULL,\n  email VARCHAR(200) UNIQUE,\n  status VARCHAR(20) NOT NULL,\n  created_at TIMESTAMP NOT NULL,\n  updated_at TIMESTAMP NOT NULL\n);\n\n-- 訂單主檔\nCREATE TABLE orders (\n  order_id INT PRIMARY KEY,\n  customer_id INT NOT NULL,\n  order_date DATE NOT NULL,\n  total_amount DECIMAL(12, 2) NOT NULL,\n  created_at TIMESTAMP NOT NULL,\n  updated_at TIMESTAMP NOT NULL,\n  CONSTRAINT fk_orders_customer\n    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)\n);\n\nCREATE INDEX idx_orders_customer_date\n  ON orders (customer_id, order_date);",
+    "practiceTasks": [
+      "設計一個員工請假系統，至少包含 employees、leave_requests、leave_types 三張表。",
+      "替每張表定義 Primary Key，並替明細或交易表建立 Foreign Key。",
+      "替常查詢的日期欄位或狀態欄位評估是否需要 Index。",
+      "加入 created_at 與 updated_at，說明它們對維運與稽核的用途。",
+      "設計一張 audit table，記錄誰在什麼時間修改了哪筆資料。"
+    ],
+    "beginnerChecklist": [
+      "我知道主檔、明細檔、代碼檔各自適合放什麼資料。",
+      "我知道 Primary Key、Foreign Key、Unique、Not Null 的用途。",
+      "我能根據查詢條件判斷是否需要 Index。",
+      "我知道正規化是為了降低重複資料與資料不一致。",
+      "我知道 Audit Table 與 Log Table 可以協助追蹤異動與排查問題。"
+    ],
+    "handson": "員工請假系統完整解答（練習任務 1–5 一次做完），貼進 DBeaver 執行。\n\n【任務 1、2 解答】三張表＋Key\nCREATE TABLE employees (                -- 主檔：一人一列\n  employee_id   INT PRIMARY KEY,\n  employee_name VARCHAR(100) NOT NULL,\n  department    VARCHAR(50)  NOT NULL,\n  created_at    TIMESTAMP NOT NULL DEFAULT now(),\n  updated_at    TIMESTAMP NOT NULL DEFAULT now()\n);\nCREATE TABLE leave_types (              -- 代碼檔：假別清單\n  leave_type_id INT PRIMARY KEY,\n  type_name     VARCHAR(50) NOT NULL UNIQUE   -- 特休、病假…不能重複\n);\nCREATE TABLE leave_requests (           -- 交易檔：一筆申請一列\n  request_id    INT PRIMARY KEY,\n  employee_id   INT NOT NULL REFERENCES employees(employee_id),\n  leave_type_id INT NOT NULL REFERENCES leave_types(leave_type_id),\n  start_date    DATE NOT NULL,\n  end_date      DATE NOT NULL,\n  status        VARCHAR(20) NOT NULL DEFAULT 'pending',\n  created_at    TIMESTAMP NOT NULL DEFAULT now(),\n  updated_at    TIMESTAMP NOT NULL DEFAULT now(),\n  CHECK (end_date >= start_date)        -- Constraint 擋「結束早於開始」的髒資料\n);\n設計思路：employees 主檔、leave_types 代碼檔、leave_requests 交易檔——三種表的分工就是正規化最日常的樣子。\n\n【任務 3 解答】Index 評估\n最常見查詢是「某員工的請假紀錄」與「某期間誰在休假」：\nCREATE INDEX idx_requests_employee ON leave_requests (employee_id);\nCREATE INDEX idx_requests_dates    ON leave_requests (start_date, end_date);\nstatus 只有幾種值（選擇性低），單獨建索引通常不值得——這就是「不盲目加 Index」的判斷。\n\n【任務 4 解答】created_at / updated_at 的用途\n維運：「這筆什麼時候進來的？昨天被改過嗎？」全靠這兩欄；出事時對照部署時間定位原因。\n稽核：ISO 27001 要求異動可追溯，這兩欄是最低限度的證據。\n\n【任務 5 解答】Audit Table\nCREATE TABLE leave_requests_audit (\n  audit_id    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,\n  request_id  INT NOT NULL,\n  action      VARCHAR(10) NOT NULL,    -- INSERT / UPDATE / DELETE\n  changed_by  VARCHAR(100) NOT NULL,\n  changed_at  TIMESTAMP NOT NULL DEFAULT now(),\n  old_status  VARCHAR(20),\n  new_status  VARCHAR(20)\n);\n概念：主表只保留「現在的樣子」，audit 表記「誰、何時、把它從什麼改成什麼」。正式系統通常用 Trigger 自動寫入。\n\n【最後驗證你的設計】\nINSERT INTO leave_requests VALUES (1, 1, 1, '2026-07-10', '2026-07-05', 'pending', now(), now());\n→ 應該被 CHECK 擋下報錯（end_date 早於 start_date）。被擋 = 你的 Constraint 在工作。"
+  },
+  "dba-permissions-role": {
+    "teachingSteps": [
+      "先理解 User 是登入身份，Role 是權限集合，Privilege 是具體能做的事。",
+      "不要直接把所有權限授給個人帳號，先設計角色再把角色分配給帳號。",
+      "依用途切分 Read Only、Read Write、Application、Report、DBA、維運帳號。",
+      "正式環境和測試環境權限要分開管理，避免測試習慣帶到正式環境。",
+      "建立權限異動申請、到期日、盤點與停用流程。"
+    ],
+    "example": "-- 角色概念\nCREATE ROLE app_readonly;\nGRANT SELECT ON customer_view TO app_readonly;\nGRANT app_readonly TO report_user;\n\n-- 原則：報表使用者只能查 View，不直接改 Table。",
+    "practiceTasks": [
+      "設計三種資料庫角色：read_only、app_user、dba_operator。",
+      "列出每種角色可以做與不能做的操作。",
+      "模擬一筆權限異動申請單。",
+      "建立一份權限盤點表欄位。"
+    ],
+    "beginnerChecklist": [
+      "我知道 User、Role、Privilege 的差異。",
+      "我知道最小權限原則。",
+      "我知道正式環境權限要更嚴格。",
+      "我能說明權限盤點的目的。"
+    ]
+  },
+  "dba-migration-flow": {
+    "teachingSteps": [
+      "先把 Migration 視為正式變更，不只是執行 SQL。",
+      "變更前準備影響評估、Script、Rollback Script、備份與驗證清單。",
+      "先在測試環境跑完整流程，再到 UAT 驗證業務功能。",
+      "正式上線時要記錄執行時間、執行人、結果與異常。",
+      "上線後驗證資料筆數、Constraint、應用程式功能與錯誤 Log。"
+    ],
+    "example": "Migration Checklist:\n1. 上線前備份完成\n2. Migration Script 已在測試環境成功\n3. Rollback Script 已驗證\n4. UAT 簽核完成\n5. 正式執行後查資料筆數與應用程式 Log",
+    "practiceTasks": [
+      "寫一份新增欄位的 Migration Script。",
+      "寫一份對應的 Rollback Script。",
+      "設計 Migration 前後驗證項目。",
+      "寫一份正式上線紀錄。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Migration 前要備份。",
+      "我知道 Rollback Script 也要測試。",
+      "我知道 UAT 驗證的重要性。",
+      "我能說明上線後要驗證哪些項目。"
+    ]
+  },
+  "dba-backup-recovery": {
+    "teachingSteps": [
+      "先理解備份不是目的，能還原才是目的。",
+      "分清楚 Full、Incremental、Differential、Archive Log 與 Transaction Log。",
+      "用 RPO 決定備份頻率，用 RTO 決定還原流程與設備資源。",
+      "定期做還原演練，並記錄實際耗時與缺失。",
+      "備份檔要考慮加密、保留週期、異地保存與稽核紀錄。"
+    ],
+    "example": "RPO/RTO 範例：\nRPO = 15 分鐘：最多只能遺失 15 分鐘資料\nRTO = 2 小時：系統必須在 2 小時內恢復服務\n\n策略可能需要：每日 Full Backup + Archive Log + 定期還原演練。",
+    "practiceTasks": [
+      "替一個訂單系統設計備份策略。",
+      "寫出還原演練步驟。",
+      "定義 RPO/RTO 並說明原因。",
+      "設計備份成功檢查紀錄欄位。"
+    ],
+    "beginnerChecklist": [
+      "我知道備份需要做還原演練。",
+      "我能說明 Full、Incremental、Differential 差異。",
+      "我知道 RPO 和 RTO 的意思。",
+      "我知道備份檔也需要保護。"
+    ]
+  },
+  "dba-monitoring-baseline": {
+    "teachingSteps": [
+      "先建立資料庫健康檢查項目：服務、連線、Session、Lock、CPU、Memory、Disk、Tablespace、Log。",
+      "把監控分成可用性、容量、效能、安全與備份狀態。",
+      "先建立正常基準，才知道什麼是異常。",
+      "告警發生時要看時間點，連回近期部署、批次作業或資料成長。",
+      "把每次異常整理成排查紀錄，累積成維運知識庫。"
+    ],
+    "example": "每日 DBA 檢查：\n- DB service running\n- Backup last status success\n- Tablespace usage < 80%\n- Archive/transaction log space ok\n- Top sessions and locks normal\n- Error log no critical errors",
+    "practiceTasks": [
+      "建立一份資料庫每日健康檢查表。",
+      "模擬 Tablespace 滿的告警，寫出處理步驟。",
+      "模擬備份失敗，列出通知與補救流程。",
+      "整理常見 DB error log 欄位。"
+    ],
+    "beginnerChecklist": [
+      "我知道資料庫監控不只看 CPU。",
+      "我知道 Tablespace 和 Log 空間很重要。",
+      "我知道備份狀態也要監控。",
+      "我能把告警連回可能原因。"
+    ]
+  },
+  "dba-tuning-plan": {
+    "teachingSteps": [
+      "先收集慢查詢 SQL、執行時間、資料量、執行頻率與影響範圍。",
+      "查看 Execution Plan，判斷是否 Full Table Scan、Index Scan、Nested Loop 或 Hash Join。",
+      "檢查 WHERE、JOIN、ORDER BY 欄位是否有合適 Index。",
+      "確認統計資訊是否過舊，資料分布是否和預期不同。",
+      "調整 SQL 或 Index 後要比較改善前後時間，不只憑感覺。"
+    ],
+    "example": "慢查詢排查摘要：\n1. 查 SQL 執行時間與資料筆數\n2. 看 Execution Plan 是否全表掃描\n3. 檢查 JOIN 條件是否命中 Index\n4. 更新 Statistics\n5. 比較改善前後耗時",
+    "practiceTasks": [
+      "準備一個沒有 Index 的查詢，觀察 Execution Plan。",
+      "新增 Index 後再次比較計畫與耗時。",
+      "找出一個 JOIN 條件錯誤造成資料膨脹的例子。",
+      "寫一份 SQL tuning 報告。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Execution Plan 是資料庫的執行路徑。",
+      "我知道慢查詢不一定只靠加 Index 解決。",
+      "我知道統計資訊會影響最佳化器判斷。",
+      "我能比較調整前後效能。"
+    ]
+  },
+  "dba-db2-foundation": {
+    "teachingSteps": [
+      "先建立 DB2 名詞地圖：Instance、Database、Schema、Tablespace、Bufferpool。",
+      "理解 DB2 備份、還原、Archive Log 與 HADR 的基本角色。",
+      "學會檢查 DB2 服務狀態、資料庫連線與 Tablespace 使用量。",
+      "排查時先看 db2diag.log 或相關錯誤訊息，再對照近期變更。",
+      "Patch/Fix Pack 前要先確認版本、相依性、備份與回復計畫。"
+    ],
+    "example": "DB2 維運檢查概念：\n- Instance 是否啟動\n- Database 是否可連線\n- Tablespace 使用率\n- Archive Log 空間\n- Backup 狀態\n- HADR 角色與同步狀態",
+    "practiceTasks": [
+      "整理 DB2 常見物件名詞表。",
+      "建立 DB2 每日檢查清單。",
+      "寫出 Archive Log 滿的排查流程。",
+      "規劃一次 Fix Pack 更新前檢查。"
+    ],
+    "beginnerChecklist": [
+      "我知道 DB2 Instance 和 Database 的差異。",
+      "我知道 Tablespace 和 Bufferpool 的角色。",
+      "我知道 DB2 Backup/Restore 是維運重點。",
+      "我能說明 HADR 的基本用途。"
+    ]
+  },
+  "dba-oracle-foundation": {
+    "teachingSteps": [
+      "先建立 Oracle 名詞地圖：Instance、Database、Schema、Tablespace、Datafile。",
+      "理解 Listener 與 TNS 負責資料庫連線入口。",
+      "學 RMAN、Data Pump、Archive Log Mode 的用途差異。",
+      "排查時先看 Listener 狀態、Alert Log、Tablespace/Datafile 空間。",
+      "理解 Data Guard 和 RAC 是高可用與災難復原相關架構。"
+    ],
+    "example": "Oracle 維運檢查概念：\n- Listener 是否正常\n- TNS 設定是否正確\n- Alert Log 是否有 ORA error\n- Tablespace/Datafile 空間\n- RMAN backup status\n- Archive Log 空間",
+    "practiceTasks": [
+      "整理 Oracle 常見物件名詞表。",
+      "寫出 Listener 無回應的排查流程。",
+      "比較 RMAN 與 Data Pump 用途。",
+      "整理 Data Guard 和 RAC 的基本差異。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Listener 和 TNS 的用途。",
+      "我知道 Alert Log 是重要排查來源。",
+      "我知道 RMAN 用於備份還原。",
+      "我能說明 Data Guard 和 RAC 的基本概念。"
+    ]
+  },
+  "devops-basics-flow": {
+    "teachingSteps": [
+      "先把軟體交付流程拆成：寫程式、審查、建置、測試、封裝、部署、監控、回復。",
+      "理解 DevOps 不是工具名稱，而是讓開發、維運與交付流程更可追蹤。",
+      "把手動部署轉成 Pipeline，讓每次部署都有紀錄與 Artifact。",
+      "每個環境 Dev/UAT/Prod 都要有清楚用途與晉升條件。",
+      "設計 Rollback 時要先知道要回復程式、設定、資料庫還是流量。"
+    ],
+    "example": "交付流程：\nfeature branch -> Merge Request -> Code Review -> CI build/test -> Artifact -> Deploy Dev -> UAT approval -> Deploy Prod -> Monitor -> Rollback if needed",
+    "practiceTasks": [
+      "畫出一個 Web 系統從 commit 到 production 的流程。",
+      "列出哪些步驟適合自動化。",
+      "設計 Dev/UAT/Prod 的部署條件。",
+      "寫出 Rollback 要保留哪些資訊。"
+    ],
+    "beginnerChecklist": [
+      "我知道 CI/CD 的基本目的。",
+      "我知道 Artifact 是可部署產物。",
+      "我知道環境切分的重要性。",
+      "我能說明 Rollback 為什麼要先設計。"
+    ],
+    "handson": "這是觀念章，手把手的重點是「把流程真的畫出來、把答案寫具體」——以下四題全部給範本，照抄後改成你自己的版本。\n\n【練習任務 1 解答】commit 到 production 的完整流程圖\n開發者 commit → push feature branch\n → 開 Merge Request → 同事 Code Review → 核准\n → 合併進 main → 自動觸發 CI Pipeline：build → test → 安全掃描 → 產出 Artifact\n → 自動部署到 Dev → 冒煙測試\n → 手動核准 → 部署 UAT → 業務驗收簽核\n → 手動核准（維護窗口內）→ 部署 Prod → 監控觀察\n → 出問題 → Rollback 到上一版 Artifact / Tag\n每個箭頭都要留下紀錄（誰、何時、結果）——「可追蹤」就是 DevOps 與「手動搬檔案」的本質差別。\n\n【練習任務 2 解答】哪些步驟適合自動化\n適合自動化：建置、測試、掃描、部署到 Dev、產出報告——重複、規則明確、失敗可重來。\n保留人工：合併核准（Code Review）、部署 UAT/Prod 的按鈕（when: manual）、事故時的 Rollback 決策。\n原則一句話：「機器做重複的事，人做需要判斷的事」。\n\n【練習任務 3 解答】三環境的部署條件\nDev：main 有新 commit 就自動部署。目的＝開發者立刻看到整合結果。\nUAT：Dev 驗證通過＋手動觸發。目的＝給業務一個穩定版本驗收，不被開發中的變動干擾。\nProd：UAT 簽核＋維護窗口＋手動觸發。目的＝把「上錯版」的機率壓到最低。\n\n【練習任務 4 解答】Rollback 要預先保留的四樣東西\n1. 上一版的 Artifact 或 Image Tag——沒有舊版就無版可回。\n2. 資料庫變更的 Rollback Script——程式回舊版、資料表卻是新結構，一樣掛。\n3. 環境設定的版本——環境變數與設定檔要跟著版本走。\n4. 部署紀錄——現在跑的是哪一版？沒有這個，連「要回到哪」都不知道。\n面試被問「Rollback 怎麼設計」：答這四樣＋一句「上線前就要演練過回退」，就是完整答案。"
+  },
+  "devops-gitlab-control": {
+    "teachingSteps": [
+      "先理解 GitLab Group、Project、Member、Role 的關係。",
+      "建立分支策略，例如 main 保護正式版本，dev 整合開發，feature 放個別功能。",
+      "啟用 Protected Branch，避免主線被直接 push。",
+      "建立 Merge Request 與 Approval Rule，讓變更進入主線前被審查。",
+      "權限盤點時確認離職、轉組、外包與 Token 使用狀態。"
+    ],
+    "example": "分支策略：\nmain：正式穩定版本，只允許 MR merge\ndev：整合測試分支\nfeature/*：功能開發分支\nhotfix/*：正式問題修補分支\n\nmain 必須 Protected，且至少 1 人 approve。",
+    "practiceTasks": [
+      "設計一份 GitLab 分支策略。",
+      "寫出 Protected Branch 規則。",
+      "設計 Merge Request 審核流程。",
+      "建立一份 GitLab 權限盤點清單。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Group 和 Project 的差異。",
+      "我知道 Protected Branch 的用途。",
+      "我知道 Merge Request 可留下審查紀錄。",
+      "我能說明 Approval Rule 的價值。"
+    ],
+    "handson": "全部用 gitlab.com 免費版＋你在環境準備課建立的 demo 專案。\n\n【第 1 步】把 Protected Branch 調嚴，親眼看被拒絕\nGitLab 專案 → Settings → Repository → Protected branches：\nmain 預設已受保護；把「Allowed to push and merge」改成 No one → 現在連你自己都不能直接 push main。\n本機驗證：\n> git checkout main\n> echo test >> README.md\n> git add . && git commit -m \"direct push test\"\n> git push\n→ 被拒絕：\nremote: GitLab: You are not allowed to push code to protected branches on this project\n這行錯誤訊息就是企業「主線不能直接改」的技術實作——親眼看過一次就永遠記得。\n\n【第 2 步】走正規流程：Merge Request\n> git checkout -b feature/readme-update\n> git push -u origin feature/readme-update\npush 完 GitLab 會給你一個 Create merge request 連結 → 填標題與說明（改了什麼、為什麼）→ Create。\nMR 頁面看三個重點：\n- Changes 頁籤：逐行差異，Code Review 就是在這裡看、在行上留言\n- 討論串：所有意見與回覆都留紀錄\n- Merge 按鈕：核准後按下，main 才更新\n自己按 Merge 完成流程——整個過程（誰開的、誰看過、何時合併）都被記錄，這就是稽核要的證據鏈。\n\n【第 3 步】Approval Rule（誠實說明版）\nSettings → Merge requests → Merge request approvals。\n注意：「強制至少 N 人核准」的 Approval Rule 是 GitLab 付費版功能；免費版可以在 MR 上按 Approve 但不強制。\n面試這樣講就正確：「企業版用 Approval Rule 強制至少一位資深人員核准，搭配 Protected Branch，讓主線的每次變更都有審核紀錄。」\n\n【練習任務 1 解答】分支策略範本\nmain：正式版本，Protected、只准 MR 合併\nfeature/<功能名>：日常開發，從 main 分出、做完開 MR\nhotfix/<問題名>：緊急修補，同樣走 MR 但加速審核\n（小團隊不需要更複雜的模型，分支越多維護成本越高。）\n\n【練習任務 4 解答】GitLab 權限盤點清單欄位\n成員帳號｜角色（Owner/Maintainer/Developer/Reporter）｜最後活動時間｜是否離職或轉組待移除｜\nAccess Token 清單（用途、到期日）｜Deploy Key 清單。\n盤點頻率至少每季；離職帳號與沒有到期日的 Token，是稽核最常抓的兩個洞。"
+  },
+  "devops-gitlab-ops": {
+    "teachingSteps": [
+      "先理解 Runner 是執行 Pipeline Job 的工作節點。",
+      "學 CI/CD Variables 與 Token 的風險，Secret 不應寫在程式碼或 Log。",
+      "定期檢查 Runner 狀態、Job 排隊、Artifact 空間與 Cache 成長。",
+      "GitLab Backup 要包含 repository、database、uploads、registry 等重要資料。",
+      "Upgrade 前要讀版本升級路徑、備份、測試與回復計畫。"
+    ],
+    "example": "Runner 掛掉排查：\n1. GitLab UI 看 Runner online/offline\n2. 查 Runner service status\n3. 看 runner log\n4. 確認 tag 是否匹配 job\n5. 確認網路、token、executor 狀態",
+    "practiceTasks": [
+      "列出 Runner 掛掉的排查步驟。",
+      "設計 Token 撤銷與更新流程。",
+      "規劃 Artifact 保留週期。",
+      "寫一份 GitLab Upgrade 前檢查清單。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Runner 負責執行 Job。",
+      "我知道 Variables 和 Token 要保護。",
+      "我知道 Artifact 會佔空間。",
+      "我知道 GitLab 升級前必須備份。"
+    ],
+    "handson": "【第 1 步】在自己電腦註冊一個 Runner（親手體驗「Job 在哪裡跑」）\n1. 到 GitLab 官方文件搜「install gitlab runner windows」，下載 gitlab-runner.exe 放到 C:\\GitLab-Runner\\。\n2. GitLab 專案 → Settings → CI/CD → Runners → New project runner → Tags 填 mypc → Create runner，複製畫面上的 token。\n3. 用系統管理員 PowerShell：\n> cd C:\\GitLab-Runner\n> .\\gitlab-runner.exe register\n  依提示輸入：URL（https://gitlab.com）、剛剛的 token、executor 選 shell\n> .\\gitlab-runner.exe install\n> .\\gitlab-runner.exe start\n4. 回 GitLab 的 Runners 頁面看到綠燈 = 你的電腦已是一台 Runner。\n\n【第 2 步】指定 Job 給自己的 Runner\n.gitlab-ci.yml 加一個 Job：\nmyjob:\n  tags: [mypc]     ← 只有帶這個 tag 的 Runner 會接這個 Job\n  script:\n    - hostname     ← 輸出會是你電腦的名字！\n推上去看 Job Log：親眼確認「這個 Job 是在我的電腦上跑的」。\n再做壞實驗：把 tags 改成 [notexist] 推上去 → Job 卡在 pending，頁面顯示 This job is stuck...\n→ 這就是企業 Pipeline 卡住的第一大原因：tag 對不上或 Runner 離線（練習任務 1 的答案，你親手重現了）。\n\n【練習任務 2 解答】Token 撤銷與更新流程\n到期輪替（服務不中斷）：先建新 Token → 更新使用端 → 驗證正常 → 撤銷（Revoke）舊的 → 記錄。\n外洩處置（順序反過來）：立刻撤銷 → 再補新的——服務短暫中斷可以接受，金鑰繼續外流不能接受。\n原則：每個 Token 都要有到期日與用途註記；沒有到期日的 Token 就是未爆彈。\n\n【練習任務 3 解答】Artifact 保留策略\n每個 Job 的 artifacts 區塊加上：\n  artifacts:\n    expire_in: 1 week      ← 建置產物短期保留\n掃描報告類設 30 天以上供稽核。用量查看：Settings → CI/CD → 或 Usage Quotas。\n原則：可重建的東西（建置產物）短期，不可重建的證據（掃描報告、上版紀錄）長期。\n\n【練習任務 4 解答】GitLab Upgrade 前檢查清單\n1. 讀官方 Upgrade Path——不能跨大版本直升，要照路徑一步步升\n2. 完整備份：gitlab-backup create（含 repo、DB、uploads），另外手動備 gitlab.rb 與 gitlab-secrets.json（備份指令不含它們，漏了會災難）\n3. 在測試機演練同路徑升級\n4. 排維護窗口＋對使用者公告\n5. 升級後驗證：登入、clone/push、跑一輪 Pipeline、Registry 拉一次 image\n6. 回復計畫先寫好放旁邊：還原備份的完整步驟"
+  },
+  "devops-cicd-pipeline": {
+    "teachingSteps": [
+      "先理解 Pipeline 由 Stage 組成，Stage 裡有多個 Job。",
+      "Job 由 Runner 執行，Runner tag 必須和 Job 設定匹配。",
+      "Artifact 保存建置結果或掃描報告，Cache 用來加速依賴下載。",
+      "把流程拆成 restore、build、test、scan、package、deploy。",
+      "Pipeline 失敗時先看 Job Log，再看環境變數、依賴、路徑、權限與網路。"
+    ],
+    "example": "stages:\n  - build\n  - test\n\nbuild_app:\n  stage: build\n  script:\n    - npm ci\n    - npm run build\n  artifacts:\n    paths:\n      - dist/\n\ntest_app:\n  stage: test\n  script:\n    - npm test",
+    "practiceTasks": [
+      "寫一個含 build/test 兩階段的 .gitlab-ci.yml。",
+      "讓 build job 保存 artifact。",
+      "故意讓 test job 失敗，練習讀 Job Log。",
+      "加入一個 manual deploy job。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Stage 和 Job 的差異。",
+      "我知道 Runner tag 會影響 Job 是否能跑。",
+      "我知道 Artifact 和 Cache 的用途不同。",
+      "我能從 Job Log 找出基本錯誤。"
+    ],
+    "handson": "【把課文範例逐行讀懂】\nstages:            ← 宣告階段與順序：先 build 後 test\n  - build\n  - test\n\nbuild_app:         ← Job 名稱（自己取）\n  stage: build     ← 這個 Job 屬於 build 階段\n  script:          ← Runner 會逐行執行的指令\n    - npm ci       ← 依 lock 檔安裝依賴（比 npm install 可重現）\n    - npm run build\n  artifacts:       ← Job 結束後要保存的檔案\n    paths:\n      - dist/      ← 建置產物；後續階段拿得到、網頁上也能下載\n\ntest_app:\n  stage: test      ← build 階段全綠之後才會執行\n  script:\n    - npm test\n\n【沒有 Node 專案也能練的極簡版（照抄可用）】\nstages: [build, test]\n\nbuild_app:\n  stage: build\n  script:\n    - echo \"building...\"\n    - mkdir -p dist\n    - echo \"fake output\" > dist/app.txt\n  artifacts:\n    paths: [dist/]\n\ntest_app:\n  stage: test\n  script:\n    - test -f dist/app.txt && echo \"artifact exists\"\n\n【練習任務解答】\n1. 推上去後到 Build → Pipelines：兩個 Job 依序變綠。\n2. 點進 build_app Job 頁面，右側 Browse 可以瀏覽下載 dist/app.txt——這就是 Artifact。\n3. 故意弄壞：把 test_app 的 script 改成 - exit 1，推上去 → Pipeline 變紅。點進紅色 Job 看 Log，從最下面往上找第一個錯誤訊息——「由下往上找第一個 ERROR」是讀 Job Log 的基本功。\n4. 加手動部署 Job（貼在檔案最後）：\ndeploy_demo:\n  stage: test\n  script:\n    - echo \"deploying\"\n  when: manual     ← Pipeline 頁面會出現播放鍵，按了才跑\n正式環境的部署都用 when: manual 控管：自動化到門口，最後一步由人按。"
+  },
+  "devops-security-scans": {
+    "teachingSteps": [
+      "先區分 SAST、SCA、DAST、Secret Detection：掃的對象完全不同。",
+      "把安全掃描放進 Pipeline，讓每次合併或部署都有檢查紀錄。",
+      "掃描結果要分級處理，不能只看有沒有失敗。",
+      "建立 False Positive 與例外申請流程，並設定到期日。",
+      "中高風險是否阻擋部署，要依企業風險政策設計安全閘門。"
+    ],
+    "example": "掃描類型：\nSAST：看原始碼弱點\nSCA：看第三方套件/CVE/License\nDAST：掃部署後網站\nSecret Detection：找 API Key、密碼、憑證外洩\n\n安全閘門：High/Critical 阻擋部署。",
+    "practiceTasks": [
+      "替一個 Pipeline 設計安全掃描階段。",
+      "列出掃描報告要保存哪些資訊。",
+      "設計 False Positive 處理流程。",
+      "定義哪些風險等級要阻擋部署。"
+    ],
+    "beginnerChecklist": [
+      "我能說明 SAST、SCA、DAST 差異。",
+      "我知道 Secret Detection 的目的。",
+      "我知道掃描報告要保存供稽核。",
+      "我能說明安全閘門。"
+    ]
+  },
+  "devops-sonar-quality": {
+    "teachingSteps": [
+      "先理解 SonarQube 是程式碼品質與部分安全問題的集中檢查平台。",
+      "Project Key 要穩定，Pipeline 才能把結果送到同一個專案。",
+      "Quality Gate 是門檻，例如新程式碼不能有 Critical issue、Coverage 要達標。",
+      "掃描結果分成 Bugs、Vulnerabilities、Code Smells、Coverage、Duplications。",
+      "Pipeline 要等待 Quality Gate 結果，失敗時中止後續部署。"
+    ],
+    "example": "sonar-scanner 觀念參數：\nsonar.projectKey=my-app\nsonar.sources=src\nsonar.host.url=https://sonar.company.local\nsonar.token=$SONAR_TOKEN\n\nQuality Gate failed -> 不進入 deploy stage。",
+    "practiceTasks": [
+      "設計一個 SonarQube Project Key 命名規則。",
+      "列出 Quality Gate 應包含的條件。",
+      "模擬 Coverage 未達標時的處理流程。",
+      "整理 SonarQube issue 分類表。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Project Key 的用途。",
+      "我知道 Quality Gate 會影響部署決策。",
+      "我能區分 Bugs、Vulnerabilities、Code Smells。",
+      "我知道 Coverage 需要測試報告支援。"
+    ]
+  },
+  "devops-zap-dast": {
+    "teachingSteps": [
+      "先理解 ZAP 是 DAST 工具，掃描的是已部署的網站或 API。",
+      "Baseline Scan 偏被動掃描，適合 CI/CD 初期導入。",
+      "掃描前要確認測試站已部署完成，並且 URL 可從 Runner 連到。",
+      "掃描報告要保存成 HTML Artifact，方便開發與資安檢視。",
+      "中高風險要建立處理流程，包含修補、例外、重掃與關閉。"
+    ],
+    "example": "ZAP Baseline 概念：\ndocker run -v $(pwd):/zap/wrk ghcr.io/zaproxy/zaproxy:stable \\\n  zap-baseline.py \\\n  -t https://test.company.local \\\n  -r zap-report.html\n\n注意：舊教學常見的 owasp/zap2docker-stable 映像已棄用，現行映像為 ghcr.io/zaproxy/zaproxy。產出 zap-report.html 後保存為 artifact。",
+    "practiceTasks": [
+      "規劃 ZAP scan 在 deploy_dev 後執行。",
+      "列出測試站需要準備的條件。",
+      "整理 ZAP report 風險分級處理方式。",
+      "設計掃描失敗是否阻擋部署的規則。"
+    ],
+    "beginnerChecklist": [
+      "我知道 ZAP 是 DAST 工具。",
+      "我知道 DAST 需要有可連線的測試站。",
+      "我知道 HTML Report 要保存。",
+      "我能說明 ZAP 和 OWASP Top 10 的關係。"
+    ]
+  },
+  "devops-dotnet-pipeline": {
+    "teachingSteps": [
+      "先分清楚 ASP.NET Framework 常用 MSBuild，現代 .NET 常用 dotnet CLI。",
+      "Pipeline 基本流程是 restore、build、test、publish、package、deploy。",
+      "NuGet Restore 可能受 Proxy、私有套件源與憑證影響。",
+      "弱點檢查可用 NuGet Audit 或 OWASP Dependency-Check。",
+      "部署到 IIS、Linux 或 Container 前，要確認設定檔與環境變數來源。"
+    ],
+    "example": "現代 .NET Pipeline 指令：\ndotnet restore\ndotnet build --configuration Release --no-restore\ndotnet test --configuration Release --no-build\ndotnet publish --configuration Release --output publish\n\nASP.NET Framework 常見：nuget restore + msbuild + web deploy。",
+    "practiceTasks": [
+      "寫一份 .NET restore/build/test/publish 流程。",
+      "列出 ASP.NET Framework 和 .NET 10 Pipeline 差異。",
+      "加入 NuGet Audit 報告保存。",
+      "設計 IIS 部署後的 ZAP 掃描流程。"
+    ],
+    "beginnerChecklist": [
+      "我知道 MSBuild 和 dotnet CLI 的差異。",
+      "我知道 NuGet Restore 常受 Proxy 影響。",
+      "我知道 publish 產物要保存為 Artifact。",
+      "我能說明 NuGet 弱點檢查。"
+    ],
+    "handson": "【先給白話版名詞，再上完整檔案】\n- restore：把專案宣告要用的第三方套件（NuGet 套件）下載回來——像手機 App 商店按「全部更新」。\n- build：把 C# 原始碼編譯成可執行的 DLL；編不過代表程式有錯，Pipeline 就該紅。\n- test：執行測試專案裡的自動化測試。\n- publish：把程式加上執行所需的全部檔案，打包成一個可部署的資料夾——放上 IIS 或容器跑的就是它。\n- NuGet Audit：比對你用的套件版本與已知弱點資料庫（CVE），有洞就列出來。\n\n【一份可直接使用的 .gitlab-ci.yml（逐段解釋）】\nimage: mcr.microsoft.com/dotnet/sdk:8.0\n↑ 所有 Job 預設跑在這個容器：微軟官方 SDK 映像，dotnet 指令已裝好\n\nstages:\n  - build\n  - test\n  - audit\n  - publish\n\nrestore_build:\n  stage: build\n  script:\n    - dotnet restore\n      # ↑ 步驟 1 restore：依 .csproj 下載 NuGet 套件\n    - dotnet build --configuration Release --no-restore\n      # ↑ 步驟 2 build：編譯 Release 版；--no-restore = 上一行已還原過，不重做\n\nrun_tests:\n  stage: test\n  script:\n    - dotnet test --configuration Release\n      # ↑ 步驟 3 test：自動找測試專案執行；還沒寫測試會顯示 0 個測試、一樣算過\n\nnuget_audit:\n  stage: audit\n  script:\n    - dotnet list package --vulnerable --include-transitive | tee nuget-audit.txt\n      # ↑ 步驟 5 弱點檢查：列出有已知弱點的套件（含間接依賴），tee 同時存成檔案\n    - if grep -qi \"critical\\|high\" nuget-audit.txt; then echo \"發現中高風險弱點\"; exit 1; fi\n      # ↑ 有 High/Critical 就讓 Job 失敗 → 最簡單的「安全閘門」\n  artifacts:\n    when: always\n      # ↑ 步驟 6：不論成功失敗都保存報告，稽核才有證據\n    paths:\n      - nuget-audit.txt\n\npublish_app:\n  stage: publish\n  script:\n    - dotnet publish --configuration Release --output publish\n      # ↑ 步驟 4 publish：產出可部署資料夾\n  artifacts:\n    paths:\n      - publish/\n\n【沒有現成專案？先做一個最小的】\n> dotnet new webapi -n DemoApi   ← 產生範例 Web API 專案（需先裝 .NET SDK）\n> cd DemoApi\n> dotnet run                     ← 本機跑起來，瀏覽器開 http://localhost:5000 附近的網址\n之後 git init、推上 GitLab，配上面的 YAML 就能完整跑通。\n\n【ASP.NET Framework 舊專案差異】\n改用 nuget restore + MSBuild 指令，且 Runner 必須是裝了 Visual Studio Build Tools 的 Windows 機器——這是新舊 .NET Pipeline 最大的差別，面試常問。"
+  },
+  "devops-python-pipeline": {
+    "teachingSteps": [
+      "先建立 Python Pipeline 基本階段：install、lint、test、dependency_scan、sast、build_image。",
+      "依專案選 requirements.txt 或 pyproject.toml 管理依賴。",
+      "用 pytest 驗證功能，用 ruff/flake8 檢查風格，用 black 控制格式。",
+      "用 pip-audit 或 Safety 檢查套件弱點，用 Bandit 檢查常見安全風險。",
+      "如果是 Web App，部署到測試站後再接 ZAP 掃描。"
+    ],
+    "example": "Python Pipeline 指令：\npython -m venv .venv\npip install -r requirements.txt\nruff check .\npytest\npip-audit\nbandit -r app\n\ndocker build -t registry.company.local/my-api:$CI_COMMIT_SHA .",
+    "practiceTasks": [
+      "建立一份 Python Pipeline 階段設計。",
+      "加入 pytest 與 ruff。",
+      "加入 pip-audit 與 Bandit 並保存報告。",
+      "設計 Docker build 與 image scan 階段。"
+    ],
+    "beginnerChecklist": [
+      "我知道 requirements.txt 和 pyproject.toml 的用途。",
+      "我知道 pytest、ruff、black、mypy 各自做什麼。",
+      "我知道 pip-audit 和 Bandit 的差異。",
+      "我能設計 Python Web App 的基本 Pipeline。"
+    ],
+    "handson": "【一份可直接使用的 Python .gitlab-ci.yml（逐段解釋）】\nimage: python:3.12\n↑ Job 跑在官方 Python 容器裡，pip 已就緒\n\nstages: [test, security]\n\nlint_and_test:\n  stage: test\n  script:\n    - pip install -r requirements.txt   # 安裝專案依賴\n    - pip install ruff pytest           # 安裝檢查與測試工具\n    - ruff check .                      # Lint：抓未使用變數、風格與常見錯誤\n    - pytest || [ $? -eq 5 ]            # 跑測試；exit code 5 = 沒有測試檔，先放行\n\nsecurity_scan:\n  stage: security\n  script:\n    - pip install pip-audit bandit\n    - pip-audit -r requirements.txt -o pip-audit.txt || true\n      # 查「你用的套件」有沒有已知弱點（CVE）；|| true = 先不擋流程，報告照存\n    - bandit -r . -f txt -o bandit.txt || true\n      # 查「你自己寫的碼」有沒有危險寫法（硬編碼密碼、eval 等）\n  artifacts:\n    when: always\n    paths: [pip-audit.txt, bandit.txt]\n\n等你熟了，把 || true 拿掉、改成依風險等級 exit 1，就從「只報告」升級成「安全閘門」。\n\n【沒有現成專案？三個檔案就能開始】\nrequirements.txt（一行）：\nflask\n\napp.py：\nfrom flask import Flask\napp = Flask(__name__)\n@app.route(\"/\")\ndef home():\n    return \"ok\"\n\nDockerfile（之後 Docker 課會用到）：\nFROM python:3.12-slim\nWORKDIR /app\nCOPY requirements.txt .\nRUN pip install -r requirements.txt\nCOPY . .\nCMD [\"flask\", \"run\", \"--host=0.0.0.0\"]\n\n【名詞白話】\n- venv / requirements.txt：「這個專案要哪些套件、什麼版本」的清單；CI 每次從乾淨環境重裝，保證每個人跑起來一樣。\n- ruff：超快的 Lint 工具（新一代 flake8）；black 管排版、mypy 檢查型別，團隊需要再加。\n- pip-audit vs Bandit：前者掃「別人的套件」（SCA）、後者掃「你的程式碼」（SAST）——一個對外一個對內，面試愛考這個對比。"
+  },
+  "devops-docker-foundation": {
+    "teachingSteps": [
+      "先理解 Image 是樣板，Container 是執行中的實例。",
+      "Dockerfile 描述如何建置 Image，應避免把密碼或金鑰寫進 Image。",
+      "Multi-stage Build 可以把建置環境和執行環境分開，降低 Image 大小與風險。",
+      "Image Tag 要能追溯版本，例如 commit SHA、build number、release tag。",
+      "推送 Registry 後要做 Image Scan，部署失敗時用舊 Tag Rollback。"
+    ],
+    "example": "Dockerfile 概念：\nFROM node:24-alpine AS build\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci\nCOPY . .\nRUN npm run build\n\nFROM nginx:alpine\nCOPY --from=build /app/dist /usr/share/nginx/html",
+    "practiceTasks": [
+      "寫一份 Multi-stage Dockerfile。",
+      "設計 Image Tag 命名規則。",
+      "推送 Image 到 Registry 的流程。",
+      "設計 Image Scan 與 Rollback 策略。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Image 和 Container 的差異。",
+      "我知道 Dockerfile 不能放 Secret。",
+      "我知道 Multi-stage Build 的好處。",
+      "我能用 Image Tag 做版本追蹤。"
+    ]
+  },
+  "devops-ai-platform": {
+    "teachingSteps": [
+      "先把企業 AI 平台拆成入口、模型服務、權限、知識庫、稽核、監控與備份。",
+      "Open WebUI 可作為使用者入口，Ollama 或 OpenAI-compatible API 可作為模型服務。",
+      "企業導入要先處理 SSO/AD/LDAP、RBAC、模型權限與知識庫權限。",
+      "RAG 需要文件、切分、Embedding、Vector Database 與檢索策略。",
+      "正式維運要管理 Chat Log、敏感資料、API Key、Reverse Proxy、HTTPS、監控與備份。"
+    ],
+    "example": "AI 平台架構：\nUser -> Reverse Proxy/HTTPS -> Open WebUI -> Model API\n                                  -> RAG Knowledge Base -> Vector DB\n\n治理重點：RBAC、資料權限、Chat Log、API Key、備份、監控。",
+    "practiceTasks": [
+      "畫出 Open WebUI + Model API + RAG 的架構圖。",
+      "設計使用者角色與模型權限。",
+      "規劃一個內部知識庫匯入流程。",
+      "寫一份 AI 平台維運檢查清單。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Open WebUI 是使用者入口。",
+      "我知道 RAG 是用文件檢索輔助模型回答。",
+      "我知道企業 AI 平台需要 RBAC 與稽核。",
+      "我能說明 Reverse Proxy、HTTPS、監控與備份的重要性。"
+    ]
+  },
+  "net-lab-setup-env": {
+    "teachingSteps": [
+      "安裝 Cisco Packet Tracer（Networking Academy 免費註冊即可下載），先完成兩台 PC 接一台 Switch、互相 ping 通的最小拓樸。",
+      "練習基本設備操作：進入 Switch CLI、使用 show 指令、設定 hostname 與 VLAN。",
+      "安裝 VirtualBox 或啟用 Hyper-V，建立一台 Windows 測試機與一台 Linux 測試機。",
+      "理解虛擬機三種網路模式：NAT（可上網、外部進不來）、Bridged（與實體網路同網段）、Host-only（只和本機互通）。",
+      "需要跑真實設備映像（防火牆、路由器 OS）時再進階到 GNS3 或 EVE-NG，不必一開始就用。",
+      "為每個完成的拓樸存檔命名，累積自己的實驗環境庫。"
+    ],
+    "example": "最小實驗拓樸：\nPC1 (192.168.1.10/24) --- Switch --- PC2 (192.168.1.20/24)\n\n驗證：PC1> ping 192.168.1.20\n\n下一步擴充：加入 Router，切出 192.168.2.0/24，練習跨網段 ping 與 Gateway 設定。",
+    "practiceTasks": [
+      "在 Packet Tracer 完成兩台 PC 同網段互 ping。",
+      "加入 Router 完成跨網段互 ping。",
+      "建立一台 Linux 虛擬機並確認可以上網。",
+      "切換虛擬機 NAT 與 Bridged 模式，記錄 IP 與連通性的變化。"
+    ],
+    "beginnerChecklist": [
+      "我能自己建立並驗證一個最小網路拓樸。",
+      "我知道 NAT、Bridged、Host-only 網卡模式的差異。",
+      "我有一台可隨時使用的 Linux 測試機。",
+      "我知道之後每個課程練習要在哪個環境做。"
+    ],
+    "handson": "【路線 A：Packet Tracer（最快起步，練 VLAN/Routing 用）】\n1. 到 netacad.com 註冊免費帳號，選「Getting Started with Cisco Packet Tracer」課程即可取得下載連結。\n2. 安裝後開新檔案：左下設備區 → End Devices 拖出 2 台 PC；Network Devices → Switches 拖出 1 台 2960。\n3. 選左下角閃電圖示裡的 Copper Straight-Through 線，把兩台 PC 分別接到 Switch 的 FastEthernet 孔（等接口燈變綠）。\n4. 點 PC0 → Desktop 頁籤 → IP Configuration → 填 192.168.1.10、遮罩 255.255.255.0；PC1 填 192.168.1.20、同遮罩。\n5. 點 PC0 → Desktop → Command Prompt → ping 192.168.1.20。\n   第一次可能掉 1 包（ARP 正在學習），之後全部回覆就成功了——你完成了人生第一個網路拓樸。\n\n【路線 B：VirtualBox 虛擬機（練 Linux/服務用）】\n1. 到 virtualbox.org 下載安裝；到 ubuntu.com 下載 Desktop ISO 檔。\n2. VirtualBox → 新增 → 選剛下載的 ISO → 記憶體給 4096 MB → 一路完成安裝（過程約 15 分鐘）。\n3. 關鍵設定在「設定 → 網路」：\n   - NAT（預設）：虛擬機可以上網，但外面連不進來。\n   - 橋接介面卡：虛擬機直接向你家路由器拿 IP，變成網路上一台獨立電腦。\n4. 開機後打開 Terminal 輸入 ip addr，分別在兩種模式下看拿到的 IP——這個差異就是練習任務要你觀察的答案（NAT 模式是 10.0.2.x 的內部 IP，橋接模式是和你電腦同網段的 IP）。\n\n【常見卡點】\n- VirtualBox 開不了虛擬機：BIOS 沒開虛擬化（VT-x/AMD-V），或與 Hyper-V 衝突。\n- Packet Tracer ping 不通：檢查兩台 PC 遮罩是否相同、線是否接錯孔（燈要綠）。"
+  },
+  "net-lab-setup-tools": {
+    "teachingSteps": [
+      "每學一個指令就實際執行一次，把輸出貼進自己的筆記，不要只背名字。",
+      "第一組（看自己）：ipconfig /all 或 ip addr，確認本機 IP、Gateway、DNS。",
+      "第二組（測連通）：ping 測可達性、tracert / traceroute 看每一跳路徑。",
+      "第三組（測服務）：Test-NetConnection <主機> -Port <埠> 或 telnet，確認 TCP Port 是否有回應。",
+      "第四組（看狀態）：netstat -ano 或 ss -tlnp 看監聽與連線、arp -a 看 IP 與 MAC 對應、nslookup 查 DNS。",
+      "把十個指令整理成一頁排查小抄，依 OSI 由下往上排列。"
+    ],
+    "example": "排查小抄（由下往上）：\nL1/L2：網卡狀態、arp -a\nL3：ipconfig /all、ping <gateway>、tracert <target>\nL4：Test-NetConnection <target> -Port 443、netstat -ano\nL7：nslookup <name>、瀏覽器錯誤訊息\n\n範例：\nTest-NetConnection intranet.company.local -Port 443\nTcpTestSucceeded : True 代表 TCP 交握成功。",
+    "practiceTasks": [
+      "對同一個網站依序執行 nslookup、ping、tracert、Test-NetConnection 443，記錄每一步結果。",
+      "用 netstat 找出本機正在監聽的 Port，說出各自對應的程式。",
+      "用 arp -a 找出 Gateway 的 MAC。",
+      "完成一頁屬於自己的排查小抄。"
+    ],
+    "beginnerChecklist": [
+      "我能不查資料打出十個常用排查指令。",
+      "我知道每個指令對應 OSI 的哪一層。",
+      "我能讀懂 Test-NetConnection 的輸出。",
+      "我有一份自己整理的排查小抄。"
+    ],
+    "handson": "十個指令逐一實測（Windows PowerShell，每個都真的打一次）：\n\n1) ipconfig /all\n→ 找出四個值：IP、遮罩、預設閘道、DNS。這是所有排查的起點。\n\n2) ping <你的閘道 IP>\n→ 測內網。通 = 到路由器沒問題。\n\n3) ping 8.8.8.8\n→ 測外網。閘道通、這個不通 = 對外線路有問題。\n\n4) tracert 8.8.8.8\n→ 看封包經過哪幾跳。第一跳一定是你的閘道；斷在第幾跳，問題就在那一段。\n\n5) nslookup www.google.com\n→ 測名稱解析。ping IP 通但 nslookup 失敗 = DNS 壞了。\n\n6) Test-NetConnection www.google.com -Port 443\n→ 測 TCP Port。TcpTestSucceeded : True = 服務端口有回應。\n\n7) netstat -ano | findstr LISTENING\n→ 本機開了哪些門（監聽中的 Port）。最後一欄是 PID。\n\n8) netstat -ano | findstr ESTABLISHED\n→ 本機現在連著誰。排查「哪個程式在連外」時用。\n\n9) arp -a\n→ 同網段 IP 對 MAC 的對照表。找得到你的閘道那筆，代表二層正常。\n\n10) route print\n→ 本機路由表。最上面 0.0.0.0 那行的閘道就是 default route。\n\n【小抄範本（練習任務 4 的解答）】\n「先 ipconfig 看自己 → ping 閘道看內網 → ping 8.8.8.8 看外網 → nslookup 看 DNS → Test-NetConnection 看服務」\n把這句背起來，第一線九成的連線排查都是這個順序。"
+  },
+  "net-tcp-udp": {
+    "teachingSteps": [
+      "先記住連線建立的三步：Client 送 SYN、Server 回 SYN-ACK、Client 回 ACK，之後才開始傳資料。",
+      "理解「Port 通」的真正意思：三向交握完成，代表網路路徑與服務監聽正常，不代表應用程式邏輯正常。",
+      "比較 TCP 與 UDP：TCP 可靠、有順序、要交握；UDP 無連線、低延遲，DNS 查詢與影音串流常用。",
+      "背常見 Port 對照表，並理解防火牆規則的 Service 欄位指定的就是這些 Port。",
+      "用 netstat / ss 觀察 LISTENING、ESTABLISHED、TIME_WAIT，理解 TIME_WAIT 是正常收尾不是故障。"
+    ],
+    "example": "三向交握：\nClient  --SYN-->      Server\nClient  <--SYN-ACK--  Server\nClient  --ACK-->      Server（連線建立）\n\n常見 Port：\nHTTP 80 / HTTPS 443 / DNS 53（UDP+TCP）/ SSH 22\nRDP 3389 / SMTP 25 / SQL Server 1433 / Oracle 1521\n\n測試：Test-NetConnection db.company.local -Port 1433",
+    "practiceTasks": [
+      "畫出三向交握流程圖，標出每一步的旗標。",
+      "用 netstat 找出三種連線狀態並解釋各自意義。",
+      "列出十個常見服務與 Port，註明走 TCP 還是 UDP。",
+      "分別對一個開著和一個關著的 Port 執行 Test-NetConnection，比較輸出差異。"
+    ],
+    "beginnerChecklist": [
+      "我能畫出三向交握流程。",
+      "我知道 Port 通與應用程式正常是兩回事。",
+      "我能說出 DNS 查詢為什麼常用 UDP。",
+      "我認得 netstat 常見的連線狀態。"
+    ],
+    "handson": "【第 1 步】親眼看到交握完成後的連線\n先開一個網頁（例如 www.google.com），然後：\n> netstat -ano | findstr :443\n會看到類似：\n  TCP  192.168.1.23:52133  142.250.76.4:443  ESTABLISHED  4321\nESTABLISHED = 三向交握已完成、連線使用中。最後的 4321 是 PID。\n> tasklist | findstr 4321\n→ 查出 PID 是哪個程式（通常是你的瀏覽器）。\n\n【第 2 步】看本機在「聽」哪些 Port\n> netstat -ano | findstr LISTENING\nLISTENING = 這台電腦有服務開著門等人連。「服務有沒有監聽」指的就是這個。\n\n【第 3 步】成功與失敗的 Port 測試對照（練習任務 4 解答）\n> Test-NetConnection www.google.com -Port 443\nTcpTestSucceeded : True   ← SYN 出去、SYN-ACK 回來、ACK 送出，交握完成\n> Test-NetConnection www.google.com -Port 8123\nWARNING: TCP connect to ... failed\nTcpTestSucceeded : False  ← 對方沒開這個 Port（或被防火牆擋）\n注意：兩次的 PingSucceeded 都是 True——這就是「ping 通不等於 Port 通」的鐵證，面試可以直接舉這個實驗。\n\n【練習任務 3 解答】常見 Port 表（背這張就夠面試）\n80 HTTP（網頁，未加密）｜443 HTTPS（網頁，加密）\n53 DNS（查詢走 UDP 為主）｜22 SSH（遠端管理 Linux）\n3389 RDP（Windows 遠端桌面）｜25 SMTP（寄信）\n1433 SQL Server｜1521 Oracle｜5432 PostgreSQL\n\n【補充】TIME_WAIT 是什麼？\n連線正常關閉後的收尾等待狀態。看到一堆 TIME_WAIT 是網站流量的正常代謝，不是故障——面試被問到能答出這點會加分。"
+  },
+  "net-arp-l2": {
+    "teachingSteps": [
+      "理解封包的最後一哩靠 MAC：IP 負責跨網路定址，同網段實際傳送要知道對方的 MAC。",
+      "學 ARP 流程：廣播詢問「誰是 192.168.1.20？」，對方單播回覆自己的 MAC，結果存入 ARP 快取。",
+      "理解跨網段時 ARP 詢問的是 Gateway 的 MAC，不是最終目標主機的。",
+      "用 arp -a 觀察快取內容，理解快取錯誤或過期會造成間歇性不通。",
+      "認識 IP 衝突的典型症狀：時通時不通、ARP 快取裡同一個 IP 對應的 MAC 一直變。"
+    ],
+    "example": "同網段：PC-A (192.168.1.10) 要送 192.168.1.20\n→ ARP 廣播詢問 .20 的 MAC → 直接送往該 MAC\n\n跨網段：PC-A 要送 10.20.5.30\n→ ARP 詢問 Gateway (192.168.1.1) 的 MAC → 交給 Gateway 轉送\n\n排查：arp -a 檢查 192.168.1.1 對應的 MAC 是否為正確設備。",
+    "practiceTasks": [
+      "用 arp -a 找出 Gateway 的 MAC，並與設備資訊比對。",
+      "清除 ARP 快取後 ping Gateway，觀察快取重新學習的紀錄。",
+      "描述 IP 衝突的症狀與確認方式。",
+      "畫出同網段與跨網段傳送時 ARP 詢問對象的差異。"
+    ],
+    "beginnerChecklist": [
+      "我能說明 ARP 在連線中的角色。",
+      "我知道跨網段時 ARP 問的是 Gateway。",
+      "我能用 arp -a 做基本檢查。",
+      "我知道 IP 衝突的典型症狀。"
+    ],
+    "handson": "【第 1 步／練習任務 1 解答】看 ARP 快取\n> arp -a\n找你的閘道那筆：\n  192.168.1.1    a4-5e-60-12-34-56    動態\n這就是「IP 對 MAC」的對照表。MAC 前六碼是廠商代碼，拿去網路搜「OUI lookup」可以查出是哪家廠牌——查出來是你路由器的品牌，就完成了「與設備資訊比對」。\n\n【第 2 步／練習任務 2 解答】清快取、看重新學習\n用「系統管理員身分」開 PowerShell（清快取需要權限）：\n> arp -d *          ← 清空 ARP 快取\n> ping 192.168.1.1\n> arp -a\n閘道那筆又出現了。這中間發生的事：你的電腦廣播「誰是 192.168.1.1？」→ 路由器回覆自己的 MAC → 存入快取。ping 的第一包偶爾逾時，就是在等這個問答完成。\n\n【練習任務 3 解答】IP 衝突的症狀與確認方法\n症狀三件套：\n1. 連線時通時不通（兩台設備輪流「搶到」這個 IP）\n2. Windows 跳出「偵測到 IP 位址衝突」通知\n3. arp -a 裡同一個 IP 對應的 MAC 一直變\n確認方法：把懷疑的兩台設備其中一台斷網，衝突立刻消失 = 抓到了。\n企業環境進一步：用交換器的 MAC address table 查那個 MAC 接在哪個 Port，直接定位到座位。\n\n【練習任務 4 解答】ARP 詢問對象的差異圖\n同網段：PC-A(192.168.1.10) 要送 192.168.1.20\n → 用遮罩判斷是同網段 → 廣播問「192.168.1.20 的 MAC？」→ 目標本人回答 → 直接送達\n跨網段：PC-A 要送 10.20.5.30\n → 判斷不同網段 → 廣播問「192.168.1.1（閘道）的 MAC？」→ 交給閘道轉送\n一句話總結：同網段問本人，跨網段問閘道——目標主機的 MAC，你的電腦從頭到尾不需要知道。"
+  },
+  "net-http-tls": {
+    "teachingSteps": [
+      "把狀態碼按開頭分類：2xx 成功、3xx 轉向、4xx 用戶端問題、5xx 伺服器端問題。",
+      "記住排查五碼：403（被拒，查權限或 WAF）、404（路徑錯誤）、500（應用程式錯誤，查後端 Log）、502（代理收到無效回應，查後端是否活著）、504（等後端逾時，查後端效能）。",
+      "理解 TLS 握手要驗證三件事：憑證有效期、名稱是否匹配、憑證鏈是否可信。",
+      "學憑證鏈結構：站台憑證 ← 中繼 CA ← 根 CA；伺服器要送出完整鏈，端點要信任根憑證。",
+      "用瀏覽器鎖頭圖示檢視任一 HTTPS 網站的憑證鏈，認識每一層的角色。"
+    ],
+    "example": "狀態碼判讀：\n502 Bad Gateway → Reverse Proxy 連不到後端或後端回應無效 → 查後端服務\n504 Gateway Timeout → 後端處理太慢 → 查後端效能與資料庫\n403 Forbidden → 權限或 WAF 規則 → 查存取控制\n\n憑證鏈：\nsite.company.com ← Intranet Issuing CA ← Company Root CA\n端點未信任 Root CA → 瀏覽器跳憑證警告。",
+    "practiceTasks": [
+      "整理一張 403 / 404 / 500 / 502 / 504 的排查方向對照表。",
+      "用瀏覽器檢視三個網站的憑證鏈並畫出結構。",
+      "說明 502 與 504 在 Reverse Proxy 環境各自代表什麼。",
+      "模擬自簽憑證警告，寫出處理選項與風險。"
+    ],
+    "beginnerChecklist": [
+      "我能依狀態碼判斷問題大概在哪一段。",
+      "我能分辨 502 和 504 的差異。",
+      "我能說明憑證鏈與根憑證信任的關係。",
+      "我知道 SSL Inspection 為什麼需要企業根憑證。"
+    ],
+    "handson": "【第 1 步】親眼看狀態碼\n開瀏覽器按 F12 → Network 頁籤 → 重新整理任一網站。\nStatus 欄就是狀態碼：200（成功）、304（用快取）；在網址後面亂加 /xyz123 再看一次 → 404。\n這個面板是你以後排查 Web 問題的主戰場，現在先混個臉熟。\n\n【練習任務 1 解答】排查方向對照表（背這五碼）\n403 → 被拒絕：查權限設定、WAF 規則、IP 白名單\n404 → 路徑不存在：查網址拼字、應用程式路由、部署是否完整\n500 → 應用程式錯誤：查後端應用 Log（問題在程式，不在網路）\n502 → 代理收到無效回應：查後端服務活著嗎、Port 對嗎\n504 → 等後端逾時：查後端效能、資料庫慢查詢\n背法：4 開頭查請求端與權限，5 開頭查伺服器端；502 是「連不到」、504 是「等不到」。\n\n【第 2 步／練習任務 2 解答】檢視憑證鏈\n瀏覽器網址列點鎖頭圖示 →「連線是安全的」→「憑證有效」（Chrome 用語，其他瀏覽器類似）。\n切到「詳細資料／憑證路徑」會看到三層結構：\n  某某 Root CA（根憑證）\n   └ 某某 Issuing CA（中繼憑證）\n      └ www.example.com（站台憑證）\n逐層點開看「有效期限」——排查憑證問題永遠先看到期日。挑三個網站各看一次，畫出它們的三層結構就完成任務。\n\n【練習任務 3 解答】502 vs 504 一句話版\n502 Bad Gateway：Reverse Proxy 把請求轉給後端，後端「連不上或回了無效內容」→ 先查後端服務是否活著、Port 是否正確。\n504 Gateway Timeout：後端有收到但「處理太久沒回」→ 先查後端效能與資料庫。\n兩個都代表問題在 Proxy 後面，但方向完全相反——面試答出這個對比就及格。\n\n【練習任務 4 解答】自簽憑證警告的處理選項與風險\n1. 正式做法：改用企業 CA 或公有 CA 簽發的憑證。\n2. 內部系統過渡做法：把自簽憑證（或企業根憑證）匯入端點的「受信任的根憑證授權單位」。\n3. 絕對不要教使用者「一律按繼續前往」——習慣性忽略警告，等於真的遇到中間人攻擊時也照樣放行。\n風險一句話：憑證警告的意義是「你無法確認對面是誰」，忽略它就是放棄 HTTPS 的保護。"
+  },
+  "net-packet-capture": {
+    "teachingSteps": [
+      "安裝 Wireshark，對自己的網卡做第一次擷取，感受不設過濾時的封包量。",
+      "學顯示過濾語法：ip.addr == x.x.x.x、tcp.port == 443、dns、http。",
+      "開啟一個網站，從封包中找出 DNS 查詢/回應與 TCP 三向交握。",
+      "認識異常訊號：RST（連線被拒或被中斷）、大量 Retransmission（路徑丟包）、SYN 無回應（被防火牆丟棄或服務未監聽）。",
+      "用 Statistics > Conversations 快速找出流量大戶。",
+      "記住證據原則：擷取點必須在流量路徑上，必要時兩端同時擷取。"
+    ],
+    "example": "常用過濾：\nip.addr == 10.30.5.10 && tcp.port == 443\ndns.qry.name contains \"company\"\ntcp.analysis.retransmission\n\n判讀：\nSYN → 無回應 → 重送 SYN：對方沒回，查防火牆或服務未啟動\nSYN → RST：主機活著但 Port 沒開\n交握完成但大量重傳：路徑品質問題",
+    "practiceTasks": [
+      "開啟一個網站並從擷取結果找出 DNS 查詢與三向交握。",
+      "連線一個沒開的 Port，觀察 RST 封包。",
+      "用過濾條件只顯示單一主機的流量。",
+      "完成一份含截圖與結論的封包分析紀錄。"
+    ],
+    "beginnerChecklist": [
+      "我能用過濾條件縮小封包範圍。",
+      "我能在封包中指出三向交握。",
+      "我知道 RST 與 Retransmission 各代表什麼。",
+      "我知道擷取位置會決定看不看得到目標流量。"
+    ],
+    "handson": "【第 1 步】安裝與第一次擷取\n到 wireshark.org 下載安裝（一路下一步，記得連 Npcap 一起裝）。\n開啟後選你的網卡（流量曲線有在跳的那張）→ 按左上角藍色鯊魚鰭開始擷取。\n開一個網頁，回來按紅色方塊停止。你會看到上千筆封包——所以第一課就是學過濾。\n\n【第 2 步】過濾出 DNS（練習任務 1 前半）\n在上方過濾列輸入：dns  然後 Enter\n找一對封包：Standard query（你的電腦在問）和 Standard query response（DNS 回答，點開能看到查到的 IP）。\n這就是 nslookup 背後真正發生的事。\n\n【第 3 步】過濾出三向交握（練習任務 1 後半）\n把剛剛 response 裡的 IP 填進過濾列：\nip.addr == 142.250.76.4 && tcp\n最前面三筆就是交握：[SYN] → [SYN, ACK] → [ACK]。\n點開封包展開 Transmission Control Protocol，可以看到來源/目的 Port 與序號。\n\n【第 4 步】製造一次失敗，看 RST（練習任務 2 解答）\n> Test-NetConnection <你的閘道或任一主機> -Port 9999\nWireshark 過濾：tcp.port == 9999\n看到 [SYN] 之後對方回 [RST, ACK] = 主機活著、但這個 Port 沒開。\n如果 SYN 送出後完全沒回應、只看到一直重送 SYN = 被防火牆默默丟掉（Drop）。\nRST 和「無回應」的差別，就是判斷「服務沒開」vs「被防火牆擋」的關鍵證據。\n\n【第 5 步】檢查重傳\n過濾：tcp.analysis.retransmission\n偶爾一兩筆正常；成串出現代表線路在丟包，該查網路品質而不是應用程式。\n\n【交報告（練習任務 4 解答）】\n截四張圖：DNS 查詢與回應、交握三筆、RST 一筆、重傳過濾結果。\n每張配一句「這證明了什麼」，就是一份合格的封包分析紀錄。"
+  },
+  "net-switch-trunk": {
+    "teachingSteps": [
+      "先分清楚兩種 Port 角色：Access 接終端設備（電腦、印表機、電話），Trunk 接設備之間（Switch 對 Switch、Switch 對虛擬化主機）。",
+      "理解 802.1Q 標籤：Trunk 上每個封包帶 VLAN ID，對端據此把流量放回正確 VLAN。",
+      "學 allowed VLAN 清單：Trunk 不一定放行所有 VLAN，新增 VLAN 後要沿路徑逐段確認。",
+      "理解 Native VLAN：Trunk 上不帶標籤流量所屬的 VLAN，兩端必須一致否則流量會跑錯區。",
+      "建立排查順序：端點所在 Port 的 VLAN → 沿途每段 Trunk 的 allowed 清單 → VLAN 的 Gateway 是否存在。"
+    ],
+    "example": "情境：新建 VLAN 30，使用者接上後拿不到 DHCP\n檢查順序：\n1. Access Port 是否設為 VLAN 30\n2. Access Switch 到 Core 的 Trunk 是否 allowed VLAN 30\n3. Core 上是否有 VLAN 30 的 Gateway（SVI）\n4. DHCP Relay 是否設定\n\n最常見的答案：第 2 步——Trunk 漏加新 VLAN。",
+    "practiceTasks": [
+      "在 Packet Tracer 建兩台 Switch，設定 Access 與 Trunk 並讓兩端同 VLAN 的 PC 互通。",
+      "故意從 Trunk 移除某個 VLAN，觀察症狀。",
+      "寫出「新增一個 VLAN」的完整檢查清單。",
+      "說明 Native VLAN 不一致可能造成的問題。"
+    ],
+    "beginnerChecklist": [
+      "我能說明 Access 與 Trunk 的差異。",
+      "我知道 802.1Q 標籤的用途。",
+      "我知道新增 VLAN 後要檢查 Trunk allowed 清單。",
+      "我能排查同 VLAN 兩端不通的問題。"
+    ],
+    "handson": "在 Packet Tracer 實作（練習任務 1、2 一次完成）。\n拓樸：兩台 2960 Switch、兩台 PC。\n接線：PC0—SW1 的 Fa0/1、PC1—SW2 的 Fa0/1、SW1 Fa0/24—SW2 Fa0/24（交換器之間選 Copper Cross-Over 線）。\nPC0 設 192.168.10.10/24、PC1 設 192.168.10.20/24。\n\n【第 1 步】兩台交換器都建 VLAN 並設 Access Port\n點 SW1 → CLI 頁籤：\n> enable\n> configure terminal\n> vlan 10\n> name Office\n> exit\n> interface fa0/1\n> switchport mode access\n> switchport access vlan 10\n> end\nSW2 照做一次。\n\n【第 2 步】設定 Trunk\n兩台的 fa0/24 都做：\n> configure terminal\n> interface fa0/24\n> switchport mode trunk\n> end\n驗證指令（重要，背起來）：\n> show vlan brief          ← fa0/1 應出現在 VLAN 10 那行\n> show interfaces trunk    ← 看得到 fa0/24 與 allowed VLAN 清單\n此時 PC0 ping PC1 應該通——同 VLAN、跨兩台交換器，靠 Trunk 載過去。\n\n【第 3 步／練習任務 2 解答】故意弄壞再修好\n在 SW1：\n> interface fa0/24\n> switchport trunk allowed vlan 20    ← 只放行 VLAN 20，VLAN 10 被擠掉\nPC0 再 ping PC1 → 不通了。show interfaces trunk 可看到 allowed 清單沒有 10。\n修復：\n> switchport trunk allowed vlan add 10   ← 注意要用 add，直接打 vlan 10 會整份清單被覆蓋\n這個實驗就是企業最常見事故「新增 VLAN 後忘了加進 Trunk」的縮小版，你已經親手重現並修好一次。\n\n【練習任務 3 解答】「新增一個 VLAN」完整檢查清單\n1. 沿途每台交換器都建了這個 VLAN（show vlan brief）\n2. 使用者 Port 設為該 VLAN 的 access\n3. 沿途每一段 Trunk 都 allowed 這個 VLAN（show interfaces trunk）\n4. 三層設備上有這個 VLAN 的 Gateway（SVI）\n5. 需要 DHCP 的話：Relay 與 Scope 都設好\n\n【練習任務 4 解答】Native VLAN 不一致會怎樣\nTrunk 上不帶標籤的流量會被歸入 Native VLAN；兩端設定不同時，A 端的無標籤流量到 B 端會被放進「別的 VLAN」——流量默默跑錯房間，且交換器 Log 會反覆跳 Native VLAN mismatch 警告。\n處理：兩端一致地設 switchport trunk native vlan <同一號碼>。"
+  },
+  "net-switch-stp": {
+    "teachingSteps": [
+      "先理解問題本質：二層封包沒有 TTL，迴圈中的廣播會無限複製，幾秒內就能打爆交換器。",
+      "學 STP 的解法：所有交換器選出一台 Root Bridge，計算到 Root 的最短路徑，其餘冗餘路徑進入 Blocking。",
+      "理解收斂：拓樸變化時 STP 重新計算，期間可能短暫斷線，Log 會出現 topology change。",
+      "學終端 Port 的兩個保護：PortFast 跳過等待直接轉發，BPDU Guard 一收到交換器訊號就關閉 Port。",
+      "在 Packet Tracer 用三台 Switch 接成三角形，觀察哪個 Port 被 Block。"
+    ],
+    "example": "三台 Switch 接成環：\nSW1 --- SW2\n  \\     /\n   SW3\nSTP 選出 Root（例如 SW1），SW2-SW3 之間其中一個 Port 進入 Blocking，邏輯拓樸變成無迴圈的樹。\n\n經典事故：使用者把會議室牆上兩個網路孔接進同一台小 Switch\n→ 若接取 Port 沒開 BPDU Guard，可能造成整層樓廣播風暴斷網。",
+    "practiceTasks": [
+      "在模擬器把三台 Switch 接成環，找出被 Block 的 Port。",
+      "說明廣播風暴的形成過程。",
+      "寫出終端 Port 應該啟用的保護設定與原因。",
+      "從交換器 Log 描述如何發現拓樸變化。"
+    ],
+    "beginnerChecklist": [
+      "我能說明二層迴圈為什麼會造成廣播風暴。",
+      "我知道 STP 用 Blocking 冗餘路徑防止迴圈。",
+      "我知道 PortFast 與 BPDU Guard 的用途。",
+      "我知道使用者私接小交換器的風險。"
+    ],
+    "handson": "在 Packet Tracer 實作：三台 2960 接成三角形（SW1—SW2、SW2—SW3、SW1—SW3 各一條 Cross-Over 線）。\n\n【第 1 步／練習任務 1 解答】找出被 Block 的 Port\n接完線等約 30–50 秒讓 STP 收斂，看每條線兩端的燈：\n綠色 = 轉送中；橘色 = 被 STP 封鎖。三角形裡一定有一個 Port 是橘的。\n用 CLI 驗證（任一台）：\n> show spanning-tree\n重點欄位：\n  Root ID ……            ← 誰是 Root Bridge（Priority＋MAC 最小者當選）\n  Interface  Role  Sts\n  Fa0/1      Desg  FWD   ← 轉送中\n  Fa0/2      Altn  BLK   ← 就是被封鎖的那個\n進階實驗：拔掉任一條「綠色」的線，幾秒後原本 BLK 的 Port 自動變 FWD——備援路徑接手，網路不斷。這就是 STP 封鎖冗餘路徑的意義：平時待命、壞時頂上。\n\n【練習任務 2 解答】廣播風暴的形成（面試版，背這段）\n「二層封包沒有 TTL。迴圈存在時，一個廣播封包會被交換器不斷互相轉送、每繞一圈就複製一次，幾秒內流量放大到塞爆所有鏈路與交換器 CPU，整段網路癱瘓。STP 的工作就是預先把冗餘路徑封鎖，讓邏輯拓樸永遠是一棵無迴圈的樹。」\n\n【練習任務 3 解答】終端 Port 的保護設定\n接電腦的 Port（例如 fa0/1）：\n> configure terminal\n> interface fa0/1\n> spanning-tree portfast          ← 跳過等待直接轉送；沒開的話電腦開機拿 DHCP 常逾時\n> spanning-tree bpduguard enable  ← 一收到交換器訊號（BPDU）就把 Port 關進 err-disabled\n為什麼兩個都要：PortFast 顧使用者體驗，BPDU Guard 防有人把小交換器/AP 接進來造成迴圈——「會議室兩個牆孔接同一台小 Switch」事故的正解就是它。\n\n【練習任務 4 解答】從 Log 發現拓樸變化\n交換器 Log 出現 %SPANTREE 開頭訊息（topology change）= STP 重算過。\n短時間大量出現 = 有 Port 反覆 up/down（線路不穩或有人在插拔）。\n排查方向：先找最近新接入的設備與狀態反覆變化的 Port，而不是重啟交換器。"
+  },
+  "net-switch-security": {
+    "teachingSteps": [
+      "理解 Port Security 的目的：限制單一 Port 學到的 MAC 數量或綁定特定 MAC，防止私接設備與 MAC flooding。",
+      "學違規動作：shutdown（Port 進入 err-disabled）、restrict、protect，以及企業常見的申請復原流程。",
+      "理解 LACP：多條實體線捆成一條邏輯鏈路，壞一條不斷線；流量以雜湊分配，單一工作階段仍只走一條成員線路。",
+      "學兩端模式配對：LACP 的 active/passive，至少一端要 active 才會協商成功。",
+      "建立排查心法：Port 突然不通先查 err-disabled 原因；聚合鏈路不穩先比對兩端設定。"
+    ],
+    "example": "Port Security 事故：\n使用者換新電腦 → Port 綁定的是舊電腦 MAC → 違規觸發 shutdown\n→ show interfaces status 看到 err-disabled\n→ 依流程確認換機屬實後，清除綁定並重新學習 MAC\n\nLACP 觀念：兩條 1G 聚合 = 邏輯 2G 頻寬，\n但單一檔案傳輸最多仍只有 1G（雜湊分配到單一成員）。",
+    "practiceTasks": [
+      "寫出「使用者換電腦後網路不通」的排查步驟。",
+      "列出 Port Security 三種違規動作的差異。",
+      "說明 LACP 聚合後單一連線的頻寬上限。",
+      "整理 err-disabled 的常見原因清單。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Port Security 防範什麼風險。",
+      "我知道 err-disabled 的意義與復原方式。",
+      "我能說明 LACP 的備援與頻寬特性。",
+      "我知道聚合兩端設定要一致。"
+    ],
+    "handson": "在 Packet Tracer 實作 Port Security：一台 2960 + 兩台 PC（PC1 先不接線）。\n\n【第 1 步／練習任務 1 前半】設定\n> configure terminal\n> interface fa0/1\n> switchport mode access\n> switchport port-security                      ← 啟用\n> switchport port-security maximum 1            ← 這個 Port 只允許 1 個 MAC\n> switchport port-security violation shutdown   ← 違規就關 Port\n> switchport port-security mac-address sticky   ← 自動記住第一個學到的 MAC\n> end\n讓 PC0 接上 fa0/1 並 ping 一下任意位址（讓交換器學到它的 MAC），然後：\n> show port-security interface fa0/1\n看 Secure Mac Address 是 PC0 的 MAC、Violation Count = 0。\n\n【第 2 步】模擬「使用者換電腦」\n把線從 PC0 拔掉、改接 PC1（不同 MAC）。PC1 一發出流量：\n> show interfaces status\n  Fa0/1 …… err-disabled\nPort 被關了——使用者的體感就是「換了新電腦就不能上網」，現在你知道背後是什麼。\n\n【第 3 步／練習任務 1 後半】復原（企業流程：先確認換機屬實再解鎖）\n> configure terminal\n> interface fa0/1\n> no switchport port-security mac-address sticky   ← 清掉舊 MAC 綁定\n> switchport port-security mac-address sticky      ← 重新啟用學習\n> shutdown\n> no shutdown            ← 手動 down/up 一次，Port 復原\n\n【練習任務 2 解答】三種違規動作\nshutdown：關閉 Port（進 err-disabled）——最嚴格、最常用，事件「看得見」。\nrestrict：丟棄違規流量＋記 Log＋違規計數，Port 不關。\nprotect：只默默丟棄、不記錄——最不建議，因為問題「看不見」。\n\n【練習任務 3 解答】LACP 頻寬上限\n兩條 1G 聚合 = 邏輯 2G，但單一傳輸（例如一次檔案複製）被雜湊分配到其中一條成員線，上限仍是 1G。\nLACP 的價值在「多條連線的總吞吐」與「斷一條不斷線」，不是讓單一下載變快。模式配對：active/passive 至少一端要 active。\n\n【練習任務 4 解答】err-disabled 常見原因清單\nPort Security 違規／BPDU Guard 觸發（有人接了交換器）／UDLD 偵測到單向鏈路／聚合設定兩端不一致。\n排查指令：show interfaces status err-disabled 看哪些 Port 被關、show errdisable recovery 看自動復原設定。原則：先查原因再復原，直接 no shutdown 而不處理根因，五分鐘後又會被關。"
+  },
+  "net-dhcp-relay": {
+    "teachingSteps": [
+      "複習 DHCP 四步 DORA：Discover、Offer、Request、Ack，前兩步依靠廣播。",
+      "理解廣播不會穿過路由器，所以每個 VLAN 要嘛有自己的 DHCP Server，要嘛設定 Relay。",
+      "學 Relay 原理：Gateway 收到 Discover 廣播後以單播轉送給 DHCP Server，並附上來源網段資訊（giaddr），Server 據此挑選對應 Scope。",
+      "建立「整個網段拿不到 IP」的排查順序：Relay 設定 → Server 是否有對應 Scope → 位址池餘量 → 中途防火牆是否放行。",
+      "區分範圍：單一使用者拿不到查 Port 與 Port Security；整段拿不到查 Relay 與 Scope。"
+    ],
+    "example": "VLAN 30（10.30.0.0/24）使用者 → 廣播 Discover\n→ Gateway 10.30.0.1（設定 helper-address 10.99.0.10）\n→ 單播轉送給 DHCP Server，giaddr = 10.30.0.1\n→ Server 依 10.30.0.0/24 的 Scope 回 Offer\n\n排查：新 VLAN 全員拿不到 IP\n→ 先確認 Gateway 是否設定 helper-address，再查 Server Scope。",
+    "practiceTasks": [
+      "畫出跨網段 DHCP 的完整流程圖。",
+      "寫出「新 VLAN 整段拿不到 IP」的排查清單。",
+      "說明單人拿不到與整段拿不到的排查差異。",
+      "查一次本機 DHCP 租約，指出 Server 位址與租期。"
+    ],
+    "beginnerChecklist": [
+      "我能說出 DHCP 四步流程。",
+      "我知道 DHCP 廣播不能跨網段。",
+      "我知道 Relay（helper-address）設在哪裡、做什麼。",
+      "我能判斷 DHCP 問題該查端點還是查基礎設施。"
+    ],
+    "handson": "在 Packet Tracer 實作（一台 Router、一台 Server、一台 PC 就能重現跨網段 DHCP）。\n拓樸：PC—Switch—Router 的 Gig0/0；Server 接 Router 的 Gig0/1。\nRouter 介面設定：\n> configure terminal\n> interface gig0/0\n> ip address 10.30.0.1 255.255.255.0    ← 使用者網段的 Gateway\n> no shutdown\n> interface gig0/1\n> ip address 10.99.0.1 255.255.255.0    ← Server 網段\n> no shutdown\nServer 手動設 IP：10.99.0.10／255.255.255.0／Gateway 10.99.0.1。\n\n【第 1 步】DHCP Server 設定\n點 Server → Services 頁籤 → DHCP → 開啟服務，新增 Pool：\n  Pool Name: VLAN30\n  Default Gateway: 10.30.0.1\n  Start IP: 10.30.0.100，Subnet Mask: 255.255.255.0\n→ Add。注意：Server 自己在 10.99 網段，但發的是 10.30 網段的 IP——這就是「集中發放」。\n\n【第 2 步】Router 上設 Relay（本課主角，就一行）\n> interface gig0/0\n> ip helper-address 10.99.0.10\n意思：這個介面收到 DHCP 廣播時，代為「單播」轉送給 10.99.0.10，並附上來源網段資訊（giaddr = 10.30.0.1），Server 靠它挑對 Pool。\n\n【第 3 步】驗證與故意弄壞\nPC → Desktop → IP Configuration → 切到 DHCP。\n成功：拿到 10.30.0.100、Gateway 10.30.0.1。\n故意弄壞：> no ip helper-address 10.99.0.10，PC 再切 Static 再切回 DHCP →「DHCP request failed」——「整段拿不到 IP」的經典現場，你親手做出來了。記得把設定加回去。\n\n【練習任務 2 解答】「新 VLAN 整段拿不到 IP」排查清單\n1. Gateway 介面有沒有 ip helper-address？（實務上九成是這個）\n2. DHCP Server 有沒有該網段的 Scope/Pool？\n3. Pool 位址是否耗盡？（看租約使用率）\n4. Gateway 到 Server 的路徑通嗎？中間防火牆放行 DHCP（UDP 67/68）了嗎？\n\n【練習任務 3 解答】單人 vs 整段的排查差異\n一個人拿不到 → 問題在端點或它的 Port：查網卡、Port 狀態、Port Security、換孔測試。\n整段都拿不到 → 問題在基礎設施：查 Relay、Scope、DHCP 服務狀態。\n「先問影響範圍多大」是所有網路排查的第一問，方向立刻減半。\n\n【練習任務 4 解答】看本機租約\n> ipconfig /all\n找「DHCP 伺服器」（誰發給你的）與「租約取得／到期」。\n> ipconfig /release 再 /renew 可觀察完整重新取得流程。"
+  },
+  "net-ad-basics": {
+    "teachingSteps": [
+      "建立物件地圖：網域（公司）→ OU（部門或用途分層）→ 使用者與電腦帳號；群組是授權的基本單位。",
+      "理解「用群組授權」原則：系統權限授予群組而非個人，人員異動只需調整群組成員。",
+      "學 GPO：綁定在 OU 上集中派送設定（密碼原則、Proxy 設定、桌面限制），端點開機或週期性套用。",
+      "理解 LDAP 是查詢與驗證協定：應用系統用服務帳號綁定 AD，查詢並驗證使用者。",
+      "學帳號鎖定排查：多個系統同時登不進 → 先查 AD 帳號是否鎖定 → 找出鎖定來源（常見是某裝置存了舊密碼一直重試）。"
+    ],
+    "example": "VPN 權限鏈：\n使用者 jsmith → AD 群組 VPN-ERP-Users → VPN Policy 對應該群組 → ACL 允許連 ERP TCP/443\n\n排查「同事可以、我不行」：\n1. 比對兩人的 AD 群組差異\n2. 確認帳號未鎖定、密碼未過期\n3. 查 VPN Policy 綁定的群組是否包含該使用者",
+    "practiceTasks": [
+      "畫出網域、OU、使用者、群組、GPO 的關係圖。",
+      "設計一組「ERP 唯讀」與「ERP 管理」的群組授權方案。",
+      "寫出帳號被鎖定的排查步驟。",
+      "說明應用系統透過 LDAP 驗證的流程。"
+    ],
+    "beginnerChecklist": [
+      "我能說明帳號、群組、OU、GPO 的關係。",
+      "我知道權限應授予群組而非個人。",
+      "我知道 GPO 可以派送哪些常見設定。",
+      "我能排查帳號鎖定造成的多系統登入異常。"
+    ]
+  },
+  "net-enterprise-dns": {
+    "teachingSteps": [
+      "背四種核心記錄：A（名稱→IP）、CNAME（別名→正名）、PTR（IP→名稱，反查）、MX（郵件路由）。",
+      "理解 TTL：解析結果會被快取，改記錄後舊值可能存活到 TTL 過期，這是「改了沒生效」的主因。",
+      "學 split-horizon：同一網域內外兩套 Zone，內部解析到內網 IP、外部解析到公網 IP。",
+      "養成比對習慣：nslookup 指定內部 DNS 查一次、指定外部 DNS（如 8.8.8.8）查一次，比較結果。",
+      "把 DNS 接回 VPN 排查：Split/Full Tunnel 下使用者實際使用的 DNS 不同，解析結果可能不同。"
+    ],
+    "example": "nslookup erp.company.com 10.1.1.10  → 10.30.5.20（內部 DNS 給內網 IP）\nnslookup erp.company.com 8.8.8.8    → 203.0.113.50（外部 DNS 給公網 IP）\n\nVPN 使用者連不上 ERP：\n若他解析到 203.0.113.50（外部 IP），代表 VPN 沒有派發內部 DNS\n→ 修正 VPN 的 DNS 指派設定。",
+    "practiceTasks": [
+      "用 nslookup 分別指定兩個 DNS Server 查同一名稱並比較結果。",
+      "整理 A、CNAME、PTR、MX 的用途對照表。",
+      "說明改了 DNS 記錄卻「沒生效」的原因與確認方式。",
+      "畫出 split-horizon 架構下內外部使用者的解析路徑。"
+    ],
+    "beginnerChecklist": [
+      "我能說明四種常見 DNS 記錄的用途。",
+      "我知道 TTL 對變更生效時間的影響。",
+      "我能說明 split-horizon DNS 的目的。",
+      "我會用 nslookup 指定 DNS Server 做比對。"
+    ]
+  },
+  "net-incident-mgmt": {
+    "teachingSteps": [
+      "記住處理順序：先止血（恢復服務）再查根因；但止血前先保留證據（Log、截圖、時間點）。",
+      "接報先問四件事：影響範圍（多少人、哪些系統）、開始時間、最近有無變更、問題可否重現。",
+      "依影響程度分級，超過門檻立即通報窗口與主管——不要悶著頭修。",
+      "全程記錄時間軸：幾點發現、幾點做了什麼動作、幾點恢復。",
+      "事後撰寫 RCA：根因、影響、時間軸、短期修補、長期改善，存入知識庫。",
+      "平時變更走變更單：影響評估、核准、維護窗口、回復計畫、驗證項目。"
+    ],
+    "example": "事件紀錄範本：\n[14:05] 監控告警：Proxy Port 8080 無回應\n[14:08] 確認影響：全公司無法上網；通報主管與資訊窗口\n[14:12] 檢查服務：Proxy 程序當掉，磁碟使用率 100%（Log 塞滿）\n[14:20] 清出空間、重啟服務，功能恢復\n[14:30] 對使用者公告恢復\n[後續] RCA：Log rotation 未設定；改善：設定輪替 + 磁碟 80% 告警",
+    "practiceTasks": [
+      "用一次模擬事件寫出完整時間軸紀錄。",
+      "為一個設定變更撰寫變更單，包含回復計畫。",
+      "定義自己的事件分級與通報門檻。",
+      "完成一份含短期與長期改善的 RCA 報告。"
+    ],
+    "beginnerChecklist": [
+      "我知道接到事件要先確認影響範圍與時間。",
+      "我知道「先恢復服務、保留證據、事後查根因」的順序。",
+      "我能寫出含時間軸的事件紀錄。",
+      "我知道變更管理需要哪些必備欄位。"
+    ]
+  },
+  "dba-lab-setup-env": {
+    "teachingSteps": [
+      "安裝 Docker Desktop，執行 docker run hello-world 確認環境正常。",
+      "一行指令啟動 PostgreSQL 練習庫，並用 -v 掛載 Volume 保存資料。",
+      "想練 SQL Server 就改跑 mcr.microsoft.com/mssql/server 映像；Oracle XE 與 DB2 Community 也有官方映像可用。",
+      "安裝 DBeaver（免費通用 GUI），用 localhost 加映射 Port 連線，建立第一個練習資料庫。",
+      "理解 Volume 的意義：沒掛 Volume，容器刪除後資料就消失。",
+      "刻意練一次「砍掉重建」：停止、刪除容器再重跑指令，體會練習環境可拋棄的好處。"
+    ],
+    "example": "docker run -d --name pg \\\n  -e POSTGRES_PASSWORD=devpass \\\n  -p 5432:5432 \\\n  -v pgdata:/var/lib/postgresql/data \\\n  postgres:16\n\nDBeaver 連線：Host=localhost, Port=5432, User=postgres\n\nSQL Server 版本：\ndocker run -d --name mssql \\\n  -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD='Dev!Pass123' \\\n  -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest",
+    "practiceTasks": [
+      "啟動一套 PostgreSQL 並用 DBeaver 連線成功。",
+      "建立一個練習資料庫與一張測試表，寫入幾筆資料。",
+      "刪除容器重新啟動，驗證 Volume 讓資料還在。",
+      "再啟動一套 SQL Server，體驗兩種資料庫並存。"
+    ],
+    "beginnerChecklist": [
+      "我能用 Docker 快速啟動一套資料庫。",
+      "我能用 GUI 工具連線並執行 SQL。",
+      "我知道 Volume 對資料持久化的作用。",
+      "我有一套可以隨時砍掉重建的練習環境。"
+    ],
+    "handson": "【先講白話：Docker 是什麼？為什麼用它裝資料庫？】\nDocker 像「軟體的即食包」：別人把 PostgreSQL 連同它需要的整套環境打包成映像（Image），你一行指令就能跑成一個容器（Container）。不用跑安裝精靈、不用設定服務、移除也不留垃圾。練壞了整個刪掉重來，電腦永遠乾淨——這就是用它建練習環境的原因。\n\n【第 1 步】安裝 Docker Desktop\n到 docker.com 下載 Docker Desktop for Windows，安裝時勾選「Use WSL 2」（它需要 Windows 的 Linux 子系統）。裝完重開機，右下角鯨魚圖示變綠就緒。\n驗證：\n> docker run hello-world\n看到「Hello from Docker!」= 環境正常。\n\n【第 2 步】啟動 PostgreSQL（每個參數都解釋）\n> docker run -d --name pg -e POSTGRES_PASSWORD=devpass -p 5432:5432 -v pgdata:/var/lib/postgresql/data postgres:16\n- docker run：跑一個容器\n- -d：在背景執行（不佔住你的視窗）\n- --name pg：幫容器取名，之後 docker stop pg 就能操作它\n- -e POSTGRES_PASSWORD=devpass：設定資料庫管理員密碼\n- -p 5432:5432：把容器的 5432 Port 接到你電腦的 5432，本機工具才連得到\n- -v pgdata:/var/lib/postgresql/data：資料存進名叫 pgdata 的空間，容器刪了資料還在\n- postgres:16：映像名稱與版本\n驗證：\n> docker ps\n看到 pg 這行、STATUS 是 Up = 資料庫已經在跑了。\n\n【第 3 步】用 DBeaver 連進去\n1. 到 dbeaver.io 下載 Community 版安裝。\n2. 左上角「新增連線」→ 選 PostgreSQL → Host: localhost、Port: 5432、Username: postgres、Password: devpass → Test Connection（第一次會自動下載驅動）→ 完成。\n3. 對連線按右鍵 → SQL 編輯器 → 新增 SQL 腳本，執行：\nSELECT version();\n有回傳版本文字 = 你已經有一套可以隨便玩的資料庫。\n\n【第 4 步】驗證資料不會消失（練習任務 3 解答）\n> docker stop pg     ← 停掉容器\n> docker start pg    ← 再啟動\nDBeaver 重新連線，剛剛建的東西都還在（因為 -v）。\n進階實驗：docker rm -f pg 整個刪掉，再跑一次第 2 步同一行指令——只要 -v pgdata 相同，資料照樣還在。\n\n【常見卡點】\n- 5432 被占用：把 -p 改成 -p 15432:5432，DBeaver 連 Port 15432。\n- Docker Desktop 起不來：Windows 功能開啟「虛擬機器平台」與「Windows 子系統 Linux 版」，BIOS 開虛擬化。"
+  },
+  "dba-basics-isolation": {
+    "teachingSteps": [
+      "把四個層級記成階梯：Read Uncommitted → Read Committed → Repeatable Read → Serializable，越往右一致性越高、併發性越差。",
+      "記住三種讀取異常：Dirty Read（讀到未提交）、Non-repeatable Read（同交易兩次讀同筆值不同）、Phantom Read（同交易兩次讀範圍筆數不同）。",
+      "開兩個資料庫連線（兩個 Session）做實驗：A 更新未提交，B 讀同一筆，觀察行為。",
+      "查自己資料庫的預設層級：PostgreSQL、Oracle、SQL Server 預設 Read Committed；MySQL InnoDB 預設 Repeatable Read。",
+      "記住原則：遇到一致性問題先改查詢與交易設計，不要輕易全域調高隔離層級。"
+    ],
+    "example": "Session A：\nBEGIN;\nUPDATE accounts SET balance = 900 WHERE id = 1;  -- 尚未 COMMIT\n\nSession B（Read Committed）：\nSELECT balance FROM accounts WHERE id = 1;\n→ 讀到舊值或等待（不會讀到未提交的 900）\n\nSession A：COMMIT;\nSession B 再查 → 900\n（同一交易內兩次讀值不同 = Non-repeatable Read，Read Committed 允許）",
+    "practiceTasks": [
+      "用兩個 Session 重現「未提交資料讀不到」的行為。",
+      "查出目前資料庫的預設隔離層級。",
+      "整理四種層級與三種讀取異常的對照表。",
+      "描述一個因隔離層級不足造成報表不一致的情境。"
+    ],
+    "beginnerChecklist": [
+      "我能說出四種隔離層級的順序。",
+      "我能解釋 Dirty Read、Non-repeatable Read、Phantom Read。",
+      "我知道常見資料庫的預設層級。",
+      "我知道調高隔離層級要付出併發代價。"
+    ],
+    "handson": "用 PostgreSQL + DBeaver 兩個「獨立連線」的 SQL 編輯器（開法見「Transaction、Lock 與 Deadlock」章的手把手），沿用 accounts 表（id=1, balance=1000）。\n\n【第 0 步／練習任務 2 解答】查預設隔離層級\nSHOW default_transaction_isolation;\n→ read committed（PostgreSQL、Oracle、SQL Server 的預設；MySQL InnoDB 是 repeatable read）\n\n【實驗 1／練習任務 1 解答】Read Committed 下的行為\n視窗 A：\nBEGIN;\nUPDATE accounts SET balance = 900 WHERE account_id = 1;   -- 不要 COMMIT\n視窗 B：\nSELECT balance FROM accounts WHERE account_id = 1;\n→ 讀到 1000（舊值）。沒讀到 900 = 沒有 Dirty Read，Read Committed 保證這點。\n視窗 A：COMMIT;\n視窗 B 再查同一句：\n→ 900。同一個人、兩次讀值不同 = Non-repeatable Read，Read Committed「允許」這件事發生。\n\n【實驗 2】換 Repeatable Read 再做一次\n視窗 B：\nBEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;\nSELECT balance FROM accounts WHERE account_id = 1;   -- 讀到 900\n視窗 A 再改一次並 COMMIT（例如改成 800）。\n視窗 B 再查：\n→ 還是 900！交易內的視野被「凍結」在第一次讀取的時點。\n視窗 B 執行 COMMIT; 結束交易後再查 → 800。\n兩個層級的差異不是理論——你剛剛親眼看到了兩種行為。\n\n【練習任務 3 解答】對照表（面試背這張）\n層級               Dirty Read／Non-repeatable／Phantom\nRead Uncommitted   可能／可能／可能\nRead Committed     不會／可能／可能\nRepeatable Read    不會／不會／可能*\nSerializable       不會／不會／不會\n（* PostgreSQL 的 Repeatable Read 實作其實連 Phantom 也擋掉，面試先按標準定義回答，行有餘力再補這句會加分）\n\n【練習任務 4 解答】情境描述範本\n「月底結帳報表要跑十分鐘，期間持續有人寫入。用 Read Committed，報表前半段和後半段讀到的是不同時點的資料，總額對不起來。解法不是全域調 Serializable（會把寫入卡死），而是讓報表交易用 Repeatable Read 取得一致視野，或改到唯讀副本上跑。」"
+  },
+  "dba-sql-aggregate": {
+    "teachingSteps": [
+      "從單一聚合開始：SELECT COUNT(*) FROM orders，再加上 WHERE 條件。",
+      "加入 GROUP BY 做分組統計：每個客戶的訂單數與金額；規則是 SELECT 的欄位不是聚合函數就必須出現在 GROUP BY。",
+      "用 HAVING 過濾分組結果：WHERE 先過濾資料列，HAVING 後過濾分組。",
+      "學子查詢與 CTE（WITH）：把複雜查詢拆成可讀的步驟。",
+      "套用到維運場景：GROUP BY ... HAVING COUNT(*) > 1 找重複資料、每日筆數比對、異常量統計。"
+    ],
+    "example": "-- 每個客戶的訂單數與總金額\nSELECT customer_id, COUNT(*) AS order_count, SUM(total_amount) AS total\nFROM orders\nWHERE order_date >= '2026-01-01'\nGROUP BY customer_id\nHAVING COUNT(*) >= 10\nORDER BY total DESC;\n\n-- 找出重複的 email\nSELECT email, COUNT(*)\nFROM customers\nGROUP BY email\nHAVING COUNT(*) > 1;",
+    "practiceTasks": [
+      "寫出每月訂單數與金額的統計查詢。",
+      "用 HAVING 找出下單超過 N 次的客戶。",
+      "用 GROUP BY + HAVING 找出資料表中的重複資料。",
+      "把一個巢狀子查詢改寫成 CTE，比較可讀性。"
+    ],
+    "beginnerChecklist": [
+      "我知道常用聚合函數的行為。",
+      "我能說明 WHERE 與 HAVING 的差異。",
+      "我知道 SELECT 欄位與 GROUP BY 的搭配規則。",
+      "我能用聚合查詢找出重複資料。"
+    ],
+    "handson": "先加碼資料讓統計有意義（沿用 JOIN 課建的 customers / orders）：\nINSERT INTO orders VALUES\n  (104,2,'2026-06-15',200),(105,3,'2026-06-20',900),\n  (106,1,'2026-06-25',150),(107,2,'2026-07-04',400);\n\n【任務 1 解答】每月訂單統計\nSELECT\n  to_char(order_date, 'YYYY-MM') AS month,\n  COUNT(*)          AS order_count,\n  SUM(total_amount) AS total\nFROM orders\nGROUP BY to_char(order_date, 'YYYY-MM')\nORDER BY month;\n預期看到 2026-06 與 2026-07 各一列的筆數與總額。\n規則驗證：把 customer_id 直接加進 SELECT 再執行一次 →\nERROR: column \"orders.customer_id\" must appear in the GROUP BY clause...\n這個錯誤訊息以後會常見——SELECT 的欄位「不是聚合函數就必須在 GROUP BY 裡」，親眼看過就記住了。\n\n【任務 2 解答】HAVING 過濾分組\nSELECT customer_id, COUNT(*) AS cnt\nFROM orders\nGROUP BY customer_id\nHAVING COUNT(*) >= 3;\n為什麼不能寫 WHERE COUNT(*) >= 3？因為 WHERE 在分組「之前」執行，那時還沒有 COUNT 可言。\n執行順序背起來：WHERE → GROUP BY → HAVING → ORDER BY。\n\n【任務 3 解答】找重複資料（維運萬用句型）\n先製造重複：INSERT INTO customers VALUES (4,'小明');\nSELECT customer_name, COUNT(*)\nFROM customers\nGROUP BY customer_name\nHAVING COUNT(*) > 1;\n→ 小明 2 筆。接著看「重複的是哪幾筆」：\nSELECT * FROM customers\nWHERE customer_name IN (\n  SELECT customer_name FROM customers GROUP BY customer_name HAVING COUNT(*) > 1\n)\nORDER BY customer_name;\n\n【任務 4 解答】巢狀子查詢改寫成 CTE\n巢狀版（能跑但難讀）：\nSELECT * FROM customers WHERE customer_id IN (\n  SELECT customer_id FROM orders GROUP BY customer_id HAVING SUM(total_amount) > 500\n);\nCTE 版（一段一個名字，好讀好維護）：\nWITH big_spenders AS (\n  SELECT customer_id, SUM(total_amount) AS total\n  FROM orders\n  GROUP BY customer_id\n  HAVING SUM(total_amount) > 500\n)\nSELECT c.customer_name, b.total\nFROM customers c\nJOIN big_spenders b ON c.customer_id = b.customer_id;\n兩者結果相同。原則：查詢一複雜就用 WITH 拆步驟，三個月後回頭還看得懂。"
+  },
+  "dba-sql-null": {
+    "teachingSteps": [
+      "先記核心觀念：NULL 是「未知」，不是 0 也不是空字串；任何值與 NULL 比較的結果都是 UNKNOWN。",
+      "練習正確判斷：用 IS NULL / IS NOT NULL，並實際體驗 = NULL 永遠查不到資料。",
+      "實驗 NOT IN 陷阱：子查詢結果含 NULL 時整個查詢回傳空集合，改寫成 NOT EXISTS。",
+      "比較 COUNT(*) 與 COUNT(欄位)：後者會忽略 NULL，兩者數字不同時就是有 NULL。",
+      "在報表輸出用 COALESCE(欄位, 預設值) 明確處理 NULL 顯示。"
+    ],
+    "example": "-- 陷阱示範\nSELECT * FROM customers\nWHERE customer_id NOT IN (SELECT customer_id FROM orders);\n-- 若 orders.customer_id 含 NULL → 整個查詢回傳 0 筆！\n\n-- 安全寫法\nSELECT * FROM customers c\nWHERE NOT EXISTS (\n  SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id\n);",
+    "practiceTasks": [
+      "示範 = NULL 與 IS NULL 的查詢結果差異。",
+      "重現 NOT IN 含 NULL 回傳空集合的陷阱，再用 NOT EXISTS 修正。",
+      "找一張表比較 COUNT(*) 與 COUNT(欄位) 的差異並解釋。",
+      "用 COALESCE 把報表中的 NULL 顯示成有意義的預設值。"
+    ],
+    "beginnerChecklist": [
+      "我知道 NULL = NULL 為什麼不成立。",
+      "我會用 IS NULL 做正確判斷。",
+      "我知道 NOT IN 遇到 NULL 的陷阱與改寫方式。",
+      "我知道 COUNT(*) 與 COUNT(欄位) 的差異。"
+    ],
+    "handson": "【第 0 步】準備含 NULL 的資料\nALTER TABLE customers ADD COLUMN email VARCHAR(200);\nUPDATE customers SET email = 'ming@test.com' WHERE customer_id = 1;\n-- 其他人的 email 不填 = NULL\n\n【任務 1 解答】= NULL vs IS NULL\nSELECT * FROM customers WHERE email = NULL;\n→ 0 筆！注意：不報錯、就是默默查不到——這是 NULL 最陰的地方。\nSELECT * FROM customers WHERE email IS NULL;\n→ 正確查到所有沒填 email 的人。\n原因：NULL 是「未知」，「未知 = 未知」的答案還是未知（UNKNOWN），而 WHERE 只保留「確定為真」的列。\n\n【任務 2 解答】NOT IN 陷阱重現與修正\n讓 orders 出現一筆 customer_id 為 NULL 的資料（訪客訂單情境）：\nINSERT INTO orders VALUES (108, NULL, '2026-07-05', 50);\n（如果欄位有外鍵/NOT NULL 擋住，先移除限制做實驗，做完復原）\nSELECT * FROM customers\nWHERE customer_id NOT IN (SELECT customer_id FROM orders);\n→ 0 筆！哪怕明明有客戶沒下過單。\n原因：NOT IN 展開成「id <> 101 AND id <> NULL AND …」，其中「<> NULL」是 UNKNOWN，整串條件永遠無法為真。\n修正（兩種都要會）：\nSELECT * FROM customers c\nWHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id);\n或在子查詢排除 NULL：\n... NOT IN (SELECT customer_id FROM orders WHERE customer_id IS NOT NULL);\n\n【任務 3 解答】COUNT 的差異\nSELECT COUNT(*) AS all_rows, COUNT(email) AS has_email FROM customers;\n→ all_rows 比 has_email 大。COUNT(欄位) 自動忽略 NULL——兩張報表數字對不上時，先想到這個。\n\n【任務 4 解答】COALESCE 收尾\nSELECT customer_name, COALESCE(email, '(未填)') AS email FROM customers;\n報表輸出永遠給 NULL 一個明確的顯示值，讀報表的人才不會以為系統壞了。\n實驗完記得清理：DELETE FROM orders WHERE order_id = 108;"
+  },
+  "dba-charset-collation": {
+    "teachingSteps": [
+      "分清兩個概念：字元集是編碼方式（UTF-8、Big5），Collation 是排序與比較規則（大小寫、全半形）。",
+      "排查亂碼時檢查四層：Database 預設編碼、Table/欄位設定、連線（client encoding）、應用程式連線字串。",
+      "先確認資料存入時是否已壞：用 HEX 檢視實際儲存的位元組，再判斷是寫入端還是讀取端的問題。",
+      "做一次實驗：用錯誤編碼匯入含中文的 CSV 觀察亂碼，再用正確編碼重做一次。",
+      "訂規則：新系統一律 UTF-8；跨表 JOIN 前確認兩邊 Collation 一致。"
+    ],
+    "example": "-- PostgreSQL 檢查編碼\nSHOW server_encoding;\nSHOW client_encoding;\n\n-- 檢查實際儲存的位元組\nSELECT customer_name, encode(convert_to(customer_name, 'UTF8'), 'hex')\nFROM customers LIMIT 5;\n\n判讀：\n存入時就壞 → 匯入工具或來源檔編碼錯誤\n儲存正確但顯示亂碼 → 讀取端或連線編碼錯誤",
+    "practiceTasks": [
+      "查出目前資料庫的預設編碼與 Collation。",
+      "用錯誤編碼匯入中文 CSV 重現亂碼，再修正重做。",
+      "寫出亂碼排查的四層檢查清單。",
+      "說明兩張表 Collation 不同對 JOIN 的影響。"
+    ],
+    "beginnerChecklist": [
+      "我能分清字元集與 Collation。",
+      "我知道亂碼要分「存壞了」與「讀錯了」兩種情況。",
+      "我會用 HEX 檢查實際儲存內容。",
+      "我知道新系統應該統一使用 UTF-8。"
+    ],
+    "handson": "【第 1 步／練習任務 1 解答】查目前設定\nSHOW server_encoding;   -- 通常 UTF8（資料庫端編碼）\nSHOW client_encoding;   -- 連線端編碼\nSELECT datcollate FROM pg_database WHERE datname = current_database();   -- Collation\n\n【第 2 步／練習任務 2 解答】親手重現亂碼\n1. 開記事本，輸入兩行：\n   1,王小明\n   2,陳大文\n2. 另存新檔 → 編碼選「ANSI」（繁中 Windows 上就是 Big5）→ 存成 test-big5.csv。\n3. DBeaver 建表：CREATE TABLE charset_test (id INT, name VARCHAR(50));\n4. 對表按右鍵 → 匯入資料 → 選這個 CSV → 匯入設定的 Encoding 故意選 UTF-8 → 執行。\n5. SELECT * FROM charset_test; → name 欄變成一串怪字。\n   為什麼：檔案的真實內容是 Big5 位元組，你卻叫工具「用 UTF-8 解讀」，當然解不出正確的字。\n6. 修復：TRUNCATE charset_test; 重新匯入、Encoding 正確選 Big5（或 MS950）→ 中文正常。\n結論一句話：亂碼不是資料庫壞掉，是「宣稱的編碼」和「真實的編碼」不一致——你剛剛自己製造又自己修好了一次。\n\n【練習任務 3 解答】亂碼四層檢查清單（由外往內）\n1. 來源檔案的真實編碼（另存新檔對話框會顯示，或用編輯器偵測）\n2. 匯入工具／應用程式連線宣稱的編碼（client_encoding、連線字串 charset 參數）\n3. 資料庫／資料表／欄位的編碼設定\n4. 讀取端的編碼（報表工具、網頁 header）\n判斷「存壞了」還是「讀錯了」——直接看儲存的位元組：\nSELECT name, encode(convert_to(name, 'UTF8'), 'hex') FROM charset_test LIMIT 3;\n存進去就是亂的 → 問題在 1、2；儲存正確但畫面亂 → 問題在 4。\n\n【練習任務 4 解答】Collation 對 JOIN 的影響\n兩張表（或兩個欄位）的 Collation 不同時：\n- SQL Server：直接報錯 Cannot resolve the collation conflict\n- PostgreSQL / MySQL：可能不報錯，但無法使用索引、比對變慢、排序結果不一致\n預防原則：新物件一律跟隨資料庫預設 Collation；跨系統介接「事前」確認雙方編碼，不要等亂碼進來再救——進來的亂碼如果原始檔已刪，就救不回來了。"
+  },
+  "dba-connection-pool": {
+    "teachingSteps": [
+      "建立位置觀念：Connection Pool 在應用程式端（連線字串設定），資料庫端另有 max connections 上限。",
+      "理解 leak 模式：程式開連線沒關，Pool 逐漸耗盡，重啟應用暫時恢復——「重啟就好了」正是 leak 的典型訊號。",
+      "學排查第一步：查資料庫目前 Session 數，依來源應用與主機分組，找出誰佔用最多。",
+      "找出 idle in transaction 的長連線：交易開著不提交，既佔連線又持有鎖。",
+      "做容量對帳：所有應用的 Pool 上限總和不可超過資料庫 max connections。"
+    ],
+    "example": "-- PostgreSQL 觀察連線分佈\nSELECT state, application_name, COUNT(*)\nFROM pg_stat_activity\nGROUP BY state, application_name\nORDER BY 3 DESC;\n\n-- 找出 idle in transaction 過久的連線\nSELECT pid, now() - xact_start AS duration, query\nFROM pg_stat_activity\nWHERE state = 'idle in transaction'\nORDER BY duration DESC;",
+    "practiceTasks": [
+      "查出目前資料庫的連線數與上限設定。",
+      "模擬開啟交易不提交，從監控視角找出這條連線。",
+      "寫出「連線耗盡」的排查步驟清單。",
+      "為兩個應用共用一套資料庫設計 Pool 上限分配。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Pool 在應用端、max connections 在資料庫端。",
+      "我知道「重啟就恢復」暗示連線洩漏。",
+      "我能查出目前 Session 的來源分佈。",
+      "我知道 idle in transaction 的危害。"
+    ]
+  },
+  "dba-mssql-foundation": {
+    "teachingSteps": [
+      "建立名詞地圖：Instance、Database、mdf（資料檔）、ldf（交易記錄檔）、SSMS 管理工具。",
+      "理解 Recovery Model：Simple 只能還原到備份時間點；Full 搭配 Log 備份可還原到任意時間點，但必須定期備份交易記錄，否則 ldf 無限成長。",
+      "學備份三件組與還原順序：Full → Differential → Transaction Log。",
+      "認識 SQL Server Agent：排程備份與維護作業，Job 失敗必須有通知機制。",
+      "認識 AlwaysOn 可用性群組：主副本自動容錯移轉，唯讀副本可分擔報表查詢。"
+    ],
+    "example": "ldf 暴漲經典案例：\n現象：磁碟被 ldf 塞滿\n原因：資料庫設 Full Recovery，但只排了 Full Backup、沒排 Log Backup\n→ 交易記錄永遠不截斷，持續成長\n處理：立即補一次 Log Backup 釋放空間；\n長期依 RPO 決定 Log 備份頻率，或改 Simple（若可接受只還原到備份點）\n\n備份鏈範例：Full（每日）+ Log（每 15 分鐘）→ RPO 15 分鐘",
+    "practiceTasks": [
+      "用 Docker 啟動 SQL Server 並以 SSMS 或 DBeaver 連線。",
+      "查詢每個資料庫的 Recovery Model。",
+      "設計一組 Full + Log 的備份排程並說明對應 RPO。",
+      "寫出 ldf 暴漲的排查與處理步驟。"
+    ],
+    "beginnerChecklist": [
+      "我知道 mdf 與 ldf 的角色。",
+      "我能說明 Simple 與 Full Recovery 的差異。",
+      "我知道 Full Recovery 必須搭配 Log 備份。",
+      "我能說明 AlwaysOn 的基本用途。"
+    ]
+  },
+  "devops-lab-setup-env": {
+    "teachingSteps": [
+      "安裝 Git，設定 user.name 與 user.email，產生 SSH Key 並加到 GitLab。",
+      "註冊 GitLab.com 免費帳號，建立第一個 private project，用 git clone 驗證 SSH 連線。",
+      "安裝 Docker Desktop（Windows 需先啟用 WSL2），執行 docker run hello-world 驗證。",
+      "先使用 GitLab 共用 Runner 的免費額度，之後再學在自己電腦註冊 Runner。",
+      "建立一個只有 echo 的 .gitlab-ci.yml，推上去看到 Pipeline 綠燈，環境就緒。"
+    ],
+    "example": "git config --global user.name \"Your Name\"\ngit config --global user.email you@example.com\nssh-keygen -t ed25519\n# 公鑰內容貼到 GitLab → Settings → SSH Keys\ngit clone git@gitlab.com:you/demo.git\n\n最小 .gitlab-ci.yml：\nhello:\n  script:\n    - echo \"pipeline works\"",
+    "practiceTasks": [
+      "完成 Git 安裝與 SSH Key 設定，成功 clone 一個 private 專案。",
+      "執行 docker run hello-world 並解釋輸出。",
+      "推送最小 .gitlab-ci.yml 並看到 Pipeline 成功。",
+      "把環境安裝過程整理成自己的建置筆記。"
+    ],
+    "beginnerChecklist": [
+      "我能用 SSH 操作 GitLab 專案。",
+      "我的 Docker 環境可以正常執行容器。",
+      "我看得到自己專案的 Pipeline 執行結果。",
+      "我知道後續課程的練習都在這套環境進行。"
+    ],
+    "handson": "【第 1 步】安裝 Git\n到 git-scm.com 下載安裝（全部預設下一步）。驗證：\n> git --version\n\n【第 2 步】告訴 Git 你是誰（commit 需要署名）\n> git config --global user.name \"Your Name\"\n> git config --global user.email you@example.com\n\n【第 3 步】產生 SSH Key 並掛到 GitLab\n> ssh-keygen -t ed25519\n一路按 Enter 即可（passphrase 可留空）。顯示公鑰：\n> cat ~/.ssh/id_ed25519.pub\n複製整行（ssh-ed25519 開頭），到 gitlab.com 註冊登入 → 右上角頭像 → Preferences → SSH Keys → 貼上 → Add key。\n驗證：\n> ssh -T git@gitlab.com\n看到「Welcome to GitLab, @你的帳號」= 成功。\n\n【第 4 步】建立第一個專案並 clone\nGitLab → New project → Create blank project → 名稱 demo、Visibility 選 Private → 勾選 Initialize repository with a README → Create project。\n> git clone git@gitlab.com:你的帳號/demo.git\n> cd demo\n\n【第 5 步】第一條 Pipeline\n在 demo 資料夾建立檔案 .gitlab-ci.yml（就叫這個名字，開頭有點），內容三行：\nhello:\n  script:\n    - echo \"pipeline works\"\n推上去：\n> git add .gitlab-ci.yml\n> git commit -m \"Add first pipeline\"\n> git push\n到 GitLab 專案頁 → 左側 Build → Pipelines：看到綠色勾勾 = 你的第一條 CI/CD 跑起來了（用的是 GitLab 免費共用 Runner，不用自己架）。\n\n【第 6 步】Docker Desktop\n到 docker.com 下載安裝（勾 Use WSL 2），重開機後：\n> docker run hello-world\n看到 Hello from Docker! = 全部環境就緒。\n\n【常見卡點】\n- ssh -T 失敗：公鑰沒貼全（要一整行）、或公司網路擋 22 Port。\n- git push 要密碼：clone 時用了 https 網址，改用 git@ 開頭的 SSH 網址。"
+  },
+  "devops-git-basics": {
+    "teachingSteps": [
+      "走一次基本循環：clone → 建立 feature branch → 修改 → add / commit → push。",
+      "練 merge：把 feature 分支併回 main，用 git log --graph 觀察歷史結構。",
+      "刻意製造衝突：兩個分支修改同一行，merge 時看 <<<<<<< 標記區塊，保留正確內容後 commit。",
+      "理解 rebase 的效果與代價：歷史變成直線，但 commit 被改寫；已推送的共享分支不要 rebase。",
+      "用 tag 標記版本（例如 v1.0.0），理解 tag 與 release、rollback 的對應。",
+      "養成 commit 訊息習慣：一句話說清楚為什麼改，而不是改了什麼檔。"
+    ],
+    "example": "git checkout -b feature/login\n# 修改檔案\ngit add .\ngit commit -m \"Add login validation\"\ngit push -u origin feature/login\n\n# 衝突解決\ngit merge feature/login\n# CONFLICT in app.js\n<<<<<<< HEAD\n目前分支的內容\n=======\n對方分支的內容\n>>>>>>> feature/login\n# 編輯保留正確內容 → git add → git commit",
+    "practiceTasks": [
+      "完成一次 branch → commit → push → merge 的完整流程。",
+      "刻意製造一次衝突並解決它。",
+      "用 git log --graph 畫出目前的分支歷史。",
+      "為一個穩定版本打上 tag 並說明用途。"
+    ],
+    "beginnerChecklist": [
+      "我能獨立完成分支開發與合併流程。",
+      "我遇到衝突知道怎麼判斷與解決。",
+      "我能說明 merge 與 rebase 的差異。",
+      "我知道 tag 在版本管理與回復的角色。"
+    ],
+    "handson": "接續 demo 專案，完整走一次分支與衝突（練習任務全解）。\n\n【第 1 步】開分支改東西\n> git checkout -b feature/greeting     ← 建立並切換到新分支\n> echo hello from feature > greeting.txt\n> git add .\n> git commit -m \"Add greeting file\"\n> git push -u origin feature/greeting  ← 第一次推新分支要 -u\n\n【第 2 步】併回 main\n> git checkout main\n> git merge feature/greeting\n> git push\n驗證：git log --oneline --graph 看得到 feature 的 commit 已進入 main。\n\n【第 3 步】親手製造一次衝突（練習任務 2 解答）\n> git checkout -b feature/a\n用編輯器把 greeting.txt 第一行改成「版本 A」，然後 commit：\n> git add . && git commit -m \"Change to version A\"\n> git checkout main\n把 greeting.txt 第一行改成「版本 main」，commit：\n> git add . && git commit -m \"Change to version main\"\n> git merge feature/a\n→ CONFLICT (content): Merge conflict in greeting.txt\n打開 greeting.txt 會看到：\n<<<<<<< HEAD\n版本 main\n=======\n版本 A\n>>>>>>> feature/a\n讀法：<<<< 到 ==== 是你所在分支（main）的內容；==== 到 >>>> 是要併進來的（feature/a）。\n解法：把三行標記全部刪掉，留下你判斷正確的內容（例如「版本 A」），存檔後：\n> git add greeting.txt\n> git commit\n完成。這整段就是面試題「描述一次解衝突的流程」的標準答案：看標記 → 理解兩邊意圖 → 保留正確內容 → add + commit。\n\n【第 4 步】打版本標籤（練習任務 4 解答）\n> git tag v1.0.0\n> git push origin v1.0.0\n用途：部署的就是某個 tag 的版本；上線出問題，回到上一個 tag 重新部署就是 Rollback。\n\n【補充】什麼時候用 rebase？\n自己還沒推出去的分支想跟上 main 最新進度：git rebase main。規則只有一條：推上去給別人看過的分支，永遠不要 rebase。"
+  },
+  "devops-artifact-repo": {
+    "teachingSteps": [
+      "理解問題：企業內網的建置機不能直連 nuget.org / pypi.org，所以 Pipeline 抓套件會失敗。",
+      "理解正規解法：自建套件庫（Nexus、Artifactory 或 GitLab Package Registry）作為上游代理，第一次由它代抓並快取。",
+      "學用戶端設定：NuGet.config 的 packageSources、pip 的 index-url 指向內部套件庫。",
+      "理解治理價值：統一控管允許的套件與版本、留下稽核紀錄、離線環境也能建置。",
+      "記住安全配套：內部快取的套件同樣要納入 SCA 弱點掃描。"
+    ],
+    "example": "NuGet.config：\n<packageSources>\n  <clear />\n  <add key=\"internal\"\n       value=\"https://nexus.company.local/repository/nuget-group/index.json\" />\n</packageSources>\n\npip 指向內部來源：\npip install -r requirements.txt \\\n  --index-url https://nexus.company.local/repository/pypi-proxy/simple",
+    "practiceTasks": [
+      "畫出「開發機 / 建置機 → 內部套件庫 → 官方來源」的流量圖。",
+      "寫出 NuGet 與 pip 指向內部來源的設定範例。",
+      "說明套件庫代理模式與純快取的差異。",
+      "列出內部套件庫需要的維運項目（空間、快取更新、掃描）。"
+    ],
+    "beginnerChecklist": [
+      "我能說明企業為什麼需要私有套件庫。",
+      "我知道 NuGet/pip 抓不到套件時該檢查來源設定。",
+      "我知道上游代理與快取的運作方式。",
+      "我知道內部快取套件也要掃弱點。"
+    ]
+  },
+  "devops-zap-advanced": {
+    "teachingSteps": [
+      "先驗證盲區：對需登入的測試站跑未認證 Baseline Scan，觀察報告幾乎空白——理解「沒發現」不等於「沒弱點」。",
+      "選擇認證方式：表單登入（提供帳密與登入 URL）、Header Token（API 常用），或預先錄製的 context 檔。",
+      "掃描過程中檢查證據：ZAP 的請求記錄裡必須出現登入後才有的 URL，才代表真的掃進去了。",
+      "API 掃描：匯入 OpenAPI/Swagger 定義讓 ZAP 枚舉端點，搭配 Token 認證。",
+      "遵守安全紀律：使用專用測試帳號、可拋棄的測試資料，避免對正式環境執行主動掃描。"
+    ],
+    "example": "API 掃描概念：\ndocker run -v $(pwd):/zap/wrk ghcr.io/zaproxy/zaproxy:stable \\\n  zap-api-scan.py \\\n  -t https://test.company.local/openapi.json -f openapi \\\n  -r api-report.html\n\n認證：以 config 或環境變數注入 Authorization Header。\n\n有效性驗證：報告需出現登入後才有的端點（如 /api/orders），\n否則整輪掃描可能都停在登入頁。",
+    "practiceTasks": [
+      "對同一個測試站分別跑未認證與認證掃描，比較報告差異。",
+      "設定 Header Token 認證並驗證掃描進到內頁。",
+      "用 OpenAPI 定義執行一次 API 掃描。",
+      "寫出認證掃描的檢核清單（帳號、資料、範圍、證據）。"
+    ],
+    "beginnerChecklist": [
+      "我知道未認證 DAST 的盲區。",
+      "我能設定至少一種 ZAP 認證方式。",
+      "我知道如何驗證掃描真的進到登入後頁面。",
+      "我知道 API 掃描需要 OpenAPI 定義與 Token。"
+    ]
+  },
+  "devops-k8s-awareness": {
+    "teachingSteps": [
+      "從痛點推導：單機掛了容器全滅、更新要手動停舊起新、流量大要人工加容器——這些就是調度平台要解決的問題。",
+      "建立概念對應：Container → Pod（最小單位）、手動起 N 個容器 → Deployment（副本管理）、固定入口 → Service、對外路由 → Ingress。",
+      "理解宣告式：你描述「要 3 個副本」，Kubernetes 負責讓現實符合描述，Pod 掛了自動補。",
+      "理解滾動更新與回滾：Deployment 逐步替換 Pod，失敗可退回上一版。",
+      "認清邊界：小型單體系統用 Docker Compose 就夠；Kubernetes 帶來的維運複雜度不是免費的。"
+    ],
+    "example": "概念對照：\ndocker run my-api           → Pod\n手動維持 3 個容器           → Deployment（replicas: 3）\n自己記 IP 連容器            → Service（穩定名稱與分流）\nNginx 反代對外              → Ingress\n\n宣告式運作：kubectl apply 提交期望狀態，\nKubernetes 持續讓實際狀態收斂到期望狀態。",
+    "practiceTasks": [
+      "整理一張 Docker 概念對 Kubernetes 物件的對照表。",
+      "用一句話各說明 Pod、Deployment、Service、Ingress。",
+      "描述滾動更新的流程與失敗時的回滾。",
+      "舉一個適合與一個不適合上 Kubernetes 的系統並說明理由。"
+    ],
+    "beginnerChecklist": [
+      "我能說明 Kubernetes 解決哪些單機做不到的問題。",
+      "我能解釋 Pod、Deployment、Service 的角色。",
+      "我知道宣告式與命令式管理的差異。",
+      "我知道不是所有系統都需要 Kubernetes。"
+    ]
+  },
+  "devops-ansible-basics": {
+    "teachingSteps": [
+      "準備一台可 SSH 連線的 Linux 測試機（虛擬機或容器），作為被管理節點。",
+      "寫 Inventory：hosts 檔列出主機與分群。",
+      "跑第一個 ad-hoc 指令：ansible all -i hosts -m ping，驗證管理通道正常。",
+      "寫第一個 Playbook：安裝 nginx、放置設定檔、確保服務啟動。",
+      "連續執行兩次觀察冪等性：第一次 changed、第二次 ok，理解「描述狀態」與「執行動作」的差異。",
+      "養成先 --check 演練再正式執行的習慣。"
+    ],
+    "example": "# hosts\n[web]\n192.168.56.10\n\n# site.yml\n- hosts: web\n  become: true\n  tasks:\n    - name: Install nginx\n      apt:\n        name: nginx\n        state: present\n    - name: Ensure nginx running\n      service:\n        name: nginx\n        state: started\n        enabled: true\n\nansible-playbook -i hosts site.yml --check   # 先演練\nansible-playbook -i hosts site.yml           # 執行；再跑一次應全為 ok",
+    "practiceTasks": [
+      "完成 Inventory 與 ansible ping 驗證。",
+      "寫一個安裝並啟動 nginx 的 Playbook。",
+      "連續執行兩次，記錄 changed 與 ok 的差異。",
+      "把一個手動部署步驟清單改寫成 Playbook。"
+    ],
+    "beginnerChecklist": [
+      "我能讓 Ansible 連上被管理主機。",
+      "我能寫出基本的 Playbook。",
+      "我能解釋冪等性並用執行結果證明。",
+      "我知道 --check 模式的用途。"
+    ]
+  },
+  "devops-terraform-concept": {
+    "teachingSteps": [
+      "理解宣告式：.tf 檔描述「要存在什麼資源」，而不是「怎麼一步步建立」。",
+      "學三步循環：terraform init（安裝 provider）→ plan（預覽差異）→ apply（執行變更）。",
+      "理解 state 檔：Terraform 靠它記得「已經建了什麼」；遺失 state 等於失憶，必須集中保管並鎖定。",
+      "理解 drift：有人手動改了資源，plan 會顯示差異——這就是環境對帳能力。",
+      "劃清分工：Terraform 建立 VM、網路、雲端資源；Ansible 負責主機內的軟體與設定。"
+    ],
+    "example": "resource \"docker_container\" \"web\" {\n  name  = \"demo-web\"\n  image = \"nginx:alpine\"\n  ports {\n    internal = 80\n    external = 8080\n  }\n}\n\nterraform init\nterraform plan    # 顯示：+ docker_container.web will be created\nterraform apply\n\n# 手動 docker rm -f demo-web 之後再 plan\n# → 顯示資源需要重建（drift 偵測）",
+    "practiceTasks": [
+      "用 Docker provider 建立一個由 Terraform 管理的容器。",
+      "手動刪除該容器後執行 plan，觀察 drift 偵測。",
+      "說明 state 檔遺失會發生什麼事。",
+      "為一個部署情境劃分 Terraform 與 Ansible 的責任。"
+    ],
+    "beginnerChecklist": [
+      "我能說明宣告式 IaC 的意義。",
+      "我知道 init / plan / apply 各做什麼。",
+      "我知道 state 檔的重要性與保管方式。",
+      "我能說明 Terraform 與 Ansible 的分工。"
+    ]
+  },
+  "devops-app-monitoring": {
+    "teachingSteps": [
+      "為服務加上 /health 端點，回應要反映依賴狀態（例如資料庫可否連線），並讓 Docker healthcheck 或 Load Balancer 監測它。",
+      "集中 Logs：容器輸出到 stdout 由平台收集；約定格式（時間、等級、請求 ID）方便追查。",
+      "認識四個黃金訊號：流量、錯誤率、延遲、飽和度；先能手動查，再用 Prometheus 自動收集。",
+      "把告警設在「症狀」上：錯誤率超標、P95 延遲超標，而不是只有 CPU 高。",
+      "每次事故後回頭問：這次能不能更早從監控看到？缺什麼指標就補什麼。"
+    ],
+    "example": "docker-compose healthcheck：\nhealthcheck:\n  test: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n  interval: 30s\n  retries: 3\n\nWeb 服務告警設計：\n- 錯誤率：5xx / 總請求 > 1%（持續 5 分鐘）\n- 延遲：P95 > 800ms\n- 可用性：/health 連續 3 次失敗\n- 容量：磁碟 > 80%、記憶體持續 > 90%",
+    "practiceTasks": [
+      "為一個容器服務加上 healthcheck 並驗證失敗時的狀態變化。",
+      "規劃一個 Web 服務的告警清單（症狀優先）。",
+      "設計一份 Log 格式約定（欄位與範例）。",
+      "用一次模擬故障檢討「監控能不能更早發現」。"
+    ],
+    "beginnerChecklist": [
+      "我能說明 Logs、Metrics、Tracing 的差異。",
+      "我知道 healthcheck 要反映依賴狀態。",
+      "我能列出四個黃金訊號。",
+      "我知道告警要對症狀而不是只對資源。"
+    ]
+  }
+}

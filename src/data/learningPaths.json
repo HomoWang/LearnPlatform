@@ -1,0 +1,57 @@
+[
+  {
+    "id": "network",
+    "title": "網路工程師 / 企業網路維運",
+    "description": "從實驗環境與 TCP/IP 排查基礎開始，逐步建立 Switch、AD/DNS、Firewall、VPN、Proxy、F5、VDI、PRTG、資安合規與事件處理能力。",
+    "category": "network",
+    "level": "beginner",
+    "stages": [
+      "環境準備",
+      "網路基礎",
+      "TCP/IP 排查基礎",
+      "Router / Switch",
+      "AD / DNS",
+      "Firewall / ACL",
+      "VPN",
+      "Proxy / Reverse Proxy / WAF",
+      "F5 / Load Balancer",
+      "企業內部網路部署",
+      "VDI / PRTG / 資安合規與事件處理"
+    ]
+  },
+  {
+    "id": "dba",
+    "title": "DBS / DBA / 資料庫系統維運",
+    "description": "學習 SQL、聚合查詢、Schema、隔離層級、權限、Migration、備份還原、監控調教，以及 DB2、Oracle、SQL Server 基礎維運。",
+    "category": "dba",
+    "level": "beginner",
+    "stages": [
+      "環境準備",
+      "資料庫基礎",
+      "SQL 查詢與 Schema 設計",
+      "帳號權限控管",
+      "Migration 與備份還原",
+      "監控與效能調教",
+      "DB2 / Oracle / SQL Server 維運"
+    ]
+  },
+  {
+    "id": "devops",
+    "title": "DevOps / DevSecOps / AI Platform",
+    "description": "建立 Git 實操、GitLab 管控、CI/CD、DevSecOps、SonarQube、OWASP ZAP、Docker、IaC、應用監控與企業 AI 平台落地能力。",
+    "category": "devops",
+    "level": "beginner",
+    "stages": [
+      "環境準備",
+      "DevOps 與 Git 基礎",
+      "Git / GitLab 管控",
+      "CI/CD Pipeline",
+      "DevSecOps",
+      "SonarQube / OWASP ZAP",
+      ".NET / Python Pipeline",
+      "Docker / Container 與 AI 平台",
+      "IaC / 自動化部署",
+      "監控與營運"
+    ]
+  }
+]

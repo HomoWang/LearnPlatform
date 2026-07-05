@@ -1,0 +1,950 @@
+[
+  {
+    "id": "net-basics",
+    "pathId": "network",
+    "title": "網路基礎與企業常見架構",
+    "stage": "網路基礎",
+    "description": "建立 OSI、TCP/IP、IP、Subnet、DNS、DHCP、VLAN、NAT、Routing、LAN/WAN/DMZ 與網路拓樸的基本理解。",
+    "businessUse": "企業維運人員需要能快速看懂網路位置、流向、設備角色與常見網段規劃，才能判斷問題發生在端點、交換、路由、DNS 或防火牆。",
+    "lessons": [
+      {
+        "id": "net-basics-osi",
+        "title": "OSI 七層與 TCP/IP",
+        "objective": "能用分層方式描述連線問題可能出現的位置。",
+        "content": "OSI 七層是理解網路問題的檢查框架；TCP/IP 是實務上最常看到的通訊模型。企業排查時常用實體連線、IP、Port、Session、應用程式回應來切分問題。",
+        "commonIssues": ["網路線或 Port 未啟用", "IP 可通但應用程式無回應", "只看 Ping 而忽略 TCP Port"],
+        "troubleshooting": ["確認實體連線", "測試 IP 可達性", "測試目標 Port", "確認應用服務狀態"],
+        "interviewPoints": ["用 OSI 分層說明排查順序", "說明 Ping 與 TCP Port 測試的差異"]
+      },
+      {
+        "id": "net-basics-ip-subnet",
+        "title": "IP Address、Subnet Mask、Gateway",
+        "objective": "能判斷主機是否位於正確網段，並理解 Gateway 的用途。",
+        "content": "IP 是設備在網路中的位址，Subnet 決定同網段範圍，Gateway 是離開本網段時的下一站。企業常用不同網段切分辦公、Server、DMZ、VPN 與管理區。",
+        "commonIssues": ["子網遮罩設定錯誤", "Gateway 指到錯誤設備", "IP 衝突"],
+        "troubleshooting": ["檢查 ipconfig 或 ifconfig", "確認 ARP 與 Gateway", "比對網段規劃表"],
+        "interviewPoints": ["說明同網段與跨網段差異", "用例子計算簡單子網"]
+      },
+      {
+        "id": "net-basics-services",
+        "title": "DNS、DHCP、VLAN 與 NAT",
+        "objective": "能解釋企業常見基礎服務如何影響連線。",
+        "content": "DNS 負責名稱解析，DHCP 發放 IP 設定，VLAN 用於切分二層網路，NAT 讓內部位址轉換成可對外或跨區存取的位址。",
+        "commonIssues": ["DNS 解析錯誤", "DHCP 沒拿到正確租約", "VLAN 配錯", "NAT 規則缺漏"],
+        "troubleshooting": ["測試 nslookup", "釋放並更新 DHCP", "確認交換器 Port VLAN", "查看 NAT 規則與 Log"],
+        "interviewPoints": ["說明 DNS 與 IP 可通但網站打不開的關係", "說明 VLAN 的目的"]
+      },
+      {
+        "id": "net-basics-routing",
+        "title": "Routing、Static Route、LAN / WAN / DMZ",
+        "objective": "能理解封包跨網段移動時會經過哪些設備。",
+        "content": "Routing 決定封包下一站，Static Route 是人工指定路徑，Dynamic Routing 則由協定交換路由。DMZ 通常放對外服務，和內部網段採較嚴格控管。",
+        "commonIssues": ["缺少回程路由", "路由指向錯誤下一跳", "DMZ 規則過寬"],
+        "troubleshooting": ["查看 route table", "使用 tracert 或 traceroute", "確認雙向路由與防火牆規則"],
+        "interviewPoints": ["說明路由與防火牆規則的差異", "描述 DMZ 的用途"]
+      },
+      {
+        "id": "net-basics-devices",
+        "title": "Switch、Router、Firewall 差異",
+        "objective": "能說明常見網路設備在企業中的職責。",
+        "content": "Switch 多處理二層連接與 VLAN，Router 處理跨網段路由，Firewall 則依規則控管流量並留下安全紀錄。",
+        "commonIssues": ["把 ACL 與 Firewall Policy 混在一起", "不了解二層與三層邊界", "未確認設備是否負責該段流量"],
+        "troubleshooting": ["先確認流量經過哪台設備", "比對拓樸圖", "查看對應設備 Log"],
+        "interviewPoints": ["說明三種設備差異", "用企業網段案例描述流量路徑"]
+      }
+    ],
+    "tags": ["OSI", "TCP/IP", "Subnet", "DNS", "DHCP", "VLAN", "NAT"],
+    "order": 2
+  },
+  {
+    "id": "net-firewall-acl",
+    "pathId": "network",
+    "title": "Firewall / ACL 實務",
+    "stage": "Firewall / ACL",
+    "description": "學習 Policy、Rule、Source、Destination、Service、Allow/Deny、NAT Rule、Security Rule、ACL 與最小權限原則。",
+    "businessUse": "企業使用防火牆與 ACL 控管系統、VPN、DMZ、資料庫與分公司連線，並透過 Log 與申請流程降低資安風險。",
+    "lessons": [
+      {
+        "id": "net-firewall-policy",
+        "title": "Firewall Policy 與 Rule",
+        "objective": "能讀懂一條防火牆規則的主要欄位。",
+        "content": "防火牆規則通常包含 Source、Destination、Service、Action、Schedule、Log。維運時要確認流量方向、服務 Port 與是否符合最小權限。",
+        "commonIssues": ["Source 或 Destination 寫反", "Service 開太大", "規則順序造成命中錯誤"],
+        "troubleshooting": ["比對申請單", "查看命中規則", "確認 Log 是否 Deny"],
+        "interviewPoints": ["說明一條規則應包含哪些欄位", "解釋最小權限原則"]
+      },
+      {
+        "id": "net-firewall-acl-basic",
+        "title": "ACL 與最小權限",
+        "objective": "能區分 Router ACL、Switch ACL 與 Firewall ACL 的用途。",
+        "content": "ACL 是依條件允許或拒絕流量的清單，可出現在 Router、Switch 或 Firewall。企業上會透過 ACL 限制 VPN 使用者、Server 區與 DMZ 存取。",
+        "commonIssues": ["允許範圍過大", "忘記回程或相關服務", "未定期盤點閒置規則"],
+        "troubleshooting": ["確認命中順序", "查詢最近使用時間", "驗證來源與目的是否必要"],
+        "interviewPoints": ["說明 ACL 與 Firewall Policy 的關係", "描述規則盤點流程"]
+      },
+      {
+        "id": "net-firewall-deny",
+        "title": "Deny Log 排查",
+        "objective": "能從防火牆 Log 判斷連線被擋原因。",
+        "content": "Deny Log 會顯示來源、目的、服務、命中規則與時間。排查時要對照使用者描述、測試時間、NAT 後位址與服務 Port。",
+        "commonIssues": ["只看來源電腦，忽略 NAT 後位址", "測試時間不一致", "目的服務其實沒啟動"],
+        "troubleshooting": ["收集來源 IP 與時間", "查詢 Deny Log", "測試 Port", "補齊規則或修正服務"],
+        "interviewPoints": ["說明使用者無法連內部系統的排查步驟", "說明規則開太大造成的風險"]
+      }
+    ],
+    "tags": ["Firewall", "ACL", "Policy", "Deny Log", "DMZ"],
+    "order": 6
+  },
+  {
+    "id": "net-vpn",
+    "pathId": "network",
+    "title": "VPN 與遠端存取控管",
+    "stage": "VPN",
+    "description": "理解 Remote Access VPN、Site-to-Site VPN、SSL VPN、IPsec VPN、AD、MFA、IP Pool、Split Tunnel、Full Tunnel 與 VPN ACL。",
+    "businessUse": "VPN 讓員工、分公司與廠商能安全存取企業內部資源，維運人員需要能處理驗證、DNS、權限與路由問題。",
+    "lessons": [
+      {
+        "id": "net-vpn-types",
+        "title": "Remote Access 與 Site-to-Site VPN",
+        "objective": "能說明兩種 VPN 的用途與差異。",
+        "content": "Remote Access VPN 供個人端點連回企業，Site-to-Site VPN 連接兩個固定網路。SSL VPN 常見於使用者連線，IPsec 常見於站台互連。",
+        "commonIssues": ["VPN 登入成功但無法連內部系統", "分公司回程路由缺漏", "MFA 或 AD 驗證異常"],
+        "troubleshooting": ["確認登入與 MFA", "檢查 VPN IP Pool", "確認路由與 ACL", "檢查 DNS"],
+        "interviewPoints": ["比較 Remote Access 與 Site-to-Site", "說明 Split Tunnel 與 Full Tunnel"]
+      },
+      {
+        "id": "net-vpn-acl-log",
+        "title": "VPN ACL 與 Log",
+        "objective": "能用 Log 排查 VPN 使用者權限問題。",
+        "content": "VPN 使用者連線後仍需透過 ACL 控管可存取的系統。Log 可協助確認登入、IP 分配、連線目的與被拒原因。",
+        "commonIssues": ["使用者群組未套用正確 ACL", "DNS 指向外部解析", "VPN 後 Proxy 設定衝突"],
+        "troubleshooting": ["查 VPN 登入 Log", "確認群組與 ACL", "測試 DNS", "檢查 Proxy 設定"],
+        "interviewPoints": ["描述 VPN 可登入但連不到 Server 的排查方法", "說明 VPN 與 AD/MFA 的關係"]
+      }
+    ],
+    "tags": ["VPN", "SSL VPN", "IPsec", "MFA", "Split Tunnel"],
+    "order": 7
+  },
+  {
+    "id": "net-proxy",
+    "pathId": "network",
+    "title": "Proxy / Reverse Proxy / WAF",
+    "stage": "Proxy / Reverse Proxy / WAF",
+    "description": "完整理解 Forward Proxy、Reverse Proxy、WAF、DNS、AD、VPN、SSL Inspection、PAC、WPAD、Proxy Log 與常見異常排查。",
+    "businessUse": "企業透過 Proxy 控管上網、記錄稽核、進行 SSL Inspection，也透過 Reverse Proxy 保護內部 Web 系統並集中處理憑證與流量轉發。",
+    "lessons": [
+      {
+        "id": "net-proxy-forward-reverse",
+        "title": "Forward Proxy 與 Reverse Proxy",
+        "objective": "能清楚說明兩者差異與企業用途。",
+        "content": "Forward Proxy 代表使用者對外連線，常用於上網控管與稽核；Reverse Proxy 代表後端服務對外提供入口，常用於保護 Web Server、集中憑證與路徑轉發。",
+        "commonIssues": ["將 Proxy 與 NAT 混淆", "不知道真實來源 IP 需要 Header 保留", "忽略 Proxy 對套件下載的影響"],
+        "troubleshooting": ["確認是否套用 Proxy", "檢查 Proxy Log", "測試不走 Proxy", "檢查 X-Forwarded-For"],
+        "interviewPoints": ["回答 Forward Proxy 和 Reverse Proxy 差異", "說明 Proxy 與 Firewall/WAF/Load Balancer 關係"]
+      },
+      {
+        "id": "net-proxy-auth-ssl",
+        "title": "Proxy 驗證、PAC、WPAD 與 SSL Inspection",
+        "objective": "能判斷使用者上網與憑證錯誤是否由 Proxy 引起。",
+        "content": "企業 Proxy 常與 AD/LDAP 做驗證，透過 PAC 或 WPAD 自動套用設定。SSL Inspection 會重新簽發網站憑證，因此端點需要信任企業根憑證。",
+        "commonIssues": ["PAC 檔錯誤", "WPAD 沒生效", "端點不信任企業憑證", "應用程式不支援 Proxy"],
+        "troubleshooting": ["檢查 Proxy 位址與 Port", "查看 PAC/WPAD", "驗證帳號權限", "確認憑證信任與例外清單"],
+        "interviewPoints": ["說明 PAC File 與 WPAD", "說明 HTTPS 因 Proxy 發生憑證錯誤的原因"]
+      },
+      {
+        "id": "net-proxy-reverse-waf",
+        "title": "Reverse Proxy、WAF 與後端服務",
+        "objective": "能排查 Reverse Proxy 後端無回應或 Header 錯誤。",
+        "content": "Reverse Proxy 常和 WAF、Load Balancer、API Gateway 概念相鄰。排查時要確認外部入口、憑證、Host Header、X-Forwarded-For、後端 Port 與後端服務健康。",
+        "commonIssues": ["Host Header 未轉發", "後端 Port 錯誤", "憑證鏈不完整", "WAF 規則誤擋"],
+        "troubleshooting": ["測試 Reverse Proxy 到後端連線", "看 Nginx 或 WAF Log", "確認 Header", "檢查後端服務狀態"],
+        "interviewPoints": ["說明 Reverse Proxy 如何隱藏後端 Server", "描述後端服務無回應的排查流程"]
+      }
+    ],
+    "tags": ["Proxy", "Reverse Proxy", "WAF", "PAC", "WPAD", "SSL Inspection"],
+    "order": 8
+  },
+  {
+    "id": "net-f5",
+    "pathId": "network",
+    "title": "F5 / Load Balancer 實務",
+    "stage": "F5 / Load Balancer",
+    "description": "學習 Virtual Server、Pool、Pool Member、Health Check、SNAT、SSL Offload、Persistence、Layer 4/7 與 HA。",
+    "businessUse": "企業使用 F5 或 Load Balancer 對 Web/API 服務做分流、健康檢查、SSL 集中處理與高可用。",
+    "lessons": [
+      {
+        "id": "net-f5-objects",
+        "title": "Virtual Server、Pool 與 Member",
+        "objective": "能看懂 F5 服務入口與後端成員關係。",
+        "content": "Virtual Server 是使用者連入的入口，Pool 是後端服務群組，Pool Member 是實際 Server 與 Port。Health Check 決定是否導流。",
+        "commonIssues": ["Member Port 設錯", "Health Check 失敗", "SNAT 設定造成回程不一致"],
+        "troubleshooting": ["確認 Virtual Server 狀態", "查看 Pool Member 健康", "測試後端 Port"],
+        "interviewPoints": ["說明 F5 導流流程", "說明 Health Check 的用途"]
+      },
+      {
+        "id": "net-f5-ssl-persistence",
+        "title": "SSL Offload 與 Persistence",
+        "objective": "能解釋憑證與 Session 保持對服務的影響。",
+        "content": "SSL Offload 讓 F5 集中處理 HTTPS 憑證。Persistence 或 Session Stickiness 可讓同一使用者導向固定後端，避免登入狀態異常。",
+        "commonIssues": ["憑證到期", "Session 沒保持", "後端服務協定與 Offload 設定不一致"],
+        "troubleshooting": ["檢查憑證期限", "查看 Persistence Profile", "確認後端協定"],
+        "interviewPoints": ["說明憑證到期造成的 HTTPS 異常", "說明 Session Stickiness"]
+      }
+    ],
+    "tags": ["F5", "Load Balancer", "SSL Offload", "Health Check"],
+    "order": 9
+  },
+  {
+    "id": "net-enterprise-deploy",
+    "pathId": "network",
+    "title": "企業內部網路部署規劃",
+    "stage": "企業內部網路部署",
+    "description": "規劃總公司、分公司、辦公網段、Server、DMZ、Guest Wi-Fi、管理網段、VPN、VDI、Proxy、DNS/DHCP 與 HA。",
+    "businessUse": "清楚的網路部署與文件能降低維運風險，並讓防火牆規則、監控、備援與合規盤點有依據。",
+    "lessons": [
+      {
+        "id": "net-enterprise-zones",
+        "title": "網段與安全區域規劃",
+        "objective": "能建立基本企業網段與防火牆區域模型。",
+        "content": "常見區域包含辦公、Server、DMZ、Guest、VPN、VDI、管理與 Proxy。每個區域應有不同存取原則與監控要求。",
+        "commonIssues": ["使用者與 Server 混在同網段", "DMZ 與內網缺少隔離", "命名與文件不一致"],
+        "troubleshooting": ["整理網段表", "畫拓樸圖", "盤點跨區流量"],
+        "interviewPoints": ["說明 DMZ 與 Server 區差異", "描述網段規劃原則"]
+      }
+    ],
+    "tags": ["DMZ", "VLAN", "HA", "Network Design"],
+    "order": 10
+  },
+  {
+    "id": "net-vdi-prtg-security",
+    "pathId": "network",
+    "title": "VDI、PRTG、資安合規與事件處理",
+    "stage": "VDI / PRTG / 資安合規與事件處理",
+    "description": "整合 VDI/vSphere、PRTG Sensor、告警通知、報表、ISO 27001、CVE 更新、日常異常排除與企業事件/變更管理流程。",
+    "businessUse": "網路維運需要能監控設備健康、初步判斷告警、理解 VDI 與 VPN/Proxy 的關係，並執行合規與弱點修補流程。",
+    "lessons": [
+      {
+        "id": "net-prtg-sensors",
+        "title": "PRTG Sensor 與告警",
+        "objective": "能規劃 Router、Switch、Firewall、Proxy、Server 的基本監控。",
+        "content": "PRTG 常用 Ping、Port、SNMP、WMI、SSH、Interface 流量與磁碟空間 Sensor。告警應對應維運流程與通知窗口。",
+        "commonIssues": ["只監控 Ping 沒監控服務 Port", "告警門檻太敏感", "SNMP 認證錯誤"],
+        "troubleshooting": ["確認 Sensor 狀態", "檢查認證", "比對設備 Log", "調整門檻"],
+        "interviewPoints": ["說明如何用 PRTG 初步判斷異常", "說明流量報表用途"]
+      },
+      {
+        "id": "net-vdi-security",
+        "title": "VDI、vSphere 與合規維運",
+        "objective": "能說明 VDI 使用者登入流程與合規檢查重點。",
+        "content": "VDI 提供集中桌面環境，常與 VPN、Proxy、AD、vSphere、Snapshot、Backup、HA、vMotion 搭配。合規維運包含 CVE 更新、設定盤點與稽核紀錄。",
+        "commonIssues": ["VDI 可登入但無法上網", "Snapshot 長期未清", "弱點修補沒有回溯紀錄"],
+        "troubleshooting": ["檢查 VDI 網路與 Proxy", "確認 vCenter 事件", "盤點 CVE 與修補狀態"],
+        "interviewPoints": ["說明 VDI 和 VPN/Proxy 的關係", "說明 CVE 更新流程"]
+      },
+      {
+        "id": "net-incident-mgmt",
+        "title": "事件處理、通報與變更管理",
+        "objective": "能依企業流程處理事件：分級、通報、記錄、復原與事後檢討。",
+        "content": "企業異常處理有固定流程：確認影響範圍與等級、通報窗口與主管、優先恢復服務、保留證據與時間軸、事後撰寫 RCA 報告。日常變更則走變更單：影響評估、核准、維護窗口、驗證與回報。這套流程語言也是面試描述實務經驗的框架。",
+        "commonIssues": ["急著修而沒有通報，影響擴大時無人知情", "處理過程沒記錄時間軸，事後寫不出報告", "未走變更流程私自改設定"],
+        "troubleshooting": ["接到事件先確認影響範圍與開始時間", "邊處理邊記錄操作與時間", "恢復後補齊 RCA 與改善項目"],
+        "interviewPoints": ["描述一次完整的事件處理流程", "說明變更管理為什麼需要維護窗口與回復計畫"]
+      }
+    ],
+    "tags": ["VDI", "vSphere", "PRTG", "ISO 27001", "CVE", "Incident"],
+    "order": 11
+  },
+  {
+    "id": "dba-basics",
+    "pathId": "dba",
+    "title": "資料庫基礎與 RDBMS",
+    "stage": "資料庫基礎",
+    "description": "理解 Database、RDBMS、Table、Row、Column、Data Type、Primary Key、Foreign Key、Index、View、Transaction 與權限。",
+    "businessUse": "DBA 與資料庫維運需要理解資料結構、交易一致性、權限與備份還原，才能支援系統上線與日常維運。",
+    "lessons": [
+      {
+        "id": "dba-basics-rdbms",
+        "title": "RDBMS 與資料表",
+        "objective": "能說明資料庫、資料表、欄位與關聯。",
+        "content": "RDBMS 以資料表保存資料，透過 Primary Key、Foreign Key、Constraint 與 Index 維持資料關聯與查詢效率。",
+        "commonIssues": ["主鍵設計不清", "資料型別不合理", "沒有 Index 造成查詢慢"],
+        "troubleshooting": ["檢查 Table Schema", "確認 Key 與 Constraint", "查看索引與查詢條件"],
+        "interviewPoints": ["說明 Primary Key 和 Foreign Key", "說明 Index 的用途"]
+      },
+      {
+        "id": "dba-basics-transaction",
+        "title": "Transaction、Lock 與 Deadlock",
+        "objective": "能理解交易與鎖定如何影響系統。",
+        "content": "Transaction 透過 Commit 與 Rollback 保持資料一致性。Lock 會保護資料但也可能造成等待或 Deadlock。",
+        "commonIssues": ["長交易卡住其他 Session", "Deadlock 反覆發生", "隔離層級選擇不當"],
+        "troubleshooting": ["查 Session 與 Lock", "找出長交易", "檢查 SQL 順序與索引"],
+        "interviewPoints": ["說明 Commit/Rollback", "說明 Deadlock 的排查方向"]
+      },
+      {
+        "id": "dba-basics-isolation",
+        "title": "交易隔離層級",
+        "objective": "能說明四種隔離層級與 Dirty Read、Non-repeatable Read、Phantom Read 的差異。",
+        "content": "Read Uncommitted 可能讀到未提交資料（Dirty Read）；Read Committed 避免 Dirty Read，但同一交易內兩次讀值可能不同；Repeatable Read 保證重複讀取一致，但可能出現幻影列（Phantom Read）；Serializable 最嚴格但併發最差。多數企業系統預設 Read Committed，不同資料庫預設值不同。",
+        "commonIssues": ["報表在交易高峰讀到不一致資料", "為避免問題全面調高隔離層級，造成大量鎖等待", "跨資料庫搬遷後因預設層級不同而行為改變"],
+        "troubleshooting": ["確認目前 Session 的隔離層級", "分析問題屬於 Dirty Read 還是 Non-repeatable Read", "優先評估調整查詢方式而非調高層級"],
+        "interviewPoints": ["說明四種隔離層級各自防止的問題", "說明提高隔離層級的代價"]
+      }
+    ],
+    "tags": ["RDBMS", "Table", "Index", "Transaction", "Isolation Level"],
+    "order": 2
+  },
+  {
+    "id": "dba-sql-schema",
+    "pathId": "dba",
+    "title": "SQL 查詢與 Schema 設計",
+    "stage": "SQL 查詢與 Schema 設計",
+    "description": "建立 SQL、JOIN、聚合查詢、子查詢、NULL 處理、View、Stored Procedure、正規化、主檔/明細檔、Audit Table、字元集與 Collation 觀念。",
+    "businessUse": "良好的 Schema 與 SQL 能降低效能問題、資料品質問題與後續維運成本。",
+    "lessons": [
+      {
+        "id": "dba-sql-join",
+        "title": "基本 SQL 與 JOIN",
+        "objective": "能寫出查詢與關聯資料的基本 SQL。",
+        "content": "SQL 用於查詢、異動與管理資料。JOIN 讓不同資料表透過 Key 關聯，維運時常用於查詢異常資料或產出報表。",
+        "commonIssues": ["JOIN 條件漏寫造成資料膨脹", "WHERE 條件沒有命中索引", "NULL 判斷錯誤"],
+        "troubleshooting": ["先確認資料筆數", "檢查 JOIN 條件", "查看 Execution Plan"],
+        "interviewPoints": ["說明 INNER JOIN 與 LEFT JOIN", "描述慢查詢排查方式"]
+      },
+      {
+        "id": "dba-schema-design",
+        "title": "資料表與欄位設計",
+        "objective": "能設計基本資料表並理解正規化。",
+        "content": "Schema 設計包含欄位命名、Data Type、Key、Constraint、Index、歷史資料表、Log Table、Audit Table 與資料保留策略。",
+        "commonIssues": ["欄位型別過大或過小", "沒有建立時間與修改時間", "軟刪除與歷史保留不一致"],
+        "troubleshooting": ["比對需求與資料生命週期", "確認 Constraint", "檢查歸檔策略"],
+        "interviewPoints": ["說明正規化與反正規化", "說明 Audit Table 的用途"]
+      },
+      {
+        "id": "dba-sql-aggregate",
+        "title": "聚合查詢與子查詢",
+        "objective": "能用 GROUP BY、HAVING、聚合函數與子查詢完成維運統計查詢。",
+        "content": "COUNT、SUM、AVG、MAX、MIN 搭配 GROUP BY 做分組統計；WHERE 過濾資料列、HAVING 過濾分組結果。子查詢與 CTE（WITH）讓複雜查詢可讀可維護。維運常用情境：每日筆數比對、找出重複資料、統計異常交易量。",
+        "commonIssues": ["SELECT 了未出現在 GROUP BY 的欄位", "把 HAVING 當 WHERE 用造成效能問題", "子查詢回傳多列造成執行錯誤"],
+        "troubleshooting": ["先寫最小分組查詢再逐步加欄位", "確認每個 SELECT 欄位是聚合或分組欄位", "檢查子查詢實際回傳筆數"],
+        "interviewPoints": ["說明 WHERE 與 HAVING 的差異", "說明如何用 GROUP BY 找出重複資料"]
+      },
+      {
+        "id": "dba-sql-null",
+        "title": "NULL 三值邏輯與常見陷阱",
+        "objective": "能正確處理 NULL 判斷，避免查詢結果悄悄漏掉資料。",
+        "content": "NULL 代表未知，任何與 NULL 的比較結果都是 UNKNOWN：NULL = NULL 不成立，必須用 IS NULL / IS NOT NULL。NOT IN 清單含 NULL 會讓整個查詢回傳空集合；聚合函數會忽略 NULL；COUNT(*) 與 COUNT(欄位) 的結果可能不同。",
+        "commonIssues": ["用 = NULL 查不到任何資料", "NOT IN 子查詢含 NULL 導致回傳空集合", "COUNT(欄位) 少算了 NULL 列"],
+        "troubleshooting": ["檢查條件欄位是否允許 NULL", "把 NOT IN 改寫成 NOT EXISTS", "用 COALESCE 明確給定預設值"],
+        "interviewPoints": ["說明 NULL = NULL 為什麼不成立", "說明 NOT IN 遇到 NULL 的陷阱與改寫方式"]
+      },
+      {
+        "id": "dba-charset-collation",
+        "title": "字元集、Collation 與中文資料",
+        "objective": "能排查亂碼與中文排序、比對異常問題。",
+        "content": "字元集決定文字如何編碼（UTF-8、Big5），Collation 決定排序與比較規則（大小寫、全半形、筆劃或拼音排序）。亂碼幾乎都是「存入編碼與讀出編碼不一致」造成，跨系統介接與舊系統資料匯入時最常發生。",
+        "commonIssues": ["匯入 CSV 後中文變亂碼", "兩張表 Collation 不同造成 JOIN 報錯或變慢", "應用程式連線字串未指定編碼"],
+        "troubleshooting": ["逐層確認 Database、Table、欄位與連線的編碼設定", "用 HEX 值檢查實際儲存的位元組", "統一新建物件的預設 Collation"],
+        "interviewPoints": ["說明亂碼的常見成因與排查層次", "說明 Collation 對查詢與 JOIN 的影響"]
+      }
+    ],
+    "tags": ["SQL", "JOIN", "GROUP BY", "NULL", "Collation", "Schema", "Audit"],
+    "order": 3
+  },
+  {
+    "id": "dba-permissions",
+    "pathId": "dba",
+    "title": "帳號權限與最小權限",
+    "stage": "帳號權限控管",
+    "description": "學習 User、Role、Privilege、Schema/Table/View/Stored Procedure 權限、Read Only、Application、DBA、正式/測試環境帳號與權限盤點。",
+    "businessUse": "權限控管直接影響資料安全、稽核與正式環境風險，是資料庫維運的核心工作。",
+    "lessons": [
+      {
+        "id": "dba-permissions-role",
+        "title": "User、Role、Privilege",
+        "objective": "能規劃基本帳號與角色。",
+        "content": "User 是實際帳號，Role 是權限集合，Privilege 是具體操作權限。企業常分 Read Only、Application、維運、DBA 與報表帳號。",
+        "commonIssues": ["共用帳號難以稽核", "正式環境開發權限過大", "離職帳號未停用"],
+        "troubleshooting": ["盤點帳號", "查權限授權來源", "檢查最近登入與異動"],
+        "interviewPoints": ["說明最小權限原則", "描述權限異動申請流程"]
+      }
+    ],
+    "tags": ["User", "Role", "Privilege", "Audit"],
+    "order": 4
+  },
+  {
+    "id": "dba-migration-backup",
+    "pathId": "dba",
+    "title": "DB Migration、備份與還原",
+    "stage": "Migration 與備份還原",
+    "description": "學習 Schema/Data Migration、DDL、DML、上線前備份、影響評估、Rollback Plan、UAT、正式上版、Full/Incremental/Differential Backup、RPO/RTO 與 DR。",
+    "businessUse": "資料庫上線與還原是高風險工作，需要可驗證、可回復、可稽核的流程。",
+    "lessons": [
+      {
+        "id": "dba-migration-flow",
+        "title": "Migration 流程與 Rollback",
+        "objective": "能設計可回復的資料庫變更流程。",
+        "content": "DB Migration 包含 DDL、DML、Script 管理、測試環境驗證、UAT、正式上線、上線後驗證與 Rollback Plan。",
+        "commonIssues": ["正式上線前未備份", "Rollback Script 未測試", "Migration 後沒有驗證資料"],
+        "troubleshooting": ["檢查變更單", "驗證 Script 順序", "確認備份與回復點"],
+        "interviewPoints": ["說明 Migration 前中後檢查", "說明 Rollback Plan"]
+      },
+      {
+        "id": "dba-backup-recovery",
+        "title": "備份、還原、RPO 與 RTO",
+        "objective": "能說明備份策略與還原演練。",
+        "content": "備份類型包含 Full、Incremental、Differential、Archive Log 與 Transaction Log。RPO 是可接受資料損失，RTO 是可接受恢復時間。",
+        "commonIssues": ["備份成功但未演練還原", "備份檔未加密", "保留週期不符合稽核要求"],
+        "troubleshooting": ["確認備份排程", "做還原演練", "檢查備份檔完整性與保留策略"],
+        "interviewPoints": ["說明 RPO/RTO", "描述資料誤刪處理方向"]
+      }
+    ],
+    "tags": ["Migration", "Rollback", "Backup", "Restore", "RPO", "RTO"],
+    "order": 5
+  },
+  {
+    "id": "dba-monitoring-tuning",
+    "pathId": "dba",
+    "title": "資料庫監控、異常排除與效能調教",
+    "stage": "監控與效能調教",
+    "description": "監控服務狀態、連線數、Session、Lock、Deadlock、CPU、Memory、Disk、Tablespace、Log 空間、慢查詢、Execution Plan、SQL/Index Tuning 與 CVE 更新。",
+    "businessUse": "資料庫效能與穩定性直接影響企業系統，維運人員要能從監控與 Log 快速定位問題。",
+    "lessons": [
+      {
+        "id": "dba-monitoring-baseline",
+        "title": "監控指標與錯誤 Log",
+        "objective": "能建立資料庫日常監控清單。",
+        "content": "常見監控包含服務狀態、連線、Session、Lock、CPU、Memory、Disk、Tablespace、Log 空間、備份狀態與錯誤 Log。",
+        "commonIssues": ["Tablespace 滿", "Log 空間不足", "Connection Pool 打滿"],
+        "troubleshooting": ["確認告警時間", "查資料庫 Log", "比對系統部署與流量變化"],
+        "interviewPoints": ["說明資料庫服務異常會先看哪些指標", "說明備份狀態監控"]
+      },
+      {
+        "id": "dba-tuning-plan",
+        "title": "Execution Plan 與 SQL Tuning",
+        "objective": "能用執行計畫初步分析慢查詢。",
+        "content": "Execution Plan 顯示資料庫如何取得資料。慢查詢常與索引、統計資訊、JOIN 條件、資料量與參數有關。",
+        "commonIssues": ["全表掃描", "索引未被使用", "統計資訊過舊"],
+        "troubleshooting": ["查看 Execution Plan", "檢查索引", "更新統計資訊", "調整 SQL"],
+        "interviewPoints": ["描述慢查詢排查流程", "說明 Index Tuning"]
+      },
+      {
+        "id": "dba-connection-pool",
+        "title": "Connection Pool 與連線管理",
+        "objective": "能說明連線池的角色，並排查連線耗盡問題。",
+        "content": "應用程式透過連線池（Connection Pool）重複使用資料庫連線，避免頻繁建立連線的成本。Pool 位於應用端，資料庫端另有 max connections 上限。「Connection Pool 打滿」常見原因：程式未歸還連線（leak）、慢查詢占住連線、Pool 上限與資料庫上限不匹配。",
+        "commonIssues": ["程式未關閉連線造成 leak", "慢查詢拖住連線引發雪崩效應", "多個應用共用資料庫，總連線數超過上限"],
+        "troubleshooting": ["查詢資料庫目前 Session 數與來源應用", "找出長時間 idle in transaction 的連線", "比對各應用 Pool 設定總和與資料庫 max connections"],
+        "interviewPoints": ["說明連線池在應用端還是資料庫端", "描述連線耗盡的排查順序"]
+      }
+    ],
+    "tags": ["Monitoring", "Execution Plan", "SQL Tuning", "Connection Pool", "CVE"],
+    "order": 6
+  },
+  {
+    "id": "dba-db2-oracle",
+    "pathId": "dba",
+    "title": "DB2 / Oracle / SQL Server 基礎維運",
+    "stage": "DB2 / Oracle / SQL Server 維運",
+    "description": "掌握 DB2 Instance、Tablespace、HADR、Fix Pack，Oracle Listener、TNS、RMAN、Data Guard、RAC，以及 SQL Server Recovery Model、Agent、AlwaysOn。",
+    "businessUse": "企業核心系統常用 DB2 或 Oracle，.NET 系統則多搭配 SQL Server；維運需要理解各平台名詞、備份、Log、Patch 與基本異常排除。",
+    "lessons": [
+      {
+        "id": "dba-db2-foundation",
+        "title": "DB2 維運入門",
+        "objective": "能說明 DB2 常見維運物件。",
+        "content": "DB2 維運關注 Instance、Database、Schema、Tablespace、Bufferpool、User/Role、Backup、Restore、Archive Log、HADR 與 Fix Pack。",
+        "commonIssues": ["Tablespace 空間不足", "Archive Log 滿", "Fix Pack 版本不一致"],
+        "troubleshooting": ["確認 Instance 與 Database 狀態", "檢查 Tablespace", "查看 DB2 Log"],
+        "interviewPoints": ["說明 DB2 HADR 概念", "說明 DB2 備份與還原"]
+      },
+      {
+        "id": "dba-oracle-foundation",
+        "title": "Oracle 維運入門",
+        "objective": "能說明 Oracle 常見維運物件。",
+        "content": "Oracle 維運關注 Instance、Database、Schema、Tablespace、Datafile、Listener、TNS、Alert Log、RMAN、Data Pump、Archive Log、Data Guard、RAC 與 AWR/ASH。",
+        "commonIssues": ["Listener 無回應", "Archive Log 滿", "Datafile 空間不足"],
+        "troubleshooting": ["檢查 Listener", "查看 Alert Log", "確認 Tablespace 與 Datafile"],
+        "interviewPoints": ["說明 RMAN 與 Data Pump", "說明 Data Guard 和 RAC 基本概念"]
+      },
+      {
+        "id": "dba-mssql-foundation",
+        "title": "SQL Server 維運入門",
+        "objective": "能說明 SQL Server 常見維運物件與 .NET 系統的搭配關係。",
+        "content": "SQL Server 維運關注 Instance、Database、資料檔與交易記錄檔（mdf/ldf）、Recovery Model（Full/Simple）、SQL Server Agent 排程作業、備份（Full/Differential/Log）、AlwaysOn 可用性群組與 SSMS 管理工具。台灣企業的 .NET 系統多搭配 SQL Server，是 DBA 高頻平台。",
+        "commonIssues": ["Full Recovery 卻沒排交易記錄檔備份，ldf 暴漲塞滿磁碟", "Agent Job 失敗無人監控", "各環境版本與修補等級不一致"],
+        "troubleshooting": ["檢查 Recovery Model 與備份鏈是否完整", "查看 Agent Job 執行歷史", "查 SQL Server Error Log 與 Windows 事件"],
+        "interviewPoints": ["說明 Recovery Model 與交易記錄檔的關係", "說明 AlwaysOn 可用性群組的基本概念"]
+      }
+    ],
+    "tags": ["DB2", "Oracle", "SQL Server", "RMAN", "HADR", "Data Guard", "AlwaysOn"],
+    "order": 7
+  },
+  {
+    "id": "devops-basics",
+    "pathId": "devops",
+    "title": "DevOps 基礎與 Git 實操",
+    "stage": "DevOps 與 Git 基礎",
+    "description": "建立 Git 實際操作（clone、branch、merge、解衝突、tag）、Repository、Release、環境切分、部署、Rollback 與交付流程的基本觀念。",
+    "businessUse": "企業 DevOps 工作重點是讓交付流程可追蹤、可自動化、可回復，並把安全掃描納入流程。",
+    "lessons": [
+      {
+        "id": "devops-basics-flow",
+        "title": "從程式碼到部署",
+        "objective": "能描述企業軟體交付流程。",
+        "content": "典型流程包含需求、分支、Commit、Merge Request、Code Review、CI Build/Test、Artifact、部署到 Dev/UAT/Prod、監控與 Rollback。",
+        "commonIssues": ["手動部署不可追蹤", "環境設定不一致", "Rollback 無流程"],
+        "troubleshooting": ["檢查 Pipeline 紀錄", "比對 Artifact 版本", "確認部署環境變數"],
+        "interviewPoints": ["說明 CI/CD 的價值", "說明 Rollback 設計"]
+      },
+      {
+        "id": "devops-git-basics",
+        "title": "Git 基礎實操",
+        "objective": "能完成 clone、branch、commit、merge、解衝突與 tag 的完整流程。",
+        "content": "Git 以 commit 記錄歷史，branch 讓功能開發互不干擾，merge 整合變更；同一行被兩邊修改就會衝突，需要人工判斷保留哪段。tag 用來標記釋出版本。merge 保留分支歷史，rebase 重寫成直線歷史，企業常規定主線只用 merge 以保留審查紀錄。",
+        "commonIssues": ["遇到衝突不會解，直接砍掉重來", "commit 訊息不清楚，日後無法回溯原因", "把大檔案或 Secret commit 進版本庫"],
+        "troubleshooting": ["衝突時先看標記區塊，與對方確認保留內容", "用 git log 與 git diff 定位變更來源", "誤 commit 機敏資料時清除歷史並立即輪替金鑰"],
+        "interviewPoints": ["說明 merge 與 rebase 的差異", "描述一次解決衝突的完整流程"]
+      }
+    ],
+    "tags": ["DevOps", "Git", "CI/CD", "Rollback"],
+    "order": 2
+  },
+  {
+    "id": "devops-gitlab",
+    "pathId": "devops",
+    "title": "Git / GitLab 管控與維運",
+    "stage": "Git / GitLab 管控",
+    "description": "學習 GitLab Group、Project、權限、Protected Branch、Approval Rule、Issue、Milestone、Wiki、Runner、Token、Backup、Upgrade、Logs、Registry、Artifact 與 Cache。",
+    "businessUse": "GitLab 是企業程式碼、權限、Pipeline、Registry 與部署紀錄的核心，需要可稽核的權限與維運流程。",
+    "lessons": [
+      {
+        "id": "devops-gitlab-control",
+        "title": "GitLab 權限與分支策略",
+        "objective": "能規劃 Protected Branch 與 Merge Request 流程。",
+        "content": "企業常使用 Group/Project 權限、Protected Branch、Approval Rule、Code Review 與 Merge Request 流程來控管程式碼進入主線。",
+        "commonIssues": ["主線可直接 Push", "Approval Rule 未設定", "權限過大"],
+        "troubleshooting": ["檢查 Branch Protection", "查看 MR Approval", "盤點成員角色"],
+        "interviewPoints": ["說明分支策略", "說明 Protected Branch 的用途"]
+      },
+      {
+        "id": "devops-gitlab-ops",
+        "title": "GitLab Runner、Token、Backup 與 Upgrade",
+        "objective": "能理解 GitLab 維運項目。",
+        "content": "GitLab 維運包含 Runner 狀態、CI/CD Variables、Token 生命週期、Backup/Restore、Upgrade、Logs、Container Registry、Package Registry、Artifact 保留與 Cache 清理。",
+        "commonIssues": ["Runner 離線", "Token 外洩或過期", "Artifact 空間過大"],
+        "troubleshooting": ["檢查 Runner Log", "撤銷並更新 Token", "調整 Artifact 保留週期"],
+        "interviewPoints": ["描述 Runner 掛掉排查", "說明 GitLab Backup/Restore"]
+      }
+    ],
+    "tags": ["GitLab", "Runner", "Protected Branch", "Token"],
+    "order": 3
+  },
+  {
+    "id": "devops-cicd",
+    "pathId": "devops",
+    "title": "CI/CD Pipeline 設計",
+    "stage": "CI/CD Pipeline",
+    "description": "建立 restore、build、test、code_quality、dependency_scan、security_scan、package、deploy_dev、zap_scan、deploy_uat、deploy_prod 的標準 Pipeline。",
+    "businessUse": "Pipeline 讓建置、測試、掃描、部署與核准流程自動化，並保留可稽核紀錄。",
+    "lessons": [
+      {
+        "id": "devops-cicd-pipeline",
+        "title": "Stage、Job、Runner、Artifact 與 Cache",
+        "objective": "能讀寫基本 .gitlab-ci.yml。",
+        "content": "Pipeline 由 Stage 和 Job 組成，由 Runner 執行。Artifact 保存建置結果或報告，Cache 加速依賴安裝，Manual Approval 控管正式部署。",
+        "commonIssues": ["Runner 標籤不符", "Artifact 路徑錯誤", "Cache 污染導致建置異常"],
+        "troubleshooting": ["查看 Job Log", "確認 Runner tag", "檢查 Artifact 與 Cache 設定"],
+        "interviewPoints": ["說明 Stage 與 Job", "描述 Pipeline 失敗排查"]
+      },
+      {
+        "id": "devops-artifact-repo",
+        "title": "私有套件庫與依賴來源管理",
+        "objective": "能說明企業為何自建套件庫，並設定 NuGet / pip 指向內部來源。",
+        "content": "企業內網通常不允許直連 nuget.org 或 pypi.org，標準解法是自建 artifact repository（Nexus、Artifactory 或 GitLab Package Registry）做上游代理與快取：第一次由套件庫代抓，之後從內部取得，同時可控管允許的套件與版本。這是「Pipeline 抓不到套件」的正規解法。",
+        "commonIssues": ["Pipeline 在內網抓不到外部套件", "每台建置機各自設定來源，行為不一致", "內部快取了有弱點的舊版套件"],
+        "troubleshooting": ["檢查 NuGet.config 或 pip.conf 的來源設定", "確認套件庫的上游代理與快取狀態", "對內部快取套件同樣執行 SCA 掃描"],
+        "interviewPoints": ["說明企業為什麼需要私有套件庫", "說明 NuGet/pip 被 Proxy 擋住的正規解法"]
+      }
+    ],
+    "tags": ["Pipeline", ".gitlab-ci.yml", "Artifact", "Cache", "Nexus"],
+    "order": 4
+  },
+  {
+    "id": "devops-devsecops",
+    "pathId": "devops",
+    "title": "DevSecOps 與安全閘門",
+    "stage": "DevSecOps",
+    "description": "整合 SAST、SCA、DAST、Secret Detection、License Scan、Container Image Scan、CVE 管理、False Positive、弱點例外、修補期限與安全閘門。",
+    "businessUse": "DevSecOps 讓安全掃描成為交付流程的一部分，降低弱點進入正式環境的機率。",
+    "lessons": [
+      {
+        "id": "devops-security-scans",
+        "title": "SAST、SCA、DAST 與 Secret Detection",
+        "objective": "能說明不同掃描類型與處理方式。",
+        "content": "SAST 看程式碼，SCA 看第三方套件，DAST 掃描部署後網站，Secret Detection 找憑證外洩，License Scan 檢查套件授權是否允許商用。中高風險可透過安全閘門阻擋部署。",
+        "commonIssues": ["False Positive 未管理", "掃描報告沒保存", "弱點修補沒有期限"],
+        "troubleshooting": ["確認掃描範圍", "分類風險", "建立例外與修補追蹤"],
+        "interviewPoints": ["說明 SAST/SCA/DAST 差異", "說明安全閘門設計"]
+      }
+    ],
+    "tags": ["DevSecOps", "SAST", "SCA", "DAST", "CVE"],
+    "order": 5
+  },
+  {
+    "id": "devops-sonar-zap",
+    "pathId": "devops",
+    "title": "SonarQube 與 OWASP ZAP",
+    "stage": "SonarQube / OWASP ZAP",
+    "description": "學習 SonarScanner、Project Key、Quality Gate、Bugs、Vulnerabilities、Code Smells、Coverage，以及 ZAP Baseline、Spider、Passive/Active Scan、HTML Report 與 Artifact。",
+    "businessUse": "SonarQube 管理程式碼品質，OWASP ZAP 做 Web DAST；兩者可在 Pipeline 中形成品質與安全檢查點。",
+    "lessons": [
+      {
+        "id": "devops-sonar-quality",
+        "title": "SonarQube Quality Gate",
+        "objective": "能把 SonarQube 結果放進 Pipeline 決策。",
+        "content": "Quality Gate 依 Bugs、Vulnerabilities、Code Smells、Coverage、Duplications 等條件決定是否通過。",
+        "commonIssues": ["Project Key 不一致", "Coverage 未上傳", "Quality Gate 沒阻擋部署"],
+        "troubleshooting": ["檢查 Scanner 設定", "確認 Token", "查看 Quality Gate 結果"],
+        "interviewPoints": ["說明 Quality Gate", "說明 Code Smell 與 Vulnerability 差異"]
+      },
+      {
+        "id": "devops-zap-dast",
+        "title": "OWASP ZAP Baseline Scan",
+        "objective": "能在測試站執行基本 DAST 並保存報告。",
+        "content": "ZAP Baseline Scan 適合在 CI/CD 中對測試站做被動掃描，產出 HTML Report 並作為 Artifact 保存。",
+        "commonIssues": ["掃描目標尚未部署", "測試站需登入但未設定", "中高風險沒有處理流程"],
+        "troubleshooting": ["確認測試站可連", "保存 HTML Report", "分類 False Positive"],
+        "interviewPoints": ["說明 ZAP 與 OWASP Top 10 關係", "說明 DAST 掃描時機"]
+      },
+      {
+        "id": "devops-zap-advanced",
+        "title": "ZAP 認證掃描與 API 掃描",
+        "objective": "能對需要登入的網站與 API 執行有效的 DAST 掃描。",
+        "content": "未登入的 Baseline Scan 只能掃到登入頁，回報「無弱點」可能是假象。認證掃描需提供登入方式（表單、Header Token 或 context 檔），讓 ZAP 帶著 Session 掃描內頁；API 掃描則匯入 OpenAPI/Swagger 定義，讓 ZAP 知道有哪些端點可以測試。",
+        "commonIssues": ["未認證掃描回報無弱點，造成安全誤判", "掃描帳號權限太高，誤觸正式資料異動", "Session 過期後其實整輪都在掃登入頁"],
+        "troubleshooting": ["用 ZAP 的請求記錄確認是否真的進到登入後頁面", "使用專用測試帳號與可拋棄的測試資料", "檢查認證 Token 的有效期與更新機制"],
+        "interviewPoints": ["說明未認證 DAST 的盲區", "說明 API 掃描需要準備哪些資訊"]
+      }
+    ],
+    "tags": ["SonarQube", "OWASP ZAP", "Quality Gate", "DAST", "API Scan"],
+    "order": 6
+  },
+  {
+    "id": "devops-dotnet-python",
+    "pathId": "devops",
+    "title": ".NET / C# 與 Python Pipeline",
+    "stage": ".NET / Python Pipeline",
+    "description": "同時支援 ASP.NET Framework、.NET 10、NuGet、MSBuild、dotnet CLI、pytest、ruff、black、mypy、pip-audit、Bandit、Dockerfile 與部署。",
+    "businessUse": "企業常同時維護舊式 ASP.NET Framework、現代 .NET 與 Python 服務，Pipeline 要能兼顧建置、測試、弱點掃描與部署。",
+    "lessons": [
+      {
+        "id": "devops-dotnet-pipeline",
+        "title": "ASP.NET Framework 與 .NET 10 Pipeline",
+        "objective": "能區分 MSBuild 與 dotnet CLI 流程。",
+        "content": "ASP.NET Framework 常用 Visual Studio Build Tools、MSBuild、NuGet Restore、Web Deploy；現代 .NET 使用 dotnet restore/build/test/publish 與 Docker Image。",
+        "commonIssues": ["Build Tools 版本缺少", "NuGet Source 被 Proxy 擋住", "appsettings 或 web.config 環境變數錯誤"],
+        "troubleshooting": ["檢查 NuGet Restore", "確認 SDK/Build Tools", "檢查部署 Artifact"],
+        "interviewPoints": ["比較 ASP.NET Framework 與 .NET 10 Pipeline", "說明 NuGet Audit"]
+      },
+      {
+        "id": "devops-python-pipeline",
+        "title": "Python Pipeline",
+        "objective": "能建立 install、lint、test、dependency_scan、sast、build_image、zap_scan 流程。",
+        "content": "Python Pipeline 常使用 venv、requirements.txt、pyproject.toml、pytest、ruff/flake8、black、mypy、pip-audit、Safety、Bandit 與 Dockerfile。",
+        "commonIssues": ["套件版本未鎖定", "pip 被 Proxy 擋住", "測試環境與正式環境不一致"],
+        "troubleshooting": ["檢查 requirements", "查看 pip-audit", "確認 venv 與 Dockerfile"],
+        "interviewPoints": ["說明 pip-audit 與 Bandit", "描述 Python Web App ZAP 掃描流程"]
+      }
+    ],
+    "tags": [".NET", "MSBuild", "NuGet", "Python", "pytest", "Bandit"],
+    "order": 7
+  },
+  {
+    "id": "devops-docker-ai",
+    "pathId": "devops",
+    "title": "Docker、Container 與企業 AI 平台",
+    "stage": "Docker / Container 與 AI 平台",
+    "description": "學習 Dockerfile、Image、Container、Registry、Multi-stage Build、Image Scan、Docker Compose、IaC，以及 Open WebUI、Ollama、OpenAI-compatible API、RAG、RBAC、Reverse Proxy、HTTPS、監控與備份。",
+    "businessUse": "容器化與 IaC 讓部署更一致，企業 AI 平台則需要權限、稽核、知識庫、模型管理、監控與備份。",
+    "lessons": [
+      {
+        "id": "devops-docker-foundation",
+        "title": "Docker 與 Container Registry",
+        "objective": "能建立並掃描基本 Docker Image。",
+        "content": "Dockerfile 定義映像建置流程，Image 可推送到 GitLab Container Registry，Container 由 Image 執行。Multi-stage Build 可降低映像大小。",
+        "commonIssues": ["Image Tag 混亂", "Secret 寫進 Image", "Container Logs 未保存"],
+        "troubleshooting": ["檢查 Dockerfile", "掃描 Image", "確認環境變數與 Volume"],
+        "interviewPoints": ["說明 Image 與 Container", "說明 Image Scan 與 Rollback"]
+      },
+      {
+        "id": "devops-k8s-awareness",
+        "title": "Kubernetes 與容器調度認知",
+        "objective": "能說明容器調度平台解決什麼問題，以及基本物件名詞。",
+        "content": "單機 Docker 無法處理多主機排程、自動重啟、水平擴充與滾動更新，這是 Kubernetes 的角色。基本物件：Pod 是最小執行單位，Deployment 管理副本數與更新，Service 提供穩定存取入口，Ingress 負責對外路由。目標職缺不一定要求會操作，但要能講清楚它解決什麼問題。",
+        "commonIssues": ["把 Docker Compose 與 Kubernetes 的適用場景混淆", "只背名詞卻說不出解決什麼問題", "以為所有系統都應該上 Kubernetes"],
+        "troubleshooting": ["用「單機 Docker 做不到什麼」推導 Kubernetes 的功能", "把 Pod/Deployment/Service 對應到已學的 Docker 概念", "依系統規模評估是否需要調度平台"],
+        "interviewPoints": ["說明 Kubernetes 解決的問題", "說明 Pod、Deployment、Service 的角色"]
+      },
+      {
+        "id": "devops-ai-platform",
+        "title": "企業 AI 平台落地",
+        "objective": "能規劃可控管、可維運、可稽核的 AI 使用平台。",
+        "content": "企業 AI 平台可由 Open WebUI、Ollama 或 OpenAI-compatible API、Reverse Proxy、HTTPS、SSO/AD/LDAP、RBAC、RAG、Vector Database、Chat Log、API Key、監控與備份組成。",
+        "commonIssues": ["權限無法區分模型或知識庫", "敏感資料缺少控管", "沒有使用稽核與備份"],
+        "troubleshooting": ["確認權限模型", "檢查 Reverse Proxy/HTTPS", "測試 RAG 問答", "建立備份與監控"],
+        "interviewPoints": ["說明企業 AI 平台治理重點", "描述 Open WebUI 部署與維運項目"]
+      }
+    ],
+    "tags": ["Docker", "Container", "Kubernetes", "Open WebUI", "RAG", "AI Platform"],
+    "order": 8
+  },
+  {
+    "id": "net-lab-setup",
+    "pathId": "network",
+    "title": "第 0 課：個人實驗環境準備",
+    "stage": "環境準備",
+    "description": "在沒有企業設備的情況下，用 Packet Tracer、GNS3 與虛擬機建立可練習的網路實驗環境，並熟悉維運常用指令工具。",
+    "businessUse": "企業設備無法帶回家練，但面試會問實作經驗。能自建模擬環境代表你能自主驗證觀念，也是把本路線所有練習任務真正做完的前提。",
+    "lessons": [
+      {
+        "id": "net-lab-setup-env",
+        "title": "建立網路模擬環境",
+        "objective": "能在自己的電腦上建立可練習 VLAN、Routing 與防火牆的模擬環境。",
+        "content": "Cisco Packet Tracer 免費且適合入門，可練 VLAN、Routing 與基本設備指令；GNS3 或 EVE-NG 可載入更接近真實的設備映像；VirtualBox 或 Hyper-V 可建立 Windows/Linux 測試主機。本路線的網段、防火牆與 Proxy 練習都能在這些環境完成。",
+        "commonIssues": ["只看觀念不動手，學過就忘", "一開始就想架完整企業環境，卡在安裝就放棄", "虛擬機網路模式（NAT / Bridged / Host-only）搞混"],
+        "troubleshooting": ["從 Packet Tracer 兩台 PC 一台 Switch 的最小拓樸開始", "確認虛擬機網卡模式與 IP 取得方式", "每完成一個小環境就存檔保留版本"],
+        "interviewPoints": ["能具體說明自己如何在家練習網路技能", "說明虛擬機 NAT 與 Bridged 模式的差異"]
+      },
+      {
+        "id": "net-lab-setup-tools",
+        "title": "維運指令工具箱",
+        "objective": "能熟練使用日常排查最常用的十個指令。",
+        "content": "維運第一線的排查大多從指令開始：ipconfig/ifconfig 看本機設定，ping 測連通、tracert/traceroute 看路徑，nslookup 查 DNS，Test-NetConnection 或 telnet 測 TCP Port，netstat/ss 看連線狀態，arp -a 看 IP 與 MAC 的對應。",
+        "commonIssues": ["只會 ping，不會測服務 Port", "看不懂 netstat 輸出的連線狀態", "把 DNS 解析失敗誤判成網路不通"],
+        "troubleshooting": ["替每個指令保留一份自己實測的輸出範例", "把指令依 OSI 層級分類記憶", "排查時固定由下層往上層依序測試"],
+        "interviewPoints": ["說明 ping 通但服務不通時會用哪些指令", "說明 Test-NetConnection 測 Port 的用途"]
+      }
+    ],
+    "tags": ["Lab", "Packet Tracer", "GNS3", "CLI"],
+    "order": 1
+  },
+  {
+    "id": "net-troubleshoot-basics",
+    "pathId": "network",
+    "title": "TCP/IP 排查基礎與封包分析",
+    "stage": "TCP/IP 排查基礎",
+    "description": "補齊 TCP/UDP、三向交握、常見 Port、ARP、HTTP 狀態碼、TLS 憑證與 Wireshark 封包分析，建立所有排查工作的地基。",
+    "businessUse": "企業工單裡「連線異常」佔最大宗。分得清 502 與 504、看得懂三向交握是否完成、能用封包擷取證明問題在網路還是應用，是第一線與二線工程師的分水嶺。",
+    "lessons": [
+      {
+        "id": "net-tcp-udp",
+        "title": "TCP、UDP 與常見 Port",
+        "objective": "能說明 TCP 三向交握、TCP 與 UDP 差異，並記住常見服務 Port。",
+        "content": "TCP 透過 SYN、SYN-ACK、ACK 三向交握建立連線並提供可靠傳輸；UDP 不建立連線，適合 DNS 查詢與串流。排查時「Port 通」代表交握成功，但和應用程式正常是兩回事。常見 Port：80/443（HTTP/HTTPS）、53（DNS）、25（SMTP）、22（SSH）、3389（RDP）、1433（SQL Server）、1521（Oracle）。",
+        "commonIssues": ["以為 ping 通就等於 Port 通", "分不清哪些服務走 TCP、哪些走 UDP", "看到大量 TIME_WAIT 就誤判為異常"],
+        "troubleshooting": ["用 Test-NetConnection 確認 TCP 交握是否完成", "用 netstat/ss 觀察連線狀態", "比對防火牆規則的 Protocol 欄位是否正確"],
+        "interviewPoints": ["說明三向交握流程", "說明 TCP 與 UDP 的差異並各舉一個服務", "列出五個常見服務 Port"]
+      },
+      {
+        "id": "net-arp-l2",
+        "title": "ARP 與二層運作",
+        "objective": "能說明同網段通訊如何透過 ARP 取得 MAC，並排查 ARP 相關問題。",
+        "content": "同網段主機通訊前，先用 ARP 廣播詢問目標 IP 對應的 MAC；跨網段則是詢問 Gateway 的 MAC。IP 衝突、ARP 快取過期、ARP 欺騙都會造成「IP 設定正確卻時通時不通」的現象。",
+        "commonIssues": ["IP 衝突造成連線時通時不通", "更換設備後 ARP 快取未更新", "把二層問題誤當成路由問題查"],
+        "troubleshooting": ["用 arp -a 查詢快取內容", "確認 MAC 是否對應到正確設備", "清除 ARP 快取後重新測試"],
+        "interviewPoints": ["說明 ARP 的用途與運作流程", "說明同網段與跨網段時 ARP 詢問對象的差異"]
+      },
+      {
+        "id": "net-http-tls",
+        "title": "HTTP 狀態碼與 TLS 憑證基礎",
+        "objective": "能用狀態碼判斷問題發生在哪一段，並理解憑證鏈與信任關係。",
+        "content": "403 是被拒絕（權限或 WAF）、404 是路徑不存在、500 是應用程式錯誤、502 是代理收到後端無效回應、504 是等後端逾時。TLS 連線依靠憑證鏈：站台憑證、中繼 CA、根 CA，端點必須信任根 CA 才不會跳警告。這兩個知識是 Proxy、Reverse Proxy 與 F5 排查的共同基礎。",
+        "commonIssues": ["把 502 和 504 混為一談", "憑證鏈缺中繼憑證，部分裝置報錯部分正常", "自簽憑證未加入信任就上線"],
+        "troubleshooting": ["先依狀態碼分類定位問題段落", "用瀏覽器檢視完整憑證鏈", "比對 Reverse Proxy 與後端 Log 的時間差"],
+        "interviewPoints": ["說明 502 與 504 的差異與各自代表的問題", "說明憑證鏈與企業根憑證的信任關係"]
+      },
+      {
+        "id": "net-packet-capture",
+        "title": "Wireshark 封包擷取與分析",
+        "objective": "能擷取封包並讀出交握、DNS 查詢與重傳等關鍵訊號。",
+        "content": "Wireshark（圖形介面）與 tcpdump（指令）是排查的最終手段與最有力證據。常用過濾條件：ip.addr、tcp.port、dns、http。觀察三向交握是否完成、有沒有 RST、Retransmission 是否大量出現，可以直接證明問題在網路層或應用層。",
+        "commonIssues": ["不設過濾條件，被大量封包淹沒", "擷取位置不在流量路徑上，看不到目標流量", "把偶發的單一重傳當成網路異常"],
+        "troubleshooting": ["先用 IP 與 Port 過濾縮小範圍", "確認擷取點位於流量必經路徑", "沿時間軸尋找 RST 或成串的重傳"],
+        "interviewPoints": ["說明會用 Wireshark 觀察哪些欄位", "說明 RST 與 Retransmission 各代表什麼"]
+      }
+    ],
+    "tags": ["TCP/IP", "ARP", "HTTP", "TLS", "Wireshark"],
+    "order": 3
+  },
+  {
+    "id": "net-switch-ops",
+    "pathId": "network",
+    "title": "Switch / Router 企業維運",
+    "stage": "Router / Switch",
+    "description": "學習 Access/Trunk、STP、Port Security、LACP 與 DHCP Relay，補齊接取層與二層設備維運的核心觀念。",
+    "businessUse": "企業辦公網路的日常工單大多發生在接取層：接錯線造成迴圈、換設備後 VLAN 沒跟上、新網段拿不到 DHCP，都需要交換器維運知識才能處理。",
+    "lessons": [
+      {
+        "id": "net-switch-trunk",
+        "title": "Access Port 與 Trunk Port",
+        "objective": "能說明 Access 與 Trunk 的差異，並排查 VLAN 配置錯誤。",
+        "content": "Access Port 只屬於一個 VLAN，用來接終端設備；Trunk Port 以 802.1Q 標籤同時承載多個 VLAN，用於交換器之間或接虛擬化主機。VLAN 不通最常見的原因是 Trunk 的 allowed VLAN 清單漏加新 VLAN。",
+        "commonIssues": ["Trunk allowed VLAN 清單漏加新 VLAN", "Access Port 配錯 VLAN", "兩端 Native VLAN 不一致"],
+        "troubleshooting": ["確認 Port 模式與所屬 VLAN", "檢查 Trunk allowed VLAN 清單", "比對兩端 Native VLAN 設定"],
+        "interviewPoints": ["說明 Access 與 Trunk 的差異", "說明新增一個 VLAN 後要跟著檢查哪些設定"]
+      },
+      {
+        "id": "net-switch-stp",
+        "title": "STP 與迴圈防護",
+        "objective": "能說明為什麼接錯一條線可能癱瘓全網，以及 STP 如何防止。",
+        "content": "二層迴圈會讓廣播封包無限複製，形成廣播風暴。STP 透過選出 Root Bridge 並封鎖冗餘路徑防止迴圈；PortFast 讓終端 Port 跳過等待快速轉發，BPDU Guard 防止使用者端私接交換器。",
+        "commonIssues": ["會議室兩個牆孔被接到同一台小交換器造成迴圈", "終端 Port 未開 PortFast 導致 DHCP 逾時", "誤調 STP 優先權造成 Root Bridge 漂移"],
+        "troubleshooting": ["查交換器 Log 的 topology change 紀錄", "找出被 STP block 的 Port", "檢查最近新接入的設備"],
+        "interviewPoints": ["說明廣播風暴的成因與 STP 的角色", "說明 BPDU Guard 的用途"]
+      },
+      {
+        "id": "net-switch-security",
+        "title": "Port Security 與 LACP",
+        "objective": "能說明接取層安全控管與鏈路聚合的用途。",
+        "content": "Port Security 限制 Port 上允許的 MAC 數量或綁定特定 MAC，防止私接設備；違規時 Port 會進入 err-disabled。LACP 把多條實體線路聚合成一條邏輯鏈路，提供頻寬擴充與備援，但單一連線流量仍只走其中一條成員線路。",
+        "commonIssues": ["使用者換電腦後 Port 被 Port Security 鎖住", "聚合兩端模式不一致造成鏈路不穩", "以為 LACP 能讓單一傳輸跑滿所有成員頻寬"],
+        "troubleshooting": ["查 Port 的 err-disabled 原因並依流程復原", "確認兩端 LACP 模式與成員狀態", "檢查聚合介面的流量分佈"],
+        "interviewPoints": ["說明使用者換了電腦就不能上網的可能原因", "說明 LACP 的頻寬分配原理"]
+      },
+      {
+        "id": "net-dhcp-relay",
+        "title": "DHCP Relay 與跨網段發放",
+        "objective": "能說明多 VLAN 環境 DHCP 如何運作，並排查拿不到 IP 的問題。",
+        "content": "DHCP 用廣播運作，無法跨網段。企業在各 VLAN 的 Gateway 上設定 DHCP Relay（ip helper-address），把請求轉送到集中的 DHCP Server。新網段整段拿不到 IP，多半是 Relay 沒設，或 DHCP Server 沒建立對應網段的 Scope。",
+        "commonIssues": ["新 VLAN 忘記設定 Relay", "DHCP Server 缺少對應網段的 Scope", "Scope 位址耗盡"],
+        "troubleshooting": ["確認 Gateway 上的 helper 設定", "查 DHCP Server 的 Scope 與租約使用率", "在客戶端 release/renew 觀察取得過程"],
+        "interviewPoints": ["說明 DHCP 四步流程與 Relay 的角色", "說明某個 VLAN 全部拿不到 IP 的排查順序"]
+      }
+    ],
+    "tags": ["Switch", "Trunk", "STP", "Port Security", "DHCP Relay"],
+    "order": 4
+  },
+  {
+    "id": "net-ad-dns",
+    "pathId": "network",
+    "title": "AD / DNS 企業目錄與名稱服務",
+    "stage": "AD / DNS",
+    "description": "理解 Active Directory 網域、OU、群組、GPO、LDAP 驗證，以及企業內外部 DNS 架構與常見記錄類型。",
+    "businessUse": "VPN、Proxy、VDI、資料庫與幾乎所有企業系統都依賴 AD 做身份驗證、依賴內部 DNS 做名稱解析；不懂這兩者，一半以上的存取問題查不下去。",
+    "lessons": [
+      {
+        "id": "net-ad-basics",
+        "title": "AD 網域、群組、GPO 與 LDAP",
+        "objective": "能說明 AD 的基本物件，以及企業系統如何透過 AD/LDAP 驗證。",
+        "content": "AD 以網域組織帳號與電腦，OU 用來分層管理，群組用來授權，GPO 集中派送設定（例如 Proxy 設定、密碼原則）。應用系統常透過 LDAP 查詢 AD 驗證帳號；VPN 與 Proxy 課程裡的「使用者群組」指的就是 AD 群組。",
+        "commonIssues": ["帳號被鎖定造成多個系統同時登不進去", "群組巢狀太深，權限來源難以追查", "GPO 沒有套用到目標 OU"],
+        "troubleshooting": ["查帳號狀態與鎖定來源", "沿群組成員關係追權限鏈", "用 gpresult 確認 GPO 套用結果"],
+        "interviewPoints": ["說明帳號、群組、OU、GPO 的關係", "說明 VPN 如何用 AD 群組控管權限"]
+      },
+      {
+        "id": "net-enterprise-dns",
+        "title": "企業 DNS 架構與記錄類型",
+        "objective": "能說明常見 DNS 記錄類型與內外部 DNS 分離架構。",
+        "content": "A 記錄對應 IP，CNAME 是別名，PTR 用於反查，MX 指向郵件伺服器。企業通常內外部 DNS 分離（split-horizon）：同一個網域名稱，內部解析到內網 IP、外部解析到對外 IP。VPN 使用者若解析到錯誤的一邊，就會出現「VPN 連上了但系統打不開」。",
+        "commonIssues": ["內外部解析結果不同，VPN 使用者連到錯誤 IP", "改了 IP 但舊記錄 TTL 未過期", "CNAME 指向已下線的主機"],
+        "troubleshooting": ["用 nslookup 指定不同 DNS Server 比對結果", "檢查記錄的 TTL 設定", "確認端點目前實際使用的 DNS Server"],
+        "interviewPoints": ["說明 A、CNAME、PTR、MX 的用途", "說明 split-horizon DNS 與 VPN 排查的關係"]
+      }
+    ],
+    "tags": ["AD", "LDAP", "GPO", "DNS", "Split-horizon"],
+    "order": 5
+  },
+  {
+    "id": "dba-lab-setup",
+    "pathId": "dba",
+    "title": "第 0 課：資料庫練習環境準備",
+    "stage": "環境準備",
+    "description": "用 Docker 快速建立 PostgreSQL、SQL Server、Oracle XE 或 DB2 Community 練習環境，並以 GUI 工具連線操作。",
+    "businessUse": "後續所有 SQL、權限、備份、調教練習都需要一套可以隨便玩、砍掉重建零成本的資料庫；會快速建測試環境本身也是 DBA 的實用技能。",
+    "lessons": [
+      {
+        "id": "dba-lab-setup-env",
+        "title": "用 Docker 建立資料庫練習環境",
+        "objective": "能啟動一套可自由練習的資料庫，並用 GUI 工具連線。",
+        "content": "用 Docker 一行指令就能啟動 PostgreSQL 或 SQL Server；Oracle 有免費的 XE 版，DB2 有 Community 版映像。搭配 DBeaver（通用 GUI）或 SSMS 連線後，本路線所有練習都在這個環境完成。重點觀念：容器刪除資料就消失，要掛 Volume 才能保存。",
+        "commonIssues": ["Port 已被占用導致啟動失敗", "容器刪除後練習資料全部消失", "GUI 連線失敗，分不清容器內外的網路"],
+        "troubleshooting": ["檢查 Port 映射與本機占用狀況", "掛載 Volume 保存資料目錄", "用 localhost 加映射 Port 連線並確認帳密"],
+        "interviewPoints": ["說明如何快速建立一套測試資料庫", "說明容器資料持久化的做法"]
+      }
+    ],
+    "tags": ["Lab", "Docker", "PostgreSQL", "SQL Server"],
+    "order": 1
+  },
+  {
+    "id": "devops-lab-setup",
+    "pathId": "devops",
+    "title": "第 0 課：DevOps 練習環境準備",
+    "stage": "環境準備",
+    "description": "備妥 Git、Docker Desktop 與 GitLab.com 免費方案，建立可以完成本路線所有練習的個人環境。",
+    "businessUse": "GitLab.com 免費方案就能練 Protected Branch、Merge Request 與 CI/CD，Runner 可註冊在自己電腦上；能自建整套練習環境，面試時的實作經驗才有出處。",
+    "lessons": [
+      {
+        "id": "devops-lab-setup-env",
+        "title": "建立 DevOps 練習環境",
+        "objective": "能備妥 Git、Docker 與免費 GitLab 環境，開始後續所有練習。",
+        "content": "安裝 Git 與 Docker Desktop（Windows 需啟用 WSL2），註冊 GitLab.com 免費帳號即可練習專案治理與 CI/CD，免費額度足夠學習使用；自己電腦可註冊成 GitLab Runner 執行 Pipeline。VS Code 加終端機是基本工作介面。",
+        "commonIssues": ["Windows 未啟用 WSL2 導致 Docker Desktop 無法啟動", "未設定 SSH Key，每次操作都要輸入密碼", "公司網路有 Proxy，拉取 image 或套件失敗"],
+        "troubleshooting": ["確認 WSL2 與虛擬化功能已啟用", "設定 SSH Key 並用 git clone 驗證", "為 Git 與 Docker 設定 Proxy 環境變數"],
+        "interviewPoints": ["說明自己練習環境的組成", "說明 GitLab.com 與企業自建 GitLab 的差異"]
+      }
+    ],
+    "tags": ["Lab", "Git", "Docker", "GitLab.com"],
+    "order": 1
+  },
+  {
+    "id": "devops-iac",
+    "pathId": "devops",
+    "title": "IaC 與自動化部署",
+    "stage": "IaC / 自動化部署",
+    "description": "學習 Infrastructure as Code 觀念，用 Ansible 做設定管理與自動化部署，並理解 Terraform 的定位與分工。",
+    "businessUse": "企業維運要管理數十台以上主機，手動設定無法保證一致與可追蹤；Ansible 與 Terraform 讓環境變更像程式碼一樣可審查、可重複、可回溯。",
+    "lessons": [
+      {
+        "id": "devops-ansible-basics",
+        "title": "Ansible 入門與自動化部署",
+        "objective": "能撰寫基本 Playbook，對多台主機執行一致的設定與部署。",
+        "content": "Ansible 透過 SSH 運作、免安裝 agent：Inventory 定義主機清單，Playbook 以 YAML 描述目標狀態（安裝套件、修改設定、重啟服務）。冪等性是核心觀念：同一份 Playbook 執行多次，結果應該一致。常見用途：批次改設定、部署應用程式、例行巡檢。",
+        "commonIssues": ["把 Playbook 寫成一次性 Script，失去冪等性", "Inventory 與實際主機清單不同步", "未經測試就直接對正式環境執行"],
+        "troubleshooting": ["先用 --check 模式演練變更", "把 Inventory 分群並先對測試群執行", "檢視每個 task 的 changed/ok 狀態判斷實際影響"],
+        "interviewPoints": ["說明 Ansible 的冪等性", "說明 Ansible 與手動 Script 的差異"]
+      },
+      {
+        "id": "devops-terraform-concept",
+        "title": "Terraform 與環境一致性",
+        "objective": "能說明 Terraform 的定位，以及與 Ansible 的分工方式。",
+        "content": "Terraform 用宣告式設定描述基礎設施（VM、網路、雲端資源），以 plan 預覽變更、apply 執行，並用 state 檔記錄實際狀態。常見分工：Terraform 負責「建出基礎設施」，Ansible 負責「主機內的設定與部署」。",
+        "commonIssues": ["state 檔遺失或多人同時修改造成衝突", "有人手動改了資源造成 drift", "把主機內設定硬塞進 Terraform 管理"],
+        "troubleshooting": ["將 state 檔集中保管並啟用鎖定", "定期用 plan 檢查 drift", "釐清 Terraform 與 Ansible 的責任邊界"],
+        "interviewPoints": ["說明宣告式 IaC 與 plan/apply 流程", "說明 Terraform 與 Ansible 的分工"]
+      }
+    ],
+    "tags": ["IaC", "Ansible", "Terraform", "Automation"],
+    "order": 9
+  },
+  {
+    "id": "devops-monitoring",
+    "pathId": "devops",
+    "title": "應用監控與營運",
+    "stage": "監控與營運",
+    "description": "建立應用層監控觀念：Logs、Metrics、告警設計、Healthcheck，以及 Prometheus / Grafana 的基本認知。",
+    "businessUse": "部署完成不是結束。服務要有健康檢查、指標與集中日誌，才能在使用者通報前發現問題，也才有依據做容量規劃與 SLA 回報。",
+    "lessons": [
+      {
+        "id": "devops-app-monitoring",
+        "title": "Logs、Metrics 與告警設計",
+        "objective": "能為一個服務規劃基本監控與告警。",
+        "content": "監控三支柱：Logs 記錄事件細節，Metrics 是數值時間序列（請求數、延遲、錯誤率），Tracing 追蹤跨服務請求。容器服務先從 docker logs 與 healthcheck 做起，再進一步用 Prometheus 收集指標、Grafana 做儀表板。告警應該對「症狀」（錯誤率、延遲）而不是只對資源使用率。",
+        "commonIssues": ["只監控 CPU 與記憶體，服務掛了卻沒發現", "Log 散落在各容器，出事時找不到", "告警太多造成疲勞，真正的告警被淹沒"],
+        "troubleshooting": ["為服務加上 healthcheck 端點並監控它", "集中收容器 Log 到固定位置", "定期檢討告警的命中率與必要性"],
+        "interviewPoints": ["說明 Logs 與 Metrics 的差異", "說明會為一個 Web 服務設定哪些告警"]
+      }
+    ],
+    "tags": ["Monitoring", "Logs", "Metrics", "Prometheus", "Grafana"],
+    "order": 10
+  }
+]
