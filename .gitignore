@@ -6,3 +6,7 @@ dist
 *.log
 *.tsbuildinfo
 .DS_Store
+
+# 個人學習資料與內部看板（不進版控）
+data/
+claude_data/
