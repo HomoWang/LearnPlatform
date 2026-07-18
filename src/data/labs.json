@@ -234,7 +234,7 @@
     "prerequisites": ["理解 MSBuild 或 dotnet CLI", "理解 NuGet"],
     "steps": ["設定 restore", "設定 build", "設定 test", "設定 publish", "加入 NuGet Audit 或 Dependency-Check", "保存報告 artifact"],
     "stepGuides": [
-      "先準備專案：本機執行 dotnet new webapi -n DemoApi 產生範例專案並推上 GitLab。在專案根目錄建立 .gitlab-ci.yml，最上面寫 image: mcr.microsoft.com/dotnet/sdk:8.0（所有 Job 跑在官方 SDK 容器裡），宣告 stages: [build, test, audit, publish]。build 階段的 Job 第一行指令：dotnet restore——它會依 .csproj 清單把 NuGet 套件下載回來。",
+      "先準備專案：本機執行 dotnet new webapi -n DemoApi 產生範例專案並推上 GitLab。在專案根目錄建立 .gitlab-ci.yml，最上面寫 image: mcr.microsoft.com/dotnet/sdk:10.0（所有 Job 跑在官方 SDK 容器裡），宣告 stages: [build, test, audit, publish]。build 階段的 Job 第一行指令：dotnet restore——它會依 .csproj 清單把 NuGet 套件下載回來。",
       "同一個 Job 的 script 加第二行：dotnet build --configuration Release --no-restore。這一步把 C# 原始碼編譯成 DLL；--no-restore 表示上一行已經還原過套件、不用重做。編譯失敗 Pipeline 會紅，這是正確行為——壞掉的程式不該往下走。",
       "新增 test 階段 Job，script 寫 dotnet test --configuration Release。它會自動尋找測試專案並執行；還沒寫測試會顯示 0 個測試、一樣算通過，先讓流程跑通，之後再補真測試。",
       "新增 publish 階段 Job，script 寫 dotnet publish --configuration Release --output publish，並加上 artifacts: 區塊、paths 寫 publish/。這個資料夾就是可部署的成品，能在 Job 頁面下載。",
@@ -363,7 +363,7 @@
     "steps": ["對專案用 Syft 產出 CycloneDX SBOM", "用 OSV-Scanner 吃 SBOM 掃出 CVE", "故意放舊版套件重掃，觀察弱點出現", "用 SBOM 統計授權分佈並揪出傳染性授權", "撰寫 .gitlab-ci.yml：sbom→scan 三 job，用 artifacts+needs 傳遞", "設安全閘門讓中高風險弱點/denylist 授權擋下部署", "驗證擋門有效並保存報告"],
     "completionCriteria": ["能產出並解讀 SBOM", "OSV 能掃出並分級弱點", "能辨識傳染性授權", "Pipeline 三階段依賴正確且安全閘門可擋部署"],
     "commonErrors": ["三 job 沒用 artifact 傳遞 SBOM", "掃描失敗卻仍部署", "報告未保存供稽核"],
-    "troubleshooting": ["確認 build_sbom 的 artifacts:paths 有列 sbom.json", "用 echo $? 確認 script 最後一步的 exit code", "掃描報告設 when: always 保存"],
+    "troubleshooting": ["確認 build_sbom 的 artifacts:paths 有列 sbom.cdx.json", "用 echo $? 確認 script 最後一步的 exit code", "掃描報告設 when: always 保存"],
     "portfolioTemplate": "我建立軟體供應鏈安全掃描流程，串接 SBOM（Syft）、弱點掃描（OSV-Scanner）與 License 合規檢查，並以 artifacts/needs 建立階段依賴、用安全閘門讓中高風險弱點與禁用授權擋下部署。",
     "tags": ["Supply Chain", "SBOM", "OSV", "License", "Security Gate"]
   },

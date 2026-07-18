@@ -404,7 +404,7 @@
     "pathId": "devops",
     "type": "scenario",
     "question": "為什麼 Pipeline 裡 OSV 掃描要排在 SBOM 之後？",
-    "referenceAnswer": "因為 OSV-Scanner 吃的是 SBOM 的產出——它拿 SBOM 裡的套件版本清單去比對弱點資料庫。SBOM 還沒產生就跑 OSV，會掃到空的。實作上用 artifacts 把 sbom.json 從 SBOM job 傳給 OSV job，並用 needs 建立依賴順序。這是 CI 階段依賴的典型例子。",
+    "referenceAnswer": "因為 OSV-Scanner 吃的是 SBOM 的產出——它拿 SBOM 裡的套件版本清單去比對弱點資料庫。SBOM 還沒產生就跑 OSV，會掃到空的。實作上用 artifacts 把 sbom.cdx.json 從 SBOM job 傳給 OSV job，並用 needs 建立依賴順序。這是 CI 階段依賴的典型例子。",
     "tags": ["OSV", "Supply Chain", "Pipeline"],
     "relatedCourses": ["devops-supply-chain"],
     "relatedLabs": ["lab-devops-supply-chain"]
@@ -454,7 +454,7 @@
     "pathId": "devops",
     "type": "scenario",
     "question": "自建 SonarQube 升級要注意哪些版本相依?",
-    "referenceAnswer": "SonarQube 是 Java 應用,升級要一起顧四樣:主程式版本、對應的 JDK 版本(查官方 host requirements)、plugin/webapp 與主版本的相容性、以及升級後的資料庫遷移(開 /upgrade 執行)。跨大版本要走中繼版本,不能直升。官方 Docker image 內含對的 JDK,但自己裝在主機上就得手動升 JDK。",
+    "referenceAnswer": "SonarQube 是 Java 應用,升級要一起顧四樣:主程式版本、對應的 JDK 版本(查官方 host requirements)、plugin/webapp 與主版本的相容性、以及升級後的資料庫遷移(開 /setup 執行)。跨大版本要走中繼版本,不能直升。官方 Docker image 內含對的 JDK,但自己裝在主機上就得手動升 JDK。",
     "tags": ["SonarQube", "Upgrade"],
     "relatedCourses": ["devops-sonar-ops"],
     "relatedLabs": ["lab-devops-sonar-cacerts"]
