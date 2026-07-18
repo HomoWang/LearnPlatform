@@ -610,5 +610,149 @@
     "level": "intermediate",
     "relatedCourses": ["devops-cicd"],
     "relatedLabs": ["lab-devops-dotnet-pipeline"]
+  },
+  {
+    "id": "skill-devops-sbom",
+    "pathId": "devops",
+    "title": "我能產出並看懂 SBOM",
+    "description": "能用 Syft 產出 CycloneDX/SPDX 格式 SBOM，辨識直接與間接依賴。",
+    "level": "intermediate",
+    "relatedCourses": ["devops-supply-chain"],
+    "relatedLabs": ["lab-devops-supply-chain"]
+  },
+  {
+    "id": "skill-devops-osv",
+    "pathId": "devops",
+    "title": "我能用 OSV 掃描套件弱點",
+    "description": "能用 OSV-Scanner 吃 SBOM 掃出 CVE，並依嚴重度分級處理。",
+    "level": "intermediate",
+    "relatedCourses": ["devops-supply-chain"],
+    "relatedLabs": ["lab-devops-supply-chain"]
+  },
+  {
+    "id": "skill-devops-license",
+    "pathId": "devops",
+    "title": "我能做 License 合規檢查",
+    "description": "能辨識傳染性授權，並建立 allowlist/denylist。",
+    "level": "advanced",
+    "relatedCourses": ["devops-supply-chain"],
+    "relatedLabs": ["lab-devops-supply-chain"]
+  },
+  {
+    "id": "skill-devops-gitlab-upgrade",
+    "pathId": "devops",
+    "title": "我能規劃 GitLab 升級路徑",
+    "description": "能用 Upgrade Path 查停靠版本、確認破壞性更新與 background migrations。",
+    "level": "advanced",
+    "relatedCourses": ["devops-gitlab-upgrade"],
+    "relatedLabs": ["lab-devops-gitlab-backup"]
+  },
+  {
+    "id": "skill-devops-gitlab-backup",
+    "pathId": "devops",
+    "title": "我能備份與還原 GitLab",
+    "description": "能備份含 secrets 檔的完整資料，並完成還原演練。",
+    "level": "advanced",
+    "relatedCourses": ["devops-gitlab-upgrade"],
+    "relatedLabs": ["lab-devops-gitlab-backup"]
+  },
+  {
+    "id": "skill-devops-runner-ops",
+    "pathId": "devops",
+    "title": "我能維運 Windows GitLab Runner",
+    "description": "能設定 config.toml、處理 pwsh/PS5.1 差異與 cache 清理。",
+    "level": "advanced",
+    "relatedCourses": ["devops-gitlab-upgrade"],
+    "relatedLabs": ["lab-devops-runner-cicd"]
+  },
+  {
+    "id": "skill-devops-sonar-upgrade",
+    "pathId": "devops",
+    "title": "我能規劃 SonarQube 升級",
+    "description": "能確認 JDK、plugin、資料庫遷移的版本相依並完成升級。",
+    "level": "advanced",
+    "relatedCourses": ["devops-sonar-ops"],
+    "relatedLabs": ["lab-devops-sonar-cacerts"]
+  },
+  {
+    "id": "skill-devops-cacerts",
+    "pathId": "devops",
+    "title": "我能用 keytool 匯入憑證到 Java",
+    "description": "能讓 Java 應用信任內部 CA 憑證，解決 PKIX 連線失敗。",
+    "level": "advanced",
+    "relatedCourses": ["devops-sonar-ops"],
+    "relatedLabs": ["lab-devops-sonar-cacerts"]
+  },
+  {
+    "id": "skill-devops-sonar-proxy",
+    "pathId": "devops",
+    "title": "我能為 SonarQube 補反向代理 HTTPS",
+    "description": "能用反向代理終止 TLS 並正確帶 X-Forwarded-Proto。",
+    "level": "advanced",
+    "relatedCourses": ["devops-sonar-ops"],
+    "relatedLabs": ["lab-devops-sonar-cacerts"]
+  },
+  {
+    "id": "skill-devops-webdeploy",
+    "pathId": "devops",
+    "title": "我能用 WebDeploy 部署到 IIS",
+    "description": "能說明 WebDeploy 與 IIS 授權、帶密碼部署的前置。",
+    "level": "intermediate",
+    "relatedCourses": ["devops-enterprise-deploy"],
+    "relatedLabs": ["lab-devops-runner-cicd"]
+  },
+  {
+    "id": "skill-devops-dmz-deploy",
+    "pathId": "devops",
+    "title": "我能部署到 DMZ 主機",
+    "description": "能用預存認證部署隔離主機並處理密碼輪替連動。",
+    "level": "advanced",
+    "relatedCourses": ["devops-enterprise-deploy"],
+    "relatedLabs": ["lab-devops-runner-cicd"]
+  },
+  {
+    "id": "skill-devops-ansible-audit",
+    "pathId": "devops",
+    "title": "我能用 Ansible 做合規盤點",
+    "description": "能盤點帳號/群組/軟體並上傳稽核，機密放 Vault。",
+    "level": "advanced",
+    "relatedCourses": ["devops-compliance-audit"],
+    "relatedLabs": ["lab-devops-scap"]
+  },
+  {
+    "id": "skill-devops-scap",
+    "pathId": "devops",
+    "title": "我能用 SCAP 做組態基準掃描",
+    "description": "能用 OpenSCAP 對主機掃 CIS/STIG 基準並讀報告。",
+    "level": "advanced",
+    "relatedCourses": ["devops-compliance-audit"],
+    "relatedLabs": ["lab-devops-scap"]
+  },
+  {
+    "id": "skill-devops-service-account",
+    "pathId": "devops",
+    "title": "我能治理 CI/CD 服務帳號與 Token",
+    "description": "能設計服務帳號、最小 scopes、到期與輪替。",
+    "level": "intermediate",
+    "relatedCourses": ["devops-governance"],
+    "relatedLabs": ["lab-devops-vuln-governance"]
+  },
+  {
+    "id": "skill-devops-access-audit",
+    "pathId": "devops",
+    "title": "我能用 API 自動盤點權限",
+    "description": "能用平台 API 抓帳號權限寫入資產清冊並找異常。",
+    "level": "advanced",
+    "relatedCourses": ["devops-governance"],
+    "relatedLabs": ["lab-devops-vuln-governance"]
+  },
+  {
+    "id": "skill-devops-vuln-sla",
+    "pathId": "devops",
+    "title": "我能設計弱點管理 SLA 與台帳",
+    "description": "能依嚴重度訂修補時限、用台帳追蹤到關閉並重掃驗證。",
+    "level": "advanced",
+    "relatedCourses": ["devops-governance"],
+    "relatedLabs": ["lab-devops-vuln-governance"]
   }
 ]

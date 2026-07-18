@@ -540,6 +540,54 @@
     "order": 3
   },
   {
+    "id": "devops-gitlab-upgrade",
+    "pathId": "devops",
+    "title": "自建 GitLab 升級、備份與還原",
+    "stage": "GitLab 升級與維運",
+    "description": "掌握自建 GitLab（Community + Docker）的升級路徑、破壞性更新與 background migrations、離線 image 與跨資料庫升級、備份與還原演練，以及 Windows Runner 的實戰維運。",
+    "businessUse": "企業自建 GitLab 承載所有程式碼、Pipeline 與 Registry，升級升壞、備份還不回來都是重大事故。這門課教的是「怎麼安全地升、怎麼確定還原得回來」——這是自建 CI 平台維運的真功夫，也是相關 JD 的高頻要求。",
+    "lessons": [
+      {
+        "id": "devops-gitlab-upgrade-path",
+        "title": "升級路徑、破壞性更新與 Migrations",
+        "objective": "能查出必經升級路徑，並在每一版前確認破壞性更新與 background migrations。",
+        "content": "GitLab 不允許跨大版本直升，中間有強制停靠版本。官方 Upgrade Path 工具依 current/target 算出路徑。每一步升級前要看 Release Notes 的破壞性更新（deprecations），並確認上一版的 background migrations 已跑完，否則資料可能損壞。",
+        "commonIssues": ["想從舊版直接跳最新版，跳過停靠點", "沒等 background migrations 跑完就升下一版", "忽略破壞性更新導致升級後功能壞掉"],
+        "troubleshooting": ["用 Upgrade Path 工具確認每個停靠版本", "升級前到 Admin → Monitoring 確認 migrations 完成", "逐版閱讀 Release Notes 的 deprecations"],
+        "interviewPoints": ["說明為什麼不能跨大版本直升", "說明 background migrations 為什麼要在升級前確認"]
+      },
+      {
+        "id": "devops-gitlab-offline-image",
+        "title": "離線 image 與跨資料庫升級",
+        "objective": "能在無外網環境準備 image，並處理含 PostgreSQL 升級的版本。",
+        "content": "許多企業 GitLab 在內網、無法直接 pull image，要先在有網環境把 image 匯出成 tar、傳進內網再 load。升級路徑上若含 PostgreSQL 主要版本升級，要另外處理資料庫升級，不能只換 GitLab image。",
+        "commonIssues": ["內網環境直接 docker pull 失敗", "路徑上有 DB 升級卻只換 GitLab image", "tar 檔版本與目標版本對不上"],
+        "troubleshooting": ["有網環境 pull → save 成 tar → 內網 load", "先辨識路徑上有無 PostgreSQL 升級（官方會標示）", "load 後用 docker images 逐版確認"],
+        "interviewPoints": ["說明離線環境準備 image 的流程", "說明跨資料庫版本升級要多做什麼"]
+      },
+      {
+        "id": "devops-gitlab-backup-restore",
+        "title": "備份、還原與演練",
+        "objective": "能設計 GitLab 備份策略並完成一次真正的還原演練。",
+        "content": "GitLab 內建 backup 指令備份 repo/DB/上傳檔，但**設定與金鑰檔（如主設定檔與 secrets 檔）不在內建備份範圍內，必須另外備份**——少了它們備份還原不回來。備份成功不等於還原得回來，一定要定期做還原演練。",
+        "commonIssues": ["只備份資料，忘了備份設定檔與 secrets 檔", "備份從沒演練過還原", "還原用的 image 版本與備份來源不一致"],
+        "troubleshooting": ["確認設定檔與 secrets 檔一併備份", "用相同版本 image 在隔離環境還原演練", "記錄還原耗時作為 RTO 依據"],
+        "interviewPoints": ["說明 GitLab 備份為什麼要額外備 secrets 檔", "說明還原演練的重要性"]
+      },
+      {
+        "id": "devops-gitlab-runner-ops",
+        "title": "Windows Runner 實戰維運",
+        "objective": "能維運 Windows GitLab Runner：多 runner、shell 差異與 cache 清理。",
+        "content": "Windows 上的 GitLab Runner 用 config.toml 設定：concurrent 控併發、一個 runner 可同時服務多個 GitLab、executor 用 shell 時要指定 PowerShell 版本（pwsh 是 PS7、powershell 是 PS5.1，語法與編碼有差）。builds/cache 會不斷累積，要排程清理。",
+        "commonIssues": ["同一份 .gitlab-ci.yml 在 PS5.1 與 PS7 行為不同", "cache/builds 塞爆磁碟", "Runner 離線或 tag 不匹配導致 job 卡住"],
+        "troubleshooting": ["確認 config.toml 的 shell 設定與腳本相容", "排程清理 builds/cache 目錄", "查 Runner 狀態、tag 與註冊的 GitLab"],
+        "interviewPoints": ["說明 pwsh 與 powershell 在 Runner 上的差異", "說明一台 Runner 服務多個 GitLab 的設定"]
+      }
+    ],
+    "tags": ["GitLab", "Upgrade", "Backup", "Restore", "Runner"],
+    "order": 4
+  },
+  {
     "id": "devops-cicd",
     "pathId": "devops",
     "title": "CI/CD Pipeline 設計",
@@ -567,7 +615,7 @@
       }
     ],
     "tags": ["Pipeline", ".gitlab-ci.yml", "Artifact", "Cache", "Nexus"],
-    "order": 4
+    "order": 5
   },
   {
     "id": "devops-devsecops",
@@ -588,7 +636,55 @@
       }
     ],
     "tags": ["DevSecOps", "SAST", "SCA", "DAST", "CVE"],
-    "order": 5
+    "order": 6
+  },
+  {
+    "id": "devops-supply-chain",
+    "pathId": "devops",
+    "title": "供應鏈安全：SBOM、OSV 與 License 掃描",
+    "stage": "供應鏈安全",
+    "description": "建立軟體供應鏈安全的三步防線：用 SBOM 建立套件成分表、用 OSV 比對已知弱點、用 License 檢查授權合規，並串成有依賴順序的 Pipeline 階段與安全閘門。",
+    "businessUse": "現代應用九成程式碼來自第三方套件，攻擊者鎖定的是套件供應鏈而非你的程式。SBOM 讓你隨時答得出「用了什麼、哪個版本」，OSV 拿這份清單比對全球弱點資料庫，License 檢查每個套件能不能商用。三者是 DevSecOps 供應鏈防線的標配，也是資安稽核要的證據鏈。",
+    "lessons": [
+      {
+        "id": "devops-sbom",
+        "title": "SBOM：產出你的軟體成分表",
+        "objective": "能為專案產生 SBOM，並看懂套件、版本、授權與間接依賴。",
+        "content": "SBOM（Software Bill of Materials，軟體物料清單）是軟體的成分表，列出專案用了哪些套件、什麼版本、什麼授權。有了它，弱點掃描才知道要比對什麼、稽核才知道你用了什麼。兩種主流格式：SPDX（偏合規）與 CycloneDX（偏資安），掃描工具兩種都吃。",
+        "commonIssues": ["以為只要顧自己 import 的套件，忽略間接依賴", "SBOM 沒進版控或不隨每次建置更新", "格式選錯導致下游工具吃不進去"],
+        "troubleshooting": ["確認清單檔（package.json / requirements.txt 等）存在且被工具偵測到", "統一團隊用同一種 SBOM 格式", "把 SBOM 產出設為建置的固定步驟"],
+        "interviewPoints": ["說明 SBOM 的用途與兩種主流格式", "說明間接依賴為什麼是資安重點"]
+      },
+      {
+        "id": "devops-osv",
+        "title": "OSV：用成分表掃已知弱點",
+        "objective": "能用 OSV-Scanner 吃 SBOM 掃出 CVE，並理解為何 stage 要排在 SBOM 之後。",
+        "content": "OSV（Open Source Vulnerabilities）是開源弱點資料庫。OSV-Scanner 讀 SBOM 或清單檔，把每個套件版本比對資料庫，列出對應的 CVE 與嚴重度。因為它吃的是 SBOM 的產出，所以 Pipeline 裡一定排在 SBOM 之後——這種階段依賴是供應鏈掃描的典型結構。",
+        "commonIssues": ["SBOM 還沒產出就跑 OSV，掃到空的", "只看有沒有 CVE，不分嚴重度與是否可修", "把無法立即修的間接依賴弱點直接忽略"],
+        "troubleshooting": ["確認 OSV 的輸入來源（SBOM 檔或清單檔）存在", "依 CVSS 嚴重度分級處理", "查有無修復版本，無法升級時記錄風險與緩解"],
+        "interviewPoints": ["說明 OSV 掃描與 SBOM 的依賴關係", "說明掃到弱點但無法升級時的處理方向"]
+      },
+      {
+        "id": "devops-license",
+        "title": "License 合規：辨識授權風險",
+        "objective": "能從 SBOM 的授權欄位辨識傳染性授權與商用風險。",
+        "content": "第三方套件都有授權條款。MIT、Apache-2.0 屬寬鬆授權，商用幾乎無虞；GPL、AGPL 具傳染性，可能要求你的整個專案也開源。License 掃描從 SBOM 的 licenses 欄位彙整，標出高風險與未知授權，讓法務與工程能提前處理。",
+        "commonIssues": ["只顧資安弱點，忽略授權法務風險", "SBOM 裡授權欄位是 Unknown 卻放著不管", "誤把傳染性授權引入商用產品"],
+        "troubleshooting": ["彙整 SBOM 的 licenses 欄位並分類", "對 Unknown 授權逐一查明來源套件", "建立允許/禁止授權清單（allowlist / denylist）"],
+        "interviewPoints": ["說明寬鬆授權與傳染性授權的差異", "說明企業為何要做 License 掃描"]
+      },
+      {
+        "id": "devops-supply-chain-pipeline",
+        "title": "串進 Pipeline：三階段依賴與安全閘門",
+        "objective": "能設計 SBOM→OSV→License 有依賴順序的 CI job，並依風險擋門。",
+        "content": "把三步接進 Pipeline：SBOM 階段產出成分表並存成 artifact，OSV 與 License 階段用 needs 取得該 artifact 再各自掃描。掃到中高風險弱點或禁用授權時，讓 job 失敗以擋下部署（安全閘門）；報告一律保存供稽核。",
+        "commonIssues": ["三個 job 沒用 artifact 傳遞 SBOM，各自重複產生", "掃描失敗卻仍繼續部署", "報告沒保存，稽核時拿不出證據"],
+        "troubleshooting": ["用 artifacts + needs 建立 job 間依賴與傳遞", "設定安全閘門：中高風險 exit 1 擋部署", "所有掃描報告設 when: always 保存"],
+        "interviewPoints": ["說明如何用 artifact 與 needs 建立階段依賴", "說明供應鏈安全閘門的設計"]
+      }
+    ],
+    "tags": ["Supply Chain", "SBOM", "OSV", "License", "CycloneDX"],
+    "order": 7
   },
   {
     "id": "devops-sonar-zap",
@@ -627,7 +723,46 @@
       }
     ],
     "tags": ["SonarQube", "OWASP ZAP", "Quality Gate", "DAST", "API Scan"],
-    "order": 6
+    "order": 8
+  },
+  {
+    "id": "devops-sonar-ops",
+    "pathId": "devops",
+    "title": "SonarQube 自建維運與憑證串接",
+    "stage": "SonarQube 自建維運",
+    "description": "掌握自建 SonarQube 的升級與版本匹配（plugin/webapp/JDK/DB migration）、用 keytool 讓 Java 信任內部憑證、以反向代理補上 HTTPS，以及掃描範圍、權限與分支清理的治理。",
+    "businessUse": "SonarQube 是自建程式碼品質與安全掃描的核心平台。它是 Java 應用、預設不支援 HTTPS、升級要顧一堆版本相依——升壞會讓整個團隊的掃描停擺。這門課教的是把它穩定跑起來、安全接進 CI 的真功夫。",
+    "lessons": [
+      {
+        "id": "devops-sonar-upgrade",
+        "title": "SonarQube 升級與版本匹配",
+        "objective": "能規劃 SonarQube 升級，並確認 plugin、JDK 與資料庫遷移的版本相依。",
+        "content": "SonarQube 升級不只換主程式：它是 Java 應用，要對應正確的 JDK 版本；社群版分支功能靠 plugin，plugin 與 webapp 要對得上主版本；跨大版本升級常要先升到中繼版本；升級後要開 /setup 頁執行資料庫遷移。任一個版本對不上就起不來。",
+        "commonIssues": ["升級主程式卻沒更新 JDK 到相容版本", "plugin 版本與新主版本不匹配", "跨版本直升，沒經過中繼版本"],
+        "troubleshooting": ["對照官方 host requirements 確認 JDK 版本", "確認 plugin/webapp 與主版本相容", "升級後開 /setup 完成 DB 遷移並看 log"],
+        "interviewPoints": ["說明 SonarQube 升級要顧哪些版本相依", "說明資料庫遷移在升級流程的位置"]
+      },
+      {
+        "id": "devops-sonar-cacerts",
+        "title": "讓 Java 信任你的憑證：cacerts 與 keytool",
+        "objective": "能用 keytool 把內部憑證匯入 Java 的信任庫，讓 SonarQube 連得上內部 GitLab。",
+        "content": "SonarQube 要連內部 GitLab（SSO、匯入專案）時，如果 GitLab 用的是內部 CA 簽的憑證，Java 預設不信任會連線失敗。解法是用 keytool 把該憑證匯入 Java 的信任庫 cacerts。這是「同一張憑證要被多個生態信任」的典型場景。",
+        "commonIssues": ["Java 不信任內部憑證導致 SSO/API 連線失敗", "keytool 操作對象搞錯 JDK（多版本並存）", "升級 JDK 後新 cacerts 沒有重新匯入憑證"],
+        "troubleshooting": ["確認錯誤是憑證信任問題（PKIX path building failed）", "找到 SonarQube 實際使用的 JDK 的 cacerts", "keytool 匯入後重啟 SonarQube 服務"],
+        "interviewPoints": ["說明 Java cacerts 的作用與 keytool 的用途", "說明升級 JDK 後為何要重新匯入憑證"]
+      },
+      {
+        "id": "devops-sonar-proxy",
+        "title": "反向代理補 HTTPS 與掃描治理",
+        "objective": "能用反向代理為 SonarQube 補上 HTTPS，並治理掃描範圍、權限與分支清理。",
+        "content": "SonarQube 本身不做 HTTPS，正式環境用反向代理（Nginx 或 IIS ARR + URL Rewrite）在前面終止 TLS，並帶 X-Forwarded-Proto 讓 SonarQube 知道原始請求是 https。治理面：設定掃描範圍（inclusions）、專案權限、以及定期清理過期分支資料避免無限膨脹。",
+        "commonIssues": ["反向代理沒帶 X-Forwarded-Proto，SonarQube 產生錯誤的 http 連結", "反向代理憑證到期沒跟著換", "分支資料無限累積撐爆磁碟"],
+        "troubleshooting": ["確認反代設定 X-Forwarded-Proto = https", "把反代憑證納入到期監控", "設定分支清理排程（如清超過 N 個月的分支）"],
+        "interviewPoints": ["說明為何要用反向代理為 SonarQube 補 HTTPS", "說明 X-Forwarded-Proto 的作用"]
+      }
+    ],
+    "tags": ["SonarQube", "keytool", "cacerts", "Reverse Proxy", "Java"],
+    "order": 9
   },
   {
     "id": "devops-dotnet-python",
@@ -657,7 +792,46 @@
       }
     ],
     "tags": [".NET", "MSBuild", "NuGet", "Python", "pytest", "Bandit"],
-    "order": 7
+    "order": 10
+  },
+  {
+    "id": "devops-enterprise-deploy",
+    "pathId": "devops",
+    "title": "企業級部署實務（Windows / IIS / DMZ）",
+    "stage": "企業級部署",
+    "description": "學習傳統企業的 Windows 部署手法：WebDeploy 對 IIS 部署、IIS 授權才能帶密碼、以 matrix 一次部署多支排程程式，以及 DMZ 主機靠預存認證部署與密碼輪替連動。",
+    "businessUse": "很多企業的核心系統跑在 Windows / IIS 上，不是每個部署都能 Docker 化。用 CI 部署到 IIS、部署到隔離的 DMZ 主機、一次發佈多支排程程式，是傳統企業維運的日常，也是相關 JD 常見卻少人教的實務。",
+    "lessons": [
+      {
+        "id": "devops-webdeploy",
+        "title": "WebDeploy 對 IIS 部署與授權",
+        "objective": "能說明為何用 WebDeploy 而非檔案複製，以及 IIS 授權與帶密碼部署的關係。",
+        "content": "部署 Web 應用到 IIS，直接用 SMB 複製檔案常因檔案鎖定、權限與應用程式池狀態而失敗。WebDeploy 是微軟的部署技術，能同步檔案、設定與應用程式狀態。CI 要帶密碼自動部署前，得先在目標 IIS 把 CI 服務帳號加入管理權限，帶入的密碼才有作用。",
+        "commonIssues": ["用檔案複製部署，遇到檔案鎖定或設定不同步", "IIS 沒授權 CI 帳號，帶密碼也部署不了", "來源與目標的 WebDeploy 版本不一致"],
+        "troubleshooting": ["改用 WebDeploy 同步而非 SMB 複製", "在 IIS 把部署帳號加入管理權限", "確認兩端都裝了 WebDeploy 且版本相容"],
+        "interviewPoints": ["說明 WebDeploy 相對於檔案複製的優點", "說明帶密碼部署前要先在 IIS 做什麼"]
+      },
+      {
+        "id": "devops-matrix-deploy",
+        "title": "多目標與排程程式部署",
+        "objective": "能用 CI 的 matrix 一次部署多支程式到多個目標，帶帳號執行。",
+        "content": "一批排程程式（多支 exe / 服務）要部署到不同目標路徑時，用 CI 的 parallel matrix 把「同一套部署步驟」套到多個參數組合，一次發佈多支，避免手動重複。部署帳號密碼透過 CI 遮罩變數帶入部署腳本。",
+        "commonIssues": ["逐支手動部署，容易漏或不一致", "matrix 參數與目標對不上，部署到錯的地方", "帳密硬寫在腳本裡而非遮罩變數"],
+        "troubleshooting": ["用 matrix 列出程式與目標的對應", "部署後逐目標驗證檔案與版本", "帳密一律走 CI 遮罩變數"],
+        "interviewPoints": ["說明 CI matrix 如何一次部署多支程式", "說明部署帳密該怎麼安全帶入"]
+      },
+      {
+        "id": "devops-dmz-deploy",
+        "title": "DMZ 部署與認證管理",
+        "objective": "能說明如何讓 CI 部署到隔離的 DMZ 主機，並管理輪替的認證。",
+        "content": "DMZ 主機與內網隔離、帳號網域不同，CI 要部署過去，常見做法是在 runner 主機的作業系統認證管理員預先存好 DMZ 主機的認證，讓部署工具直接取用，走與一般專案相同的流程。DMZ 帳號密碼通常定期輪替，預存的認證要跟著更新，否則部署會突然失敗。",
+        "commonIssues": ["DMZ 帳號輪替後，預存認證沒更新導致部署失敗", "把 DMZ 認證硬編在腳本裡", "分不清 DMZ 網域帳號與內網帳號"],
+        "troubleshooting": ["更新作業系統認證管理員裡的 DMZ 認證", "確認使用正確的 DMZ 網域帳號", "建立密碼輪替與認證更新的連動流程"],
+        "interviewPoints": ["說明 CI 如何部署到隔離的 DMZ 主機", "說明密碼輪替與預存認證的連動"]
+      }
+    ],
+    "tags": ["Windows", "IIS", "WebDeploy", "DMZ", "Deploy"],
+    "order": 11
   },
   {
     "id": "devops-docker-ai",
@@ -696,7 +870,7 @@
       }
     ],
     "tags": ["Docker", "Container", "Kubernetes", "Open WebUI", "RAG", "AI Platform"],
-    "order": 8
+    "order": 12
   },
   {
     "id": "net-lab-setup",
@@ -924,7 +1098,76 @@
       }
     ],
     "tags": ["IaC", "Ansible", "Terraform", "Automation"],
-    "order": 9
+    "order": 13
+  },
+  {
+    "id": "devops-compliance-audit",
+    "pathId": "devops",
+    "title": "合規盤點與組態基準",
+    "stage": "合規盤點與組態基準",
+    "description": "用 Ansible 自動化盤點主機的帳號、群組與已安裝軟體並上傳稽核系統，並以 SCAP / STIG 組態基準掃描檢查主機是否符合安全設定標準。",
+    "businessUse": "資安稽核與 ISO 合規要求「拿得出證據」：誰有帳號、裝了什麼軟體、主機設定符不符合基準。人工盤點幾十台主機不可能準確，用 Ansible 自動盤點 + SCAP 基準掃描把它變成可重複、可稽核的自動流程，是合規維運的核心。",
+    "lessons": [
+      {
+        "id": "devops-ansible-audit",
+        "title": "Ansible 自動化盤點",
+        "objective": "能用 Ansible 盤點多台主機的帳號、群組與軟體，並上傳稽核系統。",
+        "content": "把 Ansible 從「部署工具」延伸為「盤點工具」：用 playbook 對所有主機收集帳號、群組成員、已安裝套件（apt/yum 紀錄），轉成結構化資料（JSON）後打 API 上傳到集中的稽核系統。機密（如上傳用的憑證）放在 Ansible Vault 加密。",
+        "commonIssues": ["盤點結果沒有集中，散在各主機", "上傳憑證明碼寫在 playbook 裡", "盤點與實際主機清單不同步"],
+        "troubleshooting": ["用 playbook 統一收集並轉 JSON 上傳", "機密放 Ansible Vault 加密", "Inventory 定期與實際主機對帳"],
+        "interviewPoints": ["說明如何用 Ansible 做帳號與軟體盤點", "說明 Ansible Vault 的用途"]
+      },
+      {
+        "id": "devops-scap-stig",
+        "title": "組態基準：SCAP 與 STIG",
+        "objective": "能說明組態基準的用途，並用 OpenSCAP 對主機做一次合規掃描。",
+        "content": "組態基準是「主機安全設定的標準答案」：STIG、CIS Benchmark 定義了密碼原則、服務關閉、權限設定等應有狀態。SCAP 是描述這些基準的標準格式，OpenSCAP 是開源掃描器，對主機掃描後產出「哪些項目通過/失敗」的合規報告，供修補與稽核。",
+        "commonIssues": ["把基準當一次性檢查，設定漂移後不再符合", "只掃不修，報告堆著沒處理", "用錯對應作業系統的基準"],
+        "troubleshooting": ["定期重掃偵測組態漂移", "對失敗項目排修補並重掃驗證", "選對應 OS 版本的 SCAP 基準檔"],
+        "interviewPoints": ["說明 SCAP / STIG / CIS Benchmark 的關係", "說明組態基準掃描在合規的角色"]
+      }
+    ],
+    "tags": ["Compliance", "Ansible", "SCAP", "STIG", "Audit"],
+    "order": 14
+  },
+  {
+    "id": "devops-governance",
+    "pathId": "devops",
+    "title": "CI/CD 身分與弱點治理",
+    "stage": "CI/CD 身分與弱點治理",
+    "description": "治理 CI/CD 的執行身分與憑證：服務帳號與 Token 的最小權限與輪替、用 API 自動盤點帳號權限、以及弱點分級、修補 SLA 與追蹤台帳。",
+    "businessUse": "CI/CD 手握部署到正式環境的權限，它用的服務帳號與 Token 一旦外洩或權限過大，就是最高風險的破口。加上稽核要求「權限有人定期盤點、弱點有分級與修補時限」——身分治理與弱點治理是 DevSecOps 從工具走向制度的關鍵。",
+    "lessons": [
+      {
+        "id": "devops-service-account",
+        "title": "服務帳號與 Token 治理",
+        "objective": "能規劃 CI/CD 服務帳號與 Token 的最小權限、scopes 與輪替。",
+        "content": "CI/CD 不該用個人帳號執行，要用專屬服務帳號，權限依需要最小化。存取用的 Token（如 PAT）要設定最小 scopes、設到期日、定期輪替；設成永久不到期的 Token 是稽核常抓的破口。Token 一律當機密管理，不進版本庫、外洩立刻作廢重發。",
+        "commonIssues": ["CI 用個人帳號或高權限帳號執行", "Token 設成永久不到期", "Token scopes 開太大或明碼外洩"],
+        "troubleshooting": ["改用最小權限的專屬服務帳號", "Token 設到期日並排程輪替", "外洩時立刻撤銷重發並排查影響"],
+        "interviewPoints": ["說明 CI/CD 為何要用服務帳號而非個人帳號", "說明 Token 的最小 scopes 與輪替"]
+      },
+      {
+        "id": "devops-access-audit",
+        "title": "帳號權限自動盤點",
+        "objective": "能用 API 定期抓取帳號與權限，寫入資產清冊供稽核。",
+        "content": "帳號權限要「定期盤點、有紀錄」。做法是用平台 API（如 GitLab API）定期抓取所有帳號、群組、專案權限，寫進集中的資料庫或資產清冊；再以查詢提供稽核與異常偵測（離職未停用、權限過大）。這把人工盤點變成可重複的自動流程。",
+        "commonIssues": ["靠人工截圖盤點，不準又難追溯", "離職帳號沒被發現仍有權限", "盤點資料沒有歷史，看不出權限變化"],
+        "troubleshooting": ["用 API 定期抓權限寫入資產清冊", "比對在職名單找出應停用帳號", "保留歷史快照以追蹤權限變化"],
+        "interviewPoints": ["說明如何用 API 自動盤點帳號權限", "說明權限盤點要抓哪些異常"]
+      },
+      {
+        "id": "devops-vuln-sla",
+        "title": "弱點管理 SLA 與追蹤台帳",
+        "objective": "能設計弱點分級、修補時限（SLA）與追蹤回填的管理流程。",
+        "content": "掃描掃出弱點只是開始，治理在於「分級 → 定修補時限 → 追蹤到關閉」。依嚴重度訂 SLA（例如 High 在 90 天內修補），把弱點記進追蹤台帳，含負責人、期限、狀態；修補或升級完成後回填更新。這讓弱點不會掃完就被遺忘。",
+        "commonIssues": ["掃出弱點沒有分級與期限，堆著不處理", "沒有台帳，同一弱點反覆出現無人追", "修補完沒回填，稽核看不出進度"],
+        "troubleshooting": ["依嚴重度訂修補 SLA 並記台帳", "台帳含負責人、期限、狀態", "修補後回填並重掃驗證"],
+        "interviewPoints": ["說明弱點修補 SLA 如何依嚴重度設計", "說明弱點追蹤台帳要包含什麼"]
+      }
+    ],
+    "tags": ["Governance", "Service Account", "Token", "Vulnerability", "SLA"],
+    "order": 15
   },
   {
     "id": "devops-monitoring",
@@ -945,6 +1188,6 @@
       }
     ],
     "tags": ["Monitoring", "Logs", "Metrics", "Prometheus", "Grafana"],
-    "order": 10
+    "order": 16
   }
 ]

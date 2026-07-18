@@ -388,5 +388,145 @@
     "tags": ["RAG", "AI Platform"],
     "relatedCourses": ["devops-docker-ai"],
     "relatedLabs": ["lab-devops-ai-platform"]
+  },
+  {
+    "id": "interview-devops-sbom",
+    "pathId": "devops",
+    "type": "basic",
+    "question": "SBOM 是什麼？為什麼供應鏈安全要先有它？",
+    "referenceAnswer": "SBOM（軟體物料清單）是專案的成分表，列出用了哪些套件、版本與授權，包含間接依賴。因為弱點掃描要比對「你用了什麼版本」、授權檢查要看「每個套件的授權」，兩者都以 SBOM 為輸入，所以它是供應鏈安全的第一步。主流格式有 SPDX 與 CycloneDX。",
+    "tags": ["SBOM", "Supply Chain"],
+    "relatedCourses": ["devops-supply-chain"],
+    "relatedLabs": ["lab-devops-supply-chain"]
+  },
+  {
+    "id": "interview-devops-sbom-osv-order",
+    "pathId": "devops",
+    "type": "scenario",
+    "question": "為什麼 Pipeline 裡 OSV 掃描要排在 SBOM 之後？",
+    "referenceAnswer": "因為 OSV-Scanner 吃的是 SBOM 的產出——它拿 SBOM 裡的套件版本清單去比對弱點資料庫。SBOM 還沒產生就跑 OSV，會掃到空的。實作上用 artifacts 把 sbom.json 從 SBOM job 傳給 OSV job，並用 needs 建立依賴順序。這是 CI 階段依賴的典型例子。",
+    "tags": ["OSV", "Supply Chain", "Pipeline"],
+    "relatedCourses": ["devops-supply-chain"],
+    "relatedLabs": ["lab-devops-supply-chain"]
+  },
+  {
+    "id": "interview-devops-license",
+    "pathId": "devops",
+    "type": "basic",
+    "question": "為什麼要做 License 掃描？GPL 和 MIT 差在哪？",
+    "referenceAnswer": "第三方套件的授權是法務風險：用錯授權可能被迫開源或不能商用。MIT/Apache-2.0/BSD 屬寬鬆授權，附版權聲明即可商用；GPL/AGPL 具傳染性，可能要求衍生作品也開源，AGPL 連透過網路提供服務都可能觸發。企業會建 allowlist/denylist 並在 Pipeline 自動擋掉禁用授權；Unknown 授權一律當高風險查明。",
+    "tags": ["License", "Supply Chain"],
+    "relatedCourses": ["devops-supply-chain"],
+    "relatedLabs": ["lab-devops-supply-chain"]
+  },
+  {
+    "id": "interview-devops-gitlab-upgrade",
+    "pathId": "devops",
+    "type": "scenario",
+    "question": "自建 GitLab 要從舊版升到最新版，你會怎麼規劃？",
+    "referenceAnswer": "先用官方 Upgrade Path 工具算出必經停靠版本(不能跨大版本直升)。每一版升級前讀 Release Notes 的破壞性更新、確認上一版 background migrations 已跑完。內網環境要離線準備 image(pull→save→傳入→load)，有幾版準備幾個。路徑上若含 PostgreSQL 升級要另外處理 DB。升級前完成含 secrets 檔的完整備份、先在測試機演練，正式機在維護窗口內執行。",
+    "tags": ["GitLab", "Upgrade"],
+    "relatedCourses": ["devops-gitlab-upgrade"],
+    "relatedLabs": ["lab-devops-gitlab-backup"]
+  },
+  {
+    "id": "interview-devops-gitlab-secrets",
+    "pathId": "devops",
+    "type": "troubleshooting",
+    "question": "GitLab 用內建 backup 備份了，還原後卻有資料解不開，為什麼？",
+    "referenceAnswer": "因為內建 gitlab-backup 只備 repository、資料庫、上傳檔，不含主設定檔與 gitlab-secrets.json。secrets 檔裡的金鑰用來加密資料庫中的 token、雙因子密鑰等；還原資料庫卻用了不同的 secrets 檔(或沒有)，那些加密欄位就解不開。完整備份必須是 backup tar + gitlab.rb + gitlab-secrets.json 三者一起。",
+    "tags": ["GitLab", "Backup"],
+    "relatedCourses": ["devops-gitlab-upgrade"],
+    "relatedLabs": ["lab-devops-gitlab-backup"]
+  },
+  {
+    "id": "interview-devops-runner-shell",
+    "pathId": "devops",
+    "type": "basic",
+    "question": "GitLab Runner 的 shell 設 pwsh 和 powershell 差在哪?",
+    "referenceAnswer": "pwsh 是 PowerShell 7(跨平台新版)、powershell 是 Windows PowerShell 5.1(舊版)。兩者語法與預設編碼有差:PS7 預設 UTF-8、支援三元運算子等新語法;PS5.1 預設編碼不同、不支援部分語法。同一份 .gitlab-ci.yml 的 script 在兩種 runner 上行為可能不同，所以 runner 的 shell 設定要和腳本假設一致。",
+    "tags": ["GitLab", "Runner"],
+    "relatedCourses": ["devops-gitlab-upgrade"],
+    "relatedLabs": ["lab-devops-runner-cicd"]
+  },
+  {
+    "id": "interview-devops-sonar-upgrade",
+    "pathId": "devops",
+    "type": "scenario",
+    "question": "自建 SonarQube 升級要注意哪些版本相依?",
+    "referenceAnswer": "SonarQube 是 Java 應用,升級要一起顧四樣:主程式版本、對應的 JDK 版本(查官方 host requirements)、plugin/webapp 與主版本的相容性、以及升級後的資料庫遷移(開 /upgrade 執行)。跨大版本要走中繼版本,不能直升。官方 Docker image 內含對的 JDK,但自己裝在主機上就得手動升 JDK。",
+    "tags": ["SonarQube", "Upgrade"],
+    "relatedCourses": ["devops-sonar-ops"],
+    "relatedLabs": ["lab-devops-sonar-cacerts"]
+  },
+  {
+    "id": "interview-devops-cacerts",
+    "pathId": "devops",
+    "type": "troubleshooting",
+    "question": "SonarQube 連內部 GitLab 出現 PKIX path building failed,怎麼解?",
+    "referenceAnswer": "這是 Java 不信任對方憑證造成的。內部 GitLab 用內部 CA 簽的憑證,Java 預設信任庫 cacerts 裡沒有這個 CA。解法是用 keytool 把該憑證(或內部 CA)匯入 SonarQube 使用的那個 JDK 的 cacerts(預設密碼 changeit),匯入後重啟 SonarQube。注意升級 JDK 後 cacerts 會換新,要重新匯入。",
+    "tags": ["SonarQube", "cacerts", "keytool"],
+    "relatedCourses": ["devops-sonar-ops"],
+    "relatedLabs": ["lab-devops-sonar-cacerts"]
+  },
+  {
+    "id": "interview-devops-sonar-proxy",
+    "pathId": "devops",
+    "type": "basic",
+    "question": "SonarQube 不支援 HTTPS,正式環境怎麼提供 HTTPS?反向代理要注意什麼?",
+    "referenceAnswer": "在 SonarQube 前面放反向代理(Nginx 或 IIS ARR + URL Rewrite)終止 TLS,反代對後端走 http。關鍵是反代要帶 X-Forwarded-Proto = https,讓 SonarQube 知道原始請求是 https,否則它產生的連結(通知、webhook)會用 http 而在強制 https 環境下出錯。反代憑證也要納入到期監控。",
+    "tags": ["SonarQube", "Reverse Proxy"],
+    "relatedCourses": ["devops-sonar-ops"],
+    "relatedLabs": ["lab-devops-sonar-cacerts"]
+  },
+  {
+    "id": "interview-devops-webdeploy",
+    "pathId": "devops",
+    "type": "basic",
+    "question": "部署網站到 IIS 為何用 WebDeploy 而不是直接複製檔案?",
+    "referenceAnswer": "直接 SMB 複製常因 DLL 被進程鎖住、web.config 改了但應用程式池沒回收、複製到一半使用者看到半新半舊檔案而出問題。WebDeploy 能協調應用程式池、只同步差異、處理檔案鎖定與 IIS 設定同步。另外 CI 帶密碼自動部署前,要先在目標 IIS 把部署服務帳號加入管理權限,帶的密碼才有作用。",
+    "tags": ["IIS", "WebDeploy"],
+    "relatedCourses": ["devops-enterprise-deploy"],
+    "relatedLabs": ["lab-devops-runner-cicd"]
+  },
+  {
+    "id": "interview-devops-dmz-deploy",
+    "pathId": "devops",
+    "type": "scenario",
+    "question": "CI 要部署到隔離的 DMZ 主機,怎麼做?密碼輪替要注意什麼?",
+    "referenceAnswer": "DMZ 與內網隔離、帳號網域不同,常見做法是在 runner 主機的作業系統認證管理員預先存好 DMZ 主機的認證,讓部署工具直接取用,走與一般專案相同流程。注意 DMZ 帳號密碼通常定期輪替,預存的認證要跟著更新,否則輪替後部署會突然失敗——所以要建立密碼輪替與認證更新的連動流程。",
+    "tags": ["DMZ", "Deploy"],
+    "relatedCourses": ["devops-enterprise-deploy"],
+    "relatedLabs": ["lab-devops-runner-cicd"]
+  },
+  {
+    "id": "interview-devops-scap",
+    "pathId": "devops",
+    "type": "basic",
+    "question": "SCAP、STIG、CIS Benchmark 是什麼關係?組態漂移是什麼?",
+    "referenceAnswer": "STIG(美國國防部)與 CIS Benchmark(民間)是組態基準——定義主機安全設定的標準答案(密碼原則、關閉不必要服務等);SCAP 是描述這些基準的機器可讀標準格式;OpenSCAP 是讀 SCAP 格式對主機掃描的開源工具。組態漂移指設定原本合規,後來被人改回不合規(如重開某服務),只有定期重掃才抓得到。",
+    "tags": ["SCAP", "STIG", "Compliance"],
+    "relatedCourses": ["devops-compliance-audit"],
+    "relatedLabs": ["lab-devops-scap"]
+  },
+  {
+    "id": "interview-devops-service-account",
+    "pathId": "devops",
+    "type": "scenario",
+    "question": "為什麼 CI/CD 要用服務帳號而不是個人帳號?Token 怎麼治理?",
+    "referenceAnswer": "用個人帳號:那人離職帳號停用,全公司 Pipeline 掛掉;且 log 分不清是人為還是自動化。服務帳號不綁個人、身分清楚。Token 治理:設最小 scopes(只給需要的權限)、設到期日、定期輪替(建新→更新→撤舊),不設永久 Token(稽核破口),不進版本庫,外洩立刻撤銷重發。",
+    "tags": ["Service Account", "Token"],
+    "relatedCourses": ["devops-governance"],
+    "relatedLabs": ["lab-devops-vuln-governance"]
+  },
+  {
+    "id": "interview-devops-vuln-sla",
+    "pathId": "devops",
+    "type": "scenario",
+    "question": "掃描掃出一堆弱點,你會怎麼管理它們?",
+    "referenceAnswer": "治理不是掃到就好,而是分級→定期限→追蹤到關閉。依 CVSS 嚴重度訂修補 SLA(如 Critical 7 天、High 30 天),記進追蹤台帳含來源、影響資產、負責人、期限、狀態(可用 GitLab Issue Board)。修補完成要重掃驗證弱點真的消失才回填關閉,不能只把 Issue 關掉。逾期未修的要升級處理。",
+    "tags": ["Vulnerability", "SLA"],
+    "relatedCourses": ["devops-governance"],
+    "relatedLabs": ["lab-devops-vuln-governance"]
   }
 ]

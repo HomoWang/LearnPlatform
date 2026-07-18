@@ -1576,5 +1576,426 @@
       "我知道告警要對症狀而不是只對資源。"
     ],
     "handson": "用 Docker 把「Prometheus 收指標 → Grafana 畫圖」這套業界標準組合在本機跑起來。\n\n【第 1 步／練習任務 1 解答——healthcheck】\n先給服務一個健康檢查。以你的學習平台或任一容器為例，compose 加：\nhealthcheck:\n  test: [\"CMD\", \"wget\", \"-q\", \"--spider\", \"http://localhost/\"]\n  interval: 30s\n  timeout: 3s\n  retries: 3\n> docker ps 的 STATUS 欄會顯示 (healthy)/(unhealthy)——負載平衡器與監控就是靠這個判斷死活。\nhealthcheck 的靈魂：要反映「依賴」狀態（連得到資料庫嗎），不是只回 200。\n\n【第 2 步】跑 Prometheus + Grafana + 一個 exporter\ndocker-compose.yml：\nservices:\n  node-exporter:\n    image: prom/node-exporter\n    ports: [\"9100:9100\"]\n  prometheus:\n    image: prom/prometheus\n    ports: [\"9090:9090\"]\n    volumes: [\"./prometheus.yml:/etc/prometheus/prometheus.yml\"]\n  grafana:\n    image: grafana/grafana\n    ports: [\"3001:3000\"]\nprometheus.yml：\nglobal: { scrape_interval: 15s }\nscrape_configs:\n  - job_name: node\n    static_configs:\n      - targets: ['node-exporter:9100']\n> docker compose up -d\n\n【第 3 步】看指標\nhttp://localhost:9090 （Prometheus）→ 上方查詢框打 node_memory_MemAvailable_bytes → Execute → Graph。\n你看到的是「隨時間變化的數值」= Metric，這就是 Metrics 和 Log（一行行事件）的根本差別。\n\n【第 4 步】Grafana 儀表板\nhttp://localhost:3001 （admin/admin）→ Add data source → Prometheus → URL 填 http://prometheus:9090 → Save。\nDashboards → Import → 輸入編號 1860（社群現成的 Node Exporter 儀表板）→ 選 Prometheus → Import。\n瞬間得到一整片 CPU/記憶體/磁碟/網路的專業儀表板。\n\n【練習任務 2 解答】Web 服務告警清單（症狀優先）\n錯誤率：5xx / 總請求 > 1%（持續 5 分鐘）｜延遲：P95 > 800ms｜\n可用性：healthcheck 連續 3 次失敗｜飽和：磁碟 > 80%、記憶體持續 > 90%\n重點：前兩個是「使用者痛不痛」（症狀），後兩個才是資源——只監控 CPU，服務掛了你還不知道。\n\n【練習任務 3 解答】Log 格式約定\n統一 JSON：{ time, level, service, trace_id, message }。\ntrace_id 讓你把「一個請求跨多個服務」的 Log 串起來——出事時的救命稻草。\n\n【練習任務 4 解答】用一次模擬故障檢討\n停掉某個後端 → 觀察：告警多久觸發？儀表板看得出來嗎？Log 找得到根因嗎？\n每次事後問「監控能不能更早、更準地告訴我」，缺什麼補什麼——監控是養出來的，不是一次設完。\n收尾：docker compose down。\n\n恭喜——走到這裡，三條路線 68 章的手把手你全部做完了。你現在不只「讀過」企業 IT 維運，而是每一項都親手在自己的環境跑過一遍。"
+  },
+  "devops-sbom": {
+    "teachingSteps": [
+      "先理解為什麼需要它：沒有成分表，你根本不知道自己間接依賴了哪幾百個套件——出了 Log4Shell 那種全球事件，你連「我有沒有中」都答不出來。",
+      "認識兩種格式：SPDX（偏合規/法律）、CycloneDX（偏資安），主流掃描工具兩種都吃。",
+      "用 Syft（開源、跨語言）對專案產出 SBOM。",
+      "打開 SBOM 看三個欄位：套件名、版本、授權——這三個就是後面 OSV 與 License 兩章的輸入。",
+      "理解直接依賴 vs 間接依賴（transitive）：你 install 的是 A，但 A 又拉了 B、C、D，SBOM 會把整棵樹攤平，弱點常藏在你沒聽過的間接依賴裡。"
+    ],
+    "example": "# 對專案產出表格式 SBOM（快速看一眼）\ndocker run --rm -v ${PWD}:/src anchore/syft:latest /src -o table\n\n# 輸出標準格式檔（給 OSV / License 章用）\n# 檔名固定以 .cdx.json 結尾——OSV-Scanner v2 靠副檔名辨識 SBOM 格式\ndocker run --rm -v ${PWD}:/src anchore/syft:latest /src -o cyclonedx-json=/src/sbom.cdx.json\n\n# sbom.cdx.json 內每個 component：\n# { \"name\": \"lodash\", \"version\": \"4.17.19\", \"licenses\": [\"MIT\"] }",
+    "practiceTasks": [
+      "對一個練習專案產出 table 格式 SBOM，數一數總共幾個套件。",
+      "輸出 CycloneDX JSON，找出其中三個你沒有直接安裝的間接依賴。",
+      "在 SBOM 裡找出授權欄位是空白或 Unknown 的套件（這些是 License 章的隱患）。"
+    ],
+    "beginnerChecklist": [
+      "我知道 SBOM 是軟體的成分表，列出套件/版本/授權。",
+      "我知道弱點掃描和授權檢查都要先有 SBOM。",
+      "我能分辨直接依賴與間接依賴。",
+      "我能產出一份 CycloneDX 或 SPDX 格式的 SBOM。"
+    ],
+    "handson": "用任一個有套件清單的專案練（有 package.json / requirements.txt / .csproj 都行；沒有的話 git clone 一個小開源專案）。\n\n【第 1 步】用 Docker 跑 Syft（不用安裝，一行搞定）\n在專案資料夾：\n> docker run --rm -v ${PWD}:/src anchore/syft:latest /src -o table\n會印出一張表：NAME  VERSION  TYPE。這就是你的成分表。\n（PowerShell 用 ${PWD}；cmd 用 %cd%；都是「把目前資料夾掛進容器」）\n\n【第 2 步】輸出成標準格式檔（後面兩章要用）\n> docker run --rm -v ${PWD}:/src anchore/syft:latest /src -o cyclonedx-json=/src/sbom.cdx.json\n資料夾多出 sbom.cdx.json。打開看，每個 component 有 name / version / licenses——這三個欄位就是整個供應鏈掃描的原料。\n（檔名為什麼要 .cdx.json 結尾：下一章的 OSV-Scanner v2 靠副檔名辨識格式，取名 sbom.json 它會不認得。）\n\n【第 3 步／練習任務 2】看間接依賴的威力\n> docker run --rm -v ${PWD}:/src anchore/syft:latest /src -o table | wc -l\n這個數字通常比你 package.json 裡寫的直接依賴多好幾倍——多出來的都是間接依賴（你的套件又依賴的套件）。\n重點：你要負責的不只你選的套件，是「整棵依賴樹」。Log4Shell 當年就是很多人「用了但不知道用了」。\n\n【第 4 步／練習任務 3】找隱患\n打開 sbom.cdx.json，搜尋 licenses 欄位為空或 \"NOASSERTION\"/\"Unknown\" 的套件——這些在 License 章會是要查明的對象。\n\n【失敗長相】\n- 掃出來是空的 → 沒掃到清單檔：確認資料夾裡有 package.json / requirements.txt 等，或路徑指到清單檔所在層。\n- 找不到 wc 指令（Windows）→ 改用 Select-String：... -o table | Measure-Object -Line。\n\n【延伸理解】企業實務常把 SBOM 產出設成 CI 的固定 stage，每次建置都產一份存進 artifact；也有用 microsoft/sbom-tool 等其他工具，格式相通、概念一致。"
+  },
+  "devops-osv": {
+    "teachingSteps": [
+      "先接上上一章：OSV 吃的就是你產出的 sbom.cdx.json（或直接吃清單檔）。",
+      "理解 OSV 是什麼：Open Source Vulnerabilities，一個開源弱點資料庫；scanner 把你的套件版本逐一比對它。",
+      "用 osv-scanner 掃描，讀出每個弱點的套件、版本、CVE 編號、嚴重度。",
+      "分級處理：不是掃到就全部要修，先看 CVSS 嚴重度（弱點的標準評分，0–10 分，像地震震度表，對應 Critical/High/Medium/Low）與有沒有修復版本。",
+      "理解為何 stage 排在 SBOM 之後：它依賴 SBOM 的產出，這就是 Pipeline 階段依賴的典型例子。"
+    ],
+    "example": "# 直接掃專案（scanner 自己找清單檔；v2 的子指令是 scan source）\ndocker run --rm -v ${PWD}:/src ghcr.io/google/osv-scanner:latest scan source -r /src\n\n# 吃上一章產出的 SBOM（v2 靠副檔名辨識：.cdx.json / .spdx.json）\ndocker run --rm -v ${PWD}:/src ghcr.io/google/osv-scanner:latest scan source -L /src/sbom.cdx.json\n\n# 輸出重點：\n# 套件  版本  CVE 編號  嚴重度(CRITICAL/HIGH/...)  修復版本",
+    "practiceTasks": [
+      "用 osv-scanner 掃你上一章的專案，記下掃到幾個弱點、最高嚴重度是什麼。",
+      "故意在清單裡放一個舊版套件（如很舊的 lodash / flask），重掃看 CVE 變多。",
+      "挑一個掃到的弱點，查它有沒有修復版本、要升到哪一版。"
+    ],
+    "beginnerChecklist": [
+      "我知道 OSV 掃描比對的是套件版本 vs 弱點資料庫。",
+      "我知道 OSV 可以吃 SBOM，所以排在 SBOM 之後。",
+      "我知道要依嚴重度分級，不是掃到就全修。",
+      "我能查出一個弱點的修復版本。"
+    ],
+    "handson": "延續上一章的專案與 sbom.cdx.json。\n\n【第 1 步】直接掃專案\n> docker run --rm -v ${PWD}:/src ghcr.io/google/osv-scanner:latest scan source -r /src\n輸出一張表：套件、版本、CVE/GHSA 編號、嚴重度。乾淨的新專案可能掃到 0 個——這是好事，但我們要看到東西才學得到，所以下一步製造弱點。\n（scan source 是 v2 的子指令：source 掃專案/清單檔，另有 scan image 掃容器映像。）\n\n【第 2 步／練習任務 2】故意種一個已知弱點\n找專案的清單檔，放一個老版本。例如 Python 的 requirements.txt 加一行：\nflask==0.12\n（或 Node 的 package.json 放 \"lodash\": \"4.17.4\"）\n重掃：\n> docker run --rm -v ${PWD}:/src ghcr.io/google/osv-scanner:latest scan source -r /src\n這次 CVE 清單跳出來了。逐欄看：哪個套件、哪個 CVE、多嚴重、Fixed 在哪一版。\n\n【第 3 步】吃 SBOM 的用法（本章重點——階段依賴）\n> docker run --rm -v ${PWD}:/src ghcr.io/google/osv-scanner:latest scan source -L /src/sbom.cdx.json\n結果與直接掃相近，但輸入是「上一章的產出」。這就是 Pipeline 裡 SBOM→OSV 順序的技術原因：OSV 沒有 SBOM 就沒東西可比對。\n\n【第 4 步／練習任務 3】決定怎麼處理\n挑一個 HIGH 以上的弱點：\n- 有 Fixed 版本 → 升級套件，重掃確認消失\n- 沒有修復或升不動（間接依賴、相容性問題）→ 記錄風險、找緩解措施、排入待辦\n這就是「掃到弱點但不能馬上升級」的實務答案：不是忽略，是記錄與緩解。\n\n【失敗長相】\n- 掃 SBOM 沒反應或報不認得的格式 → OSV-Scanner v2 靠副檔名辨識：檔名必須以 .cdx.json（CycloneDX）或 .spdx.json（SPDX）結尾，叫 sbom.json 它不吃——回上一章確認輸出檔名。\n- 掃很久 → 第一次要下載弱點資料，正常；CI 裡可設本地快取。"
+  },
+  "devops-license": {
+    "teachingSteps": [
+      "先建立風險意識：授權是法務風險，不是資安弱點，但同樣能擋住產品出貨。",
+      "分兩類：寬鬆授權（MIT、Apache-2.0、BSD）商用幾乎無虞；傳染性授權（GPL、AGPL、LGPL 部分情境）可能要求你的程式也開源。",
+      "從上一章的 SBOM licenses 欄位彙整每個套件的授權。",
+      "特別處理 Unknown / NOASSERTION：不是沒風險，是「還沒查明」，要逐一追。",
+      "建立 allowlist / denylist：明訂公司允許與禁止的授權，讓判斷有依據、可自動化。"
+    ],
+    "example": "# 從 sbom.cdx.json 用 jq 抽授權分佈（jq 要另外安裝，見 handson）\ncat sbom.cdx.json | jq -r '.components[].licenses[]?.license.id' | sort | uniq -c | sort -rn\n\n# 輸出像：\n#  120 MIT\n#   30 Apache-2.0\n#    2 GPL-3.0\n\n# 高風險關鍵字：GPL / AGPL / LGPL / SSPL；Unknown / NOASSERTION 要追查",
+    "practiceTasks": [
+      "從 SBOM 統計專案用到哪些授權、各幾個套件。",
+      "找出所有 GPL/AGPL 家族或 Unknown 授權的套件。",
+      "寫一份公司用的 allowlist（允許）與 denylist（禁止）授權清單草稿。"
+    ],
+    "beginnerChecklist": [
+      "我知道授權是法務風險，和資安弱點是兩回事。",
+      "我能分辨寬鬆授權與傳染性授權。",
+      "我知道 Unknown 授權代表待查明、不代表安全。",
+      "我知道 allowlist/denylist 讓授權判斷可自動化。"
+    ],
+    "handson": "延續前兩章的 sbom.cdx.json。\n\n【第 0 步】先準備 jq（Windows 不內建、Git Bash 也沒有附）\n> winget install jqlang.jq\n裝完重開終端機，jq --version 有版本號就緒。不想安裝的話用 docker 版：把後面指令裡的 jq 換成 docker run --rm -i ghcr.io/jqlang/jq:latest，檔案用 < 餵進去。\n以下指令請在 Git Bash 執行（sort / uniq 是 Unix 指令，PowerShell 沒有；winget 裝的 jq 在 Git Bash 也叫得到）。\n\n【第 1 步／練習任務 1】統計授權分佈\n> cat sbom.cdx.json | jq -r '.components[].licenses[]?.license.id' | sort | uniq -c | sort -rn\n輸出像：\n  120 MIT\n   30 Apache-2.0\n    5 ISC\n    2 GPL-3.0\n這張分佈表就是授權合規的第一眼——大部分寬鬆、少數要盯。\n\n【第 2 步／練習任務 2】揪出高風險\n> cat sbom.cdx.json | jq -r '.components[] | select(.licenses[]?.license.id | test(\"GPL|AGPL|SSPL\")) | .name'\n列出所有傳染性授權的套件名。再找 Unknown：\n> cat sbom.cdx.json | jq -r '.components[] | select((.licenses | length)==0) | .name'\n這些「查無授權」的要逐一到套件官網確認——沒授權資訊不等於免費商用。\n\n【第 3 步】判斷風險（觀念核心）\n- MIT / Apache-2.0 / BSD / ISC → 寬鬆，附上版權聲明即可，商用安全\n- LGPL → 動態連結通常可，靜態連結要小心\n- GPL / AGPL → 傳染性強，AGPL 連「透過網路提供服務」都可能觸發開源義務——商用產品通常列 denylist\n- Unknown → 一律當高風險處理，查明前不用\n\n【第 4 步／練習任務 3】寫清單\nallowlist：MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC\ndenylist：GPL-3.0, AGPL-3.0, SSPL-1.0\n灰區（需個案審查）：LGPL, MPL\n有了這份清單，下一章就能在 Pipeline 自動擋掉 denylist 授權。\n\n【失敗長相】\n- jq: command not found → Windows 與 Git Bash 都不內建 jq：winget install jqlang.jq 後重開終端機，或改用 docker 版 ghcr.io/jqlang/jq。（別想用 Syft 的 -o table 代替——table 格式沒有授權欄位。）\n- licenses 大量 Unknown → 可能是 SBOM 工具沒解析到，換 -o spdx-json（檔名記得 .spdx.json 結尾）或補掃原始碼授權。"
+  },
+  "devops-supply-chain-pipeline": {
+    "teachingSteps": [
+      "把三步接成 Pipeline：SBOM 產出成分表 → OSV 掃弱點 → License 查授權。",
+      "先解決環境前提：共享 Runner 的 job 本身就在容器裡、沒有 docker 指令，要加 services: docker:dind 才能在 job 裡跑 docker。",
+      "用 artifacts 把 sbom.cdx.json 從 SBOM job 傳給後面兩個 job，避免各自重複產生。",
+      "用 needs 建立依賴：OSV 與 License 都 needs SBOM，確保順序正確。",
+      "設安全閘門：掃到中高風險弱點或 denylist 授權，讓 job exit 1 擋下部署。",
+      "報告一律 when: always 保存成 artifact，供稽核與追蹤。"
+    ],
+    "example": "stages: [sbom, scan]\n\n# 共享 Runner 的 job 沒有 docker 指令，用 dind 服務補上\ndefault:\n  image: docker:27\n  services: [\"docker:27-dind\"]\n\nvariables:\n  DOCKER_TLS_CERTDIR: \"/certs\"\n\nbuild_sbom:\n  stage: sbom\n  script:\n    - docker run --rm -v $PWD:/src anchore/syft:latest /src -o cyclonedx-json=/src/sbom.cdx.json\n  artifacts:\n    paths: [sbom.cdx.json]\n\nosv_scan:\n  stage: scan\n  needs: [build_sbom]\n  script:\n    - docker run --rm -v $PWD:/src ghcr.io/google/osv-scanner:latest scan source -L /src/sbom.cdx.json\n  # 掃到弱點時 scanner 回非零 exit code → job 失敗 → 擋部署\n\nlicense_scan:\n  stage: scan\n  needs: [build_sbom]\n  before_script:\n    - apk add --no-cache jq   # docker:27 是 Alpine 底、可直接 apk 裝\n  script:\n    - jq -e '[.components[].licenses[]?.license.id // \"\"] | any(test(\"GPL|AGPL|SSPL\")) | not' sbom.cdx.json\n  artifacts:\n    when: always\n    paths: [sbom.cdx.json]",
+    "practiceTasks": [
+      "寫一份三 job 的 .gitlab-ci.yml，用 artifacts + needs 傳遞 sbom.json。",
+      "讓 osv_scan 掃到弱點時 Pipeline 變紅（安全閘門），驗證擋門有效。",
+      "讓 license_scan 遇到 denylist 授權時失敗、通過時綠燈。"
+    ],
+    "beginnerChecklist": [
+      "我能用 artifacts 在 job 之間傳遞 SBOM。",
+      "我知道 needs 用來建立 job 依賴順序。",
+      "我能設計安全閘門讓中高風險擋下部署。",
+      "我知道掃描報告要保存供稽核。"
+    ],
+    "handson": "把前三章接成一條可跑的 Pipeline（用你的免費 GitLab 專案，或本機模擬）。\n\n【第 1 步】本機先串起來（不進 GitLab 也能驗證邏輯）\n依序跑：\n> docker run --rm -v ${PWD}:/src anchore/syft:latest /src -o cyclonedx-json=/src/sbom.cdx.json\n> docker run --rm -v ${PWD}:/src ghcr.io/google/osv-scanner:latest scan source -L /src/sbom.cdx.json; echo \"exit=$?\"\n注意最後的 exit code：掃到弱點時 osv-scanner 回非 0——這就是「安全閘門」的原料，CI 靠這個 exit code 決定擋不擋。\n\n【第 2 步／練習任務 1】寫 .gitlab-ci.yml\n照 example 那份貼進專案根目錄。四個重點：\n- default 的 image: docker + services: docker:dind——共享 Runner 的 job 本身就在容器裡、沒有 docker 指令，dind 等於在 job 旁邊開一台迷你 Docker 主機，job 裡才跑得動 docker run\n- build_sbom 用 artifacts: paths 把 sbom.cdx.json 存起來\n- osv_scan / license_scan 用 needs: [build_sbom] 拿到它、並保證排在後面\n- 推上去看 Pipeline：sbom 階段先跑，scan 階段兩個 job 平行\n\n【第 3 步／練習任務 2】驗證安全閘門\n在清單放一個舊版套件（如 flask==0.12）推上去 → osv_scan 掃到 CVE → 回非 0 → job 變紅 → 後面的部署 job 不會執行。\n把套件升回安全版本 → 綠燈 → 放行。你剛做出一道「有弱點就上不了線」的閘門。\n\n【第 4 步／練習任務 3】License 閘門\nlicense_scan 用 jq -e 檢查有沒有 GPL/AGPL/SSPL：\n- 有 → jq -e 回非 0 → job 失敗\n- 沒有 → 綠燈\n這樣傳染性授權也被自動擋在門外。\n\n【收尾觀念】這條 SBOM→OSV→License 的鏈，就是把「供應鏈安全」從一次性檢查變成「每次提交都自動把關」。報告用 when: always 保存，稽核要證據時隨時拿得出來。\n\n【失敗長相】\n- docker: command not found → 忘了加 image: docker + services: docker:dind，job 所在的容器裡本來就沒有 docker 指令。\n- needs 報錯找不到 artifact → 確認 build_sbom 的 artifacts: paths 有列 sbom.cdx.json、且檔名一致。\n- job 一直綠燈但你覺得該紅 → 確認 script 最後一個指令的 exit code 真的有非 0（用 echo $? 驗證）；GitLab 是看最後一行的結果。"
+  },
+  "devops-gitlab-upgrade-path": {
+    "teachingSteps": [
+      "先建立心態：GitLab 升級不是「換個版本號」，是有強制路徑、有破壞性更新、有資料庫遷移的維運工程。",
+      "認識 Upgrade Path：GitLab 不允許從舊版直接跳最新版，中間有強制停靠版本，官方工具依你的 current/target 算出必經路徑。",
+      "每一個停靠版本升級前，讀該版 Release Notes 的 Deprecations（破壞性更新），確認對你的環境沒影響。",
+      "理解 background migrations：升級後 GitLab 會在背景把資料改成新結構；沒等它跑完就升下一版，資料可能損壞。",
+      "把「查路徑 → 逐版看破壞性更新 → 每版確認 migrations」變成升級前的固定三件事。"
+    ],
+    "example": "# 官方 Upgrade Path 工具（Community + Docker）\nhttps://gitlab-com.gitlab.io/support/toolbox/upgrade-path/?current=17.4.2&target=18.11.6&edition=ce&distro=docker\n\n# 結果會給你必經停靠版本，例如：\n# 17.4.2 → 17.5.5 → 17.8.7 → 17.11.7 → 18.0.x → 18.11.6\n# 紅色 = Deprecations 或 DB 升級，要特別看\n\n# 每版升級前確認 migrations（Admin 區）：\n# Admin → Monitoring → Background Migrations 應為 Finished",
+    "practiceTasks": [
+      "用 Upgrade Path 工具查一組 current→target，抄下必經停靠版本清單。",
+      "挑一個停靠版本，到官方 Release Notes 找出它的 Deprecations。",
+      "說明如果跳過某個停靠版本直接升，可能發生什麼事。"
+    ],
+    "beginnerChecklist": [
+      "我知道 GitLab 不能跨大版本直升，要走停靠路徑。",
+      "我會用 Upgrade Path 工具算路徑。",
+      "我知道每版升級前要看 Deprecations。",
+      "我知道 background migrations 沒跑完不能升下一版。"
+    ],
+    "handson": "這章不需要真的升級，用官方工具與文件走一遍「升級前的功課」，把流程練熟（真升級在後面兩章）。\n\n【第 1 步／練習任務 1】查升級路徑\n打開官方 Upgrade Path 工具：\nhttps://gitlab-com.gitlab.io/support/toolbox/upgrade-path/\n選 Edition: Community、Distro: Docker，填一組版本（例：Current 17.4.2、Target 18.11.6）。\n結果頁列出必經停靠版本——抄下來。這就是你升級的「地圖」，一步都不能跳。\n為什麼不能跳：GitLab 的 migrations 是「一版接一版」設計的，跳過中間版本，資料遷移會斷鏈。\n\n【第 2 步／練習任務 2】讀破壞性更新\n結果頁上紅色的項目就是要注意的。點進某一版的 Release Notes，找 \"Deprecations\" 或 \"Breaking changes\" 段落。\n例如某版可能移除舊 API、改設定格式——如果你的環境有用到，升上去就會壞。\n把「會影響我的破壞性更新」列成一張清單，這是升級前必做的功課。\n\n【第 3 步】理解 background migrations（觀念核心）\n升級後 GitLab 不會馬上把所有資料改成新格式，而是在背景慢慢遷移（避免升級當下卡太久）。\n所以規則是：升到某版 → 等 background migrations 全部 Finished → 才能升下一版。\n在有 GitLab 環境時，位置在 Admin → Monitoring → Background Migrations。\n\n【第 4 步／練習任務 3】說出跳版的後果\n答案：跳過停靠版本 = 跳過中間版本的 migrations，資料結構遷移斷鏈，輕則升級失敗、重則資料損壞且難還原。這就是「GitLab 升級最忌貪快」的原因。\n\n【延伸】企業實務會把「本次升級路徑 + 各版破壞性更新 + migrations 確認點」整理成一張升級作業單，逐項簽核——把易漏的步驟制度化。"
+  },
+  "devops-gitlab-offline-image": {
+    "teachingSteps": [
+      "先理解情境：企業 GitLab 常在內網、不能直接連 Docker Hub，所以不能 docker pull，要用「離線搬運」。",
+      "學離線三步：有網環境 docker pull → docker save 成 tar → 傳進內網 → docker load。",
+      "每個停靠版本都要準備一個 image，所以路徑上有幾版就搬幾個 tar。",
+      "辨識跨資料庫升級：升級路徑上若含 PostgreSQL 主要版本升級，光換 GitLab image 不夠，要另外處理 DB 升級。",
+      "建立順序觀念：DB 升級通常要在特定時機做（趁服務還在或依官方指示），不能隨便穿插。"
+    ],
+    "example": "# 有網環境：拉下來並匯出成 tar\ndocker pull gitlab/gitlab-ce:18.11.6-ce.0\ndocker save gitlab/gitlab-ce:18.11.6-ce.0 -o gitlab-18.11.6.tar\n\n# 內網環境：載入並確認\nsudo docker load -i gitlab-18.11.6.tar\nsudo docker images | grep gitlab-ce   # 逐版確認都在\n\n# 跨 DB 升級：路徑上 PostgreSQL 有主要版本變動時，\n# 需依官方文件執行 DB 升級（例：gitlab-ctl pg-upgrade），不是只換 image。",
+    "practiceTasks": [
+      "在有網的機器上把一個 GitLab CE image 存成 tar，看檔案多大。",
+      "把 tar load 到另一個 Docker 環境，用 docker images 確認。",
+      "說明如何判斷升級路徑上有沒有 PostgreSQL 升級。"
+    ],
+    "beginnerChecklist": [
+      "我知道內網 GitLab 要用離線方式準備 image。",
+      "我會用 docker save / load 搬運 image。",
+      "我知道路徑上有幾版就要搬幾個 image。",
+      "我知道跨資料庫升級要另外處理 DB，不只換 image。"
+    ],
+    "handson": "用你的 Docker 環境練「離線搬運」——不用真的有內網，兩個資料夾就能模擬。\n\n【第 1 步／練習任務 1】pull 並匯出成 tar\n> docker pull gitlab/gitlab-ce:17.4.2-ce.0\n> docker save gitlab/gitlab-ce:17.4.2-ce.0 -o gitlab-17.4.2.tar\n> ls -lh gitlab-17.4.2.tar\n這個 tar 檔就是你要「傳進內網」的東西（GitLab image 很大，通常 2-3 GB，先有心理準備）。\n真實企業：這一步在有網的跳板機做，tar 透過核准的管道送進內網。\n\n【第 2 步／練習任務 2】模擬內網載入\n先把本機這個 image 刪掉，模擬「內網原本沒有」：\n> docker rmi gitlab/gitlab-ce:17.4.2-ce.0\n> docker images | grep gitlab   # 確認沒了\n用 tar 載回來：\n> sudo docker load -i gitlab-17.4.2.tar\n> docker images | grep gitlab   # 又回來了\n你剛完整重現了「離線環境準備 image」的流程。\n\n【第 3 步】多版準備\n升級路徑有幾個停靠版本，就重複第 1-2 步幾次，每版一個 tar。\n實務上會把整批 tar 一起搬進去，load 完用 docker images 逐版核對——少一版，升到那步就會卡。\n\n【第 4 步／練習任務 3】判斷跨 DB 升級\n回到上一章的 Upgrade Path 結果頁：如果某一步標示了 PostgreSQL 版本變動（紅標），那一步就是「跨資料庫升級」。\n處理方式：不能只換 GitLab image，要依官方文件在對的時機執行 DB 升級程序。GitLab Docker 版常見的是 gitlab-ctl pg-upgrade 這類指令——但**確切步驟一定要對照你的版本的官方文件**，DB 升級做錯是會壞資料的。\n\n【失敗長相】\n- docker save 很慢/檔案巨大 → 正常，GitLab image 本來就大。\n- load 後 docker images 看不到 → 確認 tar 沒傳壞（比對檔案大小/雜湊）。\n\n【收尾】docker rmi gitlab/gitlab-ce:17.4.2-ce.0 清掉練習 image（很佔空間）。"
+  },
+  "devops-gitlab-backup-restore": {
+    "teachingSteps": [
+      "先記住鐵律：備份成功 ≠ 還原得回來。沒演練過的備份，等於沒有備份。",
+      "認識 GitLab 內建 backup：一個指令備份 repository、資料庫、上傳檔等。",
+      "認識「內建備份沒包到」的東西：主設定檔與 secrets 檔——這兩個沒有，備份還原不回來。",
+      "設計備份策略：頻率依 RPO、保留週期依稽核、備份要異地存放。",
+      "定期做還原演練：用相同版本 image、在隔離環境還原、記錄耗時當 RTO。"
+    ],
+    "example": "# GitLab Docker 版備份（備 repo/DB/上傳檔）\ndocker exec gitlab gitlab-backup create\n\n# 內建備份「不含」以下，要另外備：\n# - 主設定檔（gitlab.rb 之類）\n# - secrets 檔（gitlab-secrets.json）——含加密金鑰，少了它還原後資料解不開\n\n# 還原（需與備份來源同版本 image，且先停相關服務）：\ndocker exec gitlab gitlab-backup restore BACKUP=<備份時間戳>",
+    "practiceTasks": [
+      "在測試用的 GitLab 容器執行一次 backup create，找出備份檔位置。",
+      "說明為什麼 secrets 檔一定要另外備份。",
+      "設計一份備份策略（頻率、保留、異地）並說明對應的 RPO/RTO。"
+    ],
+    "beginnerChecklist": [
+      "我知道備份成功不等於還原得回來，要演練。",
+      "我知道 GitLab 內建 backup 備哪些東西。",
+      "我知道設定檔與 secrets 檔要另外備份。",
+      "我能設計基本備份策略並說明 RPO/RTO。"
+    ],
+    "handson": "用 Docker 跑一個測試 GitLab（純練備份，不用正式資料）。\n注意：GitLab 容器較吃資源，建議給 Docker 至少 4GB 記憶體。\n\n【第 1 步】起一個測試 GitLab\n> docker run -d --name gitlab-test -p 8929:80 --shm-size=256m gitlab/gitlab-ce:latest\n等 3-5 分鐘（docker logs -f gitlab-test 看到 healthy）。這是純練習環境，等下整個砍掉。\n\n【第 2 步／練習任務 1】做一次備份\n> docker exec gitlab-test gitlab-backup create\n輸出結尾會顯示備份完成與檔名（時間戳_gitlab_backup.tar）。找出它：\n> docker exec gitlab-test ls -lh /var/opt/gitlab/backups/\n這個 tar 就是 repo/DB/上傳檔的備份。\n\n【第 3 步／練習任務 2 的核心】看內建備份「沒包到」什麼\n> docker exec gitlab-test ls -lh /etc/gitlab/\n你會看到 gitlab.rb（主設定）和 gitlab-secrets.json（金鑰）——這兩個**不在**剛剛的備份 tar 裡。\n為什麼 secrets 檔關鍵：GitLab 用它裡面的金鑰加密資料庫中的 token、雙因子密鑰等。還原資料庫卻沒有對應的 secrets 檔，那些加密欄位就永遠解不開。\n所以完整備份 = backup tar + gitlab.rb + gitlab-secrets.json，三個一起。\n\n【第 4 步】理解還原演練\n真正的還原演練：拿相同版本的 image 起一個乾淨環境 → 放回三個備份檔 → 執行 gitlab-backup restore → 登入驗證資料都在。\n重點是「相同版本」——用不同版本 image 還原可能失敗。還原耗時就是你的 RTO 實測值。\n\n【練習任務 3 解答】備份策略範本\nRPO 1 小時、RTO 4 小時：\n- 每日全備 + 設定檔/secrets 檔一併備\n- 保留：日備 14 天、月備 1 年（依稽核）\n- 異地：備份複製到第二地點（主機掛了本地備份跟著掛）\n- 每季一次還原演練，記錄耗時與問題\n\n【收尾】docker rm -f gitlab-test（練完整個砍掉，很佔空間）。"
+  },
+  "devops-gitlab-runner-ops": {
+    "teachingSteps": [
+      "先接續 CI 基礎：Runner 是實際執行 job 的機器；Windows Runner 用 config.toml 設定。",
+      "認識 config.toml 關鍵欄位：concurrent（同時跑幾個 job）、[[runners]]（可有多段，一台 runner 服務多個 GitLab）、executor 與 shell。",
+      "分清楚 shell：pwsh = PowerShell 7（跨平台新版）、powershell = Windows PowerShell 5.1（舊版）；兩者語法與預設編碼有差，同一份 yml 行為可能不同。",
+      "理解維運負擔：builds/cache 目錄會不斷長大，要排程清理，否則塞爆磁碟讓 job 失敗。",
+      "排查 job 卡住：先看 Runner 是否 online、tag 有沒有匹配、註冊到哪個 GitLab。"
+    ],
+    "example": "# config.toml 重點（Windows Runner）\nconcurrent = 5\n\n[[runners]]\n  name = \"win-runner\"\n  url = \"https://gitlab.example.local\"\n  executor = \"shell\"\n  shell = \"pwsh\"          # PowerShell 7；改 \"powershell\" 則是 5.1\n\n# 一個 config.toml 可有多段 [[runners]]，\n# 分別 url 到不同 GitLab，即「一台 runner 服務多站」。\n\n# cache/builds 清理：用工作排程器定期刪除舊目錄。",
+    "practiceTasks": [
+      "說明 config.toml 裡 concurrent 與 shell 各控制什麼。",
+      "寫出一段 PowerShell 指令，並說明它在 5.1 與 7 可能的差異點（如編碼）。",
+      "設計一個 cache/builds 清理的排程規則。"
+    ],
+    "beginnerChecklist": [
+      "我知道 config.toml 控制 Runner 的併發、shell 與註冊對象。",
+      "我知道 pwsh 是 PS7、powershell 是 PS5.1，行為有差。",
+      "我知道 builds/cache 要定期清理。",
+      "我能排查 Runner 離線或 tag 不匹配造成的 job 卡住。"
+    ],
+    "handson": "沒有 Windows Runner 也能把觀念練透——重點在讀懂 config.toml 與理解 shell 差異。\n\n【第 1 步／練習任務 1】讀懂 config.toml\n對照 example 那段，逐欄理解：\n- concurrent = 5 → 這台 runner 最多同時跑 5 個 job\n- [[runners]] → 一段就是一個註冊；多段 = 一台機器同時當多個 GitLab 的 runner\n- executor = \"shell\" → 直接在機器上跑指令（相對於 docker executor）\n- shell = \"pwsh\" → 用 PowerShell 7 執行 script\n若你的機器裝了 gitlab-runner，config.toml 通常在安裝目錄下；沒裝也沒關係，理解結構最重要。\n\n【第 2 步／練習任務 2】親手驗證 PS5.1 vs PS7 差異\n如果你是 Windows：\n> powershell -Command '$PSVersionTable.PSVersion'    # 5.1\n> pwsh -Command '$PSVersionTable.PSVersion'          # 7.x（若有裝）\n（用單引號——若你本來就在 PowerShell 視窗裡，雙引號會讓「目前這層 shell」先把變數展開掉，測到的版本就不對了。）\n經典差異：\n- 編碼：PS5.1 預設輸出常是 ANSI/UTF-16，PS7 預設 UTF-8——同一個產生檔案的 script，兩邊產出的檔案編碼可能不同，下游工具可能讀到亂碼。\n- 語法：PS7 支援三元運算子 ?:、?? 等，PS5.1 不支援。\n意義：CI 的 .gitlab-ci.yml script 若在 pwsh runner 寫、換到 powershell runner 跑，可能直接壞——所以 runner 的 shell 設定要和腳本假設一致。\n\n【第 3 步／練習任務 3】cache 清理排程\nRunner 的 builds/ 和 cache/ 每次 job 都留東西，長期塞爆磁碟。\n清理策略範例：每日凌晨用工作排程器刪除「N 天前」的 builds/cache 子目錄；或設定 runner 的 cache 上限。\n重點觀念：這是 runner 維運的日常，和資料庫的 Log 空間、備份清理是同一類「會自己長大的東西要有人定期清」。\n\n【第 4 步】排查 job 卡在 pending\n三個最常見原因（複習 CI 章）：\n1. Runner 離線 → GitLab Admin → Runners 看狀態\n2. job 的 tag 沒有任何 runner 匹配 → 對齊 tag\n3. concurrent 已滿，job 在排隊 → 等待或加 runner\n\n【收尾觀念】Windows Runner 的維運核心就三件：config.toml 設對（shell/tag/多站）、磁碟定期清、狀態隨時可查。"
+  },
+  "devops-sonar-upgrade": {
+    "teachingSteps": [
+      "先建立觀念：SonarQube 升級要同時顧四樣——主程式、JDK、plugin/webapp、資料庫遷移，一個對不上就起不來。",
+      "JDK 相依：SonarQube 是 Java 應用，每個版本要求特定 JDK 範圍，到官方 host requirements 查。",
+      "plugin/webapp 匹配：社群版分支功能靠 plugin，plugin 版本要對應主版本。",
+      "跨大版本要走中繼版本，不能直升（和 GitLab 升級同理）。",
+      "升級後開 /setup 頁執行資料庫遷移，看 log 確認完成。",
+      "記住前提：正式環境必須外接 PostgreSQL——內嵌 H2 只供評估，不支援升級遷移（10.2 起已移除）。"
+    ],
+    "example": "# 官方 host requirements 查 JDK 需求\n# 例：某版要求 JDK 17，某版要求 JDK 21\n\n# 升級大致流程（前提：外接 PostgreSQL，不是內嵌 H2）：\n# 1. 備份資料庫\n# 2. 換 SonarQube 主程式（對應版本）\n# 3. 確認 JDK 版本符合需求\n# 4. 放對應版本的 plugin\n# 5. 啟動後開 http://<sonar>/setup 執行 DB migration",
+    "practiceTasks": [
+      "查一個 SonarQube 版本的官方 JDK 需求。",
+      "說明跨大版本升級為何要走中繼版本。",
+      "列出升級 SonarQube 要一起確認的四個版本相依。"
+    ],
+    "beginnerChecklist": [
+      "我知道 SonarQube 是 Java 應用、升級要顧 JDK 版本。",
+      "我知道 plugin/webapp 要對應主版本。",
+      "我知道跨大版本要走中繼版本。",
+      "我知道升級後要開 /setup 執行資料庫遷移。",
+      "我知道內嵌 H2 只供評估、不能升級，正式環境要外接 PostgreSQL。"
+    ],
+    "handson": "用 Docker 跑 SonarQube 練習（社群版免費），觀念比照真實升級。\n\n【第 1 步】起一個舊版當起點\n> docker run -d --name sonar -p 9000:9000 sonarqube:9.9-community\n等 1-2 分鐘，開 http://localhost:9000（admin/admin）。這是你的「舊版」。\n【失敗長相——幾乎每個人第一次都踩】容器一直重啟、開不了網頁：\n> docker logs sonar\n看到「max virtual memory areas vm.max_map_count [65530] is too low」→ SonarQube 內建 Elasticsearch，要求主機 vm.max_map_count ≥ 524288：\n- Windows（Docker Desktop）：> wsl -d docker-desktop sysctl -w vm.max_map_count=524288\n- Linux：> sudo sysctl -w vm.max_map_count=524288\n設完 > docker restart sonar 再等 1-2 分鐘。（重開機會失效，正式主機要寫進 /etc/sysctl.d/。）\n\n【第 2 步／練習任務 1】查目標版的 JDK 需求\n到 SonarQube 官方文件搜 \"prerequisites\" 或 \"requirements\"，看目標版要求的 JDK。\n重點：官方 Docker image 已內含對的 JDK，但如果是「自己裝在主機上」的部署，就得手動把 JDK 升到相容版本——這是自建維運最常忽略的一步（升了 SonarQube 忘了升 JDK，直接起不來）。\n\n【第 3 步】為什麼你這個練習環境「不能」升級（本章關鍵觀念）\n剛起的容器沒接任何資料庫，SonarQube 用的是內嵌 H2——它只供評估：官方不支援從 H2 遷移資料，而且 10.2 起 H2 已被整個移除。所以用 H2 的環境沒有升級這條路，資料搬不走，這正是「正式環境絕不能跑 H2」的原因。\n真實升級的流程（前提：外接 PostgreSQL）：\n1. 備份 PostgreSQL 資料庫\n2. 停舊版容器\n3. 用新版 image 起、連同一個 PostgreSQL（SONAR_JDBC_URL / SONAR_JDBC_USERNAME / SONAR_JDBC_PASSWORD 環境變數）\n4. 開 http://localhost:9000/setup 按下 migration、看 log 等它完成\n想完整動手：先 docker run 一個 postgres 容器、讓 SonarQube 用上面三個環境變數連它，再照四步走一遍——migration 頁面就會真的出現。\n\n【第 4 步／練習任務 2、3】整理升級檢查清單\n跨大版本要走中繼（如 9.9 → 某中繼 → 目標），因為 migration 是一版接一版。\n四個相依：主程式版本、JDK 版本、plugin/webapp 版本、資料庫遷移——做成一張升級前檢查表，逐項打勾。\n\n【收尾】docker rm -f sonar（下一章 cacerts 會重新起一個）。"
+  },
+  "devops-sonar-cacerts": {
+    "teachingSteps": [
+      "先理解問題：SonarQube（Java）要連內部 GitLab，若 GitLab 用內部 CA 憑證，Java 預設不信任 → 連線失敗（PKIX path building failed）。",
+      "解法：用 keytool 把該憑證匯入 Java 的信任庫 cacerts。",
+      "找對 cacerts：SonarQube 用哪個 JDK，就改那個 JDK 的 cacerts（多版本並存時容易改錯）。",
+      "cacerts 有預設密碼（changeit），匯入後要重啟 SonarQube。",
+      "理解這是「一張憑證被多個生態信任」的通例：作業系統信任庫、瀏覽器、Java cacerts 各有一套。"
+    ],
+    "example": "# 匯入憑證到 Java cacerts（keytool 是 JDK 附的工具）\nkeytool -importcert -alias mygitlab \\\n  -file gitlab.crt \\\n  -keystore \"$JAVA_HOME/lib/security/cacerts\" \\\n  -storepass changeit\n\n# 列出確認\nkeytool -list -keystore \"$JAVA_HOME/lib/security/cacerts\" -storepass changeit | grep mygitlab\n\n# 匯入後重啟 SonarQube 服務",
+    "practiceTasks": [
+      "取得一個網站的憑證，用 keytool 匯入一個 Java 環境的 cacerts。",
+      "用 keytool -list 確認憑證已在信任庫。",
+      "說明升級 JDK 後為何要重新匯入憑證。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Java 不信任內部憑證會造成連線失敗。",
+      "我會用 keytool 把憑證匯入 cacerts。",
+      "我知道要改對 SonarQube 使用的 JDK 的 cacerts。",
+      "我知道匯入後要重啟服務。"
+    ],
+    "handson": "用一個含 JDK 的 Docker 容器練 keytool（不用裝 Java 在自己電腦）。\n\n【第 1 步】進一個有 keytool 的環境\n> docker run --rm -it eclipse-temurin:21 bash\n（temurin 是開源 OpenJDK 發行版，含 keytool）\n\n【第 2 步】抓一個真實憑證來練\n容器內：\n# apt-get update && apt-get install -y openssl\n# echo | openssl s_client -connect github.com:443 2>/dev/null | openssl x509 > site.crt\n這樣就有一張 site.crt（模擬你的「內部 GitLab 憑證」）。\n\n【第 3 步／練習任務 1】匯入 cacerts\n# find / -name cacerts 2>/dev/null   ← 找到 JDK 的 cacerts（通常在 $JAVA_HOME/lib/security/）\n# keytool -importcert -alias testsite -file site.crt -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit -noprompt\n看到 \"Certificate was added to keystore\" = 成功。\n注意那個密碼 changeit——這是 Java cacerts 的預設密碼，全世界都一樣，維運時直接用（除非有人改過）。\n\n【第 4 步／練習任務 2】確認\n# keytool -list -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit | grep testsite\n列出 testsite = 這個 Java 環境現在信任這張憑證了。\n\n【第 5 步／練習任務 3】理解 JDK 升級的陷阱\n每個 JDK 有自己的 cacerts。升級 JDK = 換了一套新的 cacerts（空的，只有公開 CA）→ 你之前匯入的內部憑證不見了 → SonarQube 又連不上 GitLab。\n所以：升 JDK 後要重新匯入內部憑證。這是「憑證信任跟著 JDK 走」的關鍵維運點。"
+  },
+  "devops-sonar-proxy": {
+    "teachingSteps": [
+      "先理解：SonarQube 內建不做 HTTPS，正式環境要在前面放反向代理終止 TLS。",
+      "反向代理選擇：Nginx（Linux）或 IIS ARR + URL Rewrite（Windows），概念相同。",
+      "關鍵 Header：反代要帶 X-Forwarded-Proto = https，否則 SonarQube 以為自己是 http，產生錯誤連結。",
+      "憑證連動：反代的憑證要納入到期監控（和其他對外服務一起管）。",
+      "治理面：設定掃描範圍、專案權限、定期清理過期分支資料。"
+    ],
+    "example": "# Nginx 反向代理 SonarQube（補 HTTPS）\nserver {\n  listen 443 ssl;\n  server_name sonar.example.local;\n  ssl_certificate     /etc/nginx/ssl/sonar.crt;\n  ssl_certificate_key /etc/nginx/ssl/sonar.key;\n  location / {\n    proxy_pass http://127.0.0.1:9000;\n    proxy_set_header Host $host;\n    proxy_set_header X-Forwarded-Proto $scheme;   # 關鍵！讓 Sonar 知道原始是 https\n    proxy_set_header X-Forwarded-For $remote_addr;\n  }\n}",
+    "practiceTasks": [
+      "用 Nginx 為一個本機 SonarQube 補上反向代理。",
+      "說明 X-Forwarded-Proto 沒帶會發生什麼問題。",
+      "設計一個分支資料清理的排程規則。"
+    ],
+    "beginnerChecklist": [
+      "我知道 SonarQube 要靠反向代理補 HTTPS。",
+      "我知道要帶 X-Forwarded-Proto。",
+      "我知道反代憑證要納入到期監控。",
+      "我知道分支資料要定期清理。"
+    ],
+    "handson": "延續前面的 SonarQube，用 Docker 加一個 nginx 反代（複習 Reverse Proxy 章的技巧）。\n\n【第 1 步】起 SonarQube，先產一張自簽憑證\n> docker network create sonarnet\n> docker run -d --name sonar --network sonarnet sonarqube:community\n（若 sonar 一直重啟，回上一章看 vm.max_map_count 的失敗長相。）\n產自簽憑證（openssl 在 Git Bash 內建；Linux/macOS 原生就有）：\n> openssl req -x509 -newkey rsa:2048 -nodes -keyout sonar.key -out sonar.crt -days 365 -subj \"/CN=sonar.example.local\"\n資料夾多出 sonar.crt（憑證）與 sonar.key（私鑰）。\n\n【第 2 步】建 nginx.conf 並起反代\n把 example 那份設定存成 nginx.conf，只改一處：proxy_pass 改成 http://sonar:9000（容器互連用服務名，不是 127.0.0.1）。\n> docker run -d --name sonar-proxy --network sonarnet -p 8443:443 -v ${PWD}/nginx.conf:/etc/nginx/conf.d/default.conf -v ${PWD}/sonar.crt:/etc/nginx/ssl/sonar.crt -v ${PWD}/sonar.key:/etc/nginx/ssl/sonar.key nginx:alpine\n開 https://localhost:8443 —— 瀏覽器警告「不安全」是正常的（自簽憑證不在信任鏈裡，正是憑證章教過的觀念），點進階→繼續前往，看到 SonarQube 登入頁就成功了。\n【失敗長相】\n- sonar-proxy 一直重啟 → docker logs sonar-proxy；看到 cannot load certificate → 憑證沒掛對：確認 sonar.crt / sonar.key 在目前資料夾、三個 -v 路徑逐字對。\n- 502 Bad Gateway → sonar 容器還沒起好（等 1-2 分鐘）或兩者不在同一個 network。\n\n【第 3 步／練習任務 2】驗證 X-Forwarded-Proto 的作用\n這個 Header 的意義：反代在 443 收 https、轉給後端是 http。若不告訴 SonarQube「原始請求是 https」，SonarQube 產生的連結（如 email 通知、webhook）會用 http，在強制 https 的環境就壞掉或被瀏覽器擋。\n實驗：SonarQube 管理頁的 Server base URL 設成 https 網址後，帶 X-Forwarded-Proto 才能正確運作。\n\n【第 4 步／練習任務 3】分支清理\nSonarQube 每個分支都存分析資料，長期累積會撐爆磁碟。\n治理做法：設定分支超過 N 天沒更新就自動刪除（Administration → 專案的分支保留設定），或排程呼叫 API 清理。\n這和前面學過的「Runner cache 清理」「資料庫 Log 空間」是同一個維運哲學：會自己長大的東西要有人定期清。\n\n【收尾】docker rm -f sonar sonar-proxy && docker network rm sonarnet。\n\n【延伸】Windows 環境用 IIS 的 ARR + URL Rewrite 達到同樣效果：URL Rewrite 規則把請求轉到本機 9000、伺服器變數設 X_FORWARDED_PROTO=https，原理與 nginx 完全相同。"
+  },
+  "devops-webdeploy": {
+    "teachingSteps": [
+      "先理解痛點：把網站檔案直接 SMB 複製到 IIS，常因檔案被鎖、設定不同步、應用程式池狀態而失敗。",
+      "認識 WebDeploy（msdeploy）：微軟的部署技術，能同步檔案、IIS 設定與應用狀態，處理鎖定與差異同步。",
+      "理解授權前置：CI 要帶密碼自動部署，得先在目標 IIS 把 CI 服務帳號加入管理權限。",
+      "兩端都要裝 WebDeploy，且版本相容。",
+      "把部署密碼放 CI 遮罩變數，不硬寫在腳本。"
+    ],
+    "example": "# MSBuild 透過 WebDeploy 發佈（帶密碼）\n# 這是在 PowerShell 執行：續行符是反引號 `（bash 的 \\ 在這裡會報錯）\nmsbuild MyWeb.csproj /p:DeployOnBuild=true `\n  /p:PublishProfile=Prod `\n  /p:Password=$env:DEPLOY_PWD `\n  /p:AllowUntrustedCertificate=true\n\n# 前置：目標 IIS 已把部署服務帳號加入管理權限，\n# 密碼透過 CI 遮罩變數 DEPLOY_PWD 帶入。",
+    "practiceTasks": [
+      "說明為何 WebDeploy 比 SMB 檔案複製可靠。",
+      "說明帶密碼自動部署前，要先在 IIS 做什麼。",
+      "說明部署密碼該怎麼帶入才安全。"
+    ],
+    "beginnerChecklist": [
+      "我知道檔案複製部署 IIS 的問題。",
+      "我知道 WebDeploy 能同步檔案與設定。",
+      "我知道要先在 IIS 授權部署帳號。",
+      "我知道密碼要走 CI 遮罩變數。"
+    ],
+    "handson": "這章對象是傳統 Windows 部署，家裡不一定有 IIS，重點是理解流程與能講清楚（有 Windows + IIS 可實作第 4 步）。\n\n【第 1 步／練習任務 1】理解為何不用檔案複製\n情境：網站正在運行，你 SMB 複製新檔案覆蓋——\n- 有些 DLL 被 IIS 進程鎖住，複製失敗\n- web.config 改了但應用程式池沒回收，設定沒生效\n- 複製到一半使用者打進來，看到半新半舊的檔案\nWebDeploy 解決這些：它會協調應用程式池、只同步差異、處理鎖定。\n\n【第 2 步／練習任務 2】授權前置（關鍵觀念）\nCI 用服務帳號自動部署，即使 yml 帶了密碼，如果目標 IIS 沒把這個帳號加入「IIS 管理員權限」，部署照樣被拒。\n所以順序是：先在目標主機 IIS 授權部署帳號 → CI 帶密碼才有作用。\n這也是「帶了密碼還是部署失敗」最常見的原因。\n\n【第 3 步／練習任務 3】密碼安全\n部署密碼一律放 CI/CD 的遮罩變數（masked variable），yml 裡用 $env:DEPLOY_PWD 引用，絕不硬寫。外洩就輪替。\n\n【第 4 步（有 IIS 才做）】實作\n目標機：安裝 IIS + Web Deploy（微軟官方下載）→ 在 IIS 管理員把部署帳號加入權限。\n來源：Visual Studio 發佈設定檔（Publish Profile）設為 Web Deploy 方式 → 用上面的 msbuild 指令發佈。\n沒有 IIS 的話，把這套流程講清楚（為何 WebDeploy、授權前置、密碼安全）就達標——面試考的正是這三點。"
+  },
+  "devops-matrix-deploy": {
+    "teachingSteps": [
+      "先理解場景：一批程式（多支 exe / 服務）要部署到多個目標，手動逐支做又慢又容易漏。",
+      "認識 CI 的 parallel matrix：把「同一套部署步驟」套到多組參數，一次跑多個組合。",
+      "設計 matrix：列出程式名 × 目標路徑的對應。",
+      "部署帳密透過 CI 遮罩變數帶入部署腳本。",
+      "部署後逐目標驗證，不是跑完就當成功。"
+    ],
+    "example": "# GitLab CI parallel matrix：一次部署多支\ndeploy_schedule:\n  stage: deploy\n  parallel:\n    matrix:\n      - PROG: [JobA, JobB, JobC]\n  script:\n    - ./Deploy.ps1 -Program $env:PROG -Target \\\\target\\d$\\apps\\$env:PROG -User $env:DEPLOY_USER -Password $env:DEPLOY_PWD\n\n# 一個 job 定義，展開成 JobA/JobB/JobC 三個平行部署。\n# 注意：這台 runner 的 shell 是 pwsh/powershell，CI 變數一律用 $env: 前綴取；\n# bash runner 才寫 $PROG（handson 在共享 Runner 練的就是 bash 寫法）。",
+    "practiceTasks": [
+      "把三支程式部署到三個目標，用 matrix 表達對應。",
+      "說明 matrix 相對於逐支手動部署的好處。",
+      "說明部署後要怎麼逐目標驗證。"
+    ],
+    "beginnerChecklist": [
+      "我知道 matrix 能把一套步驟套到多組參數。",
+      "我能列出程式與目標的對應。",
+      "我知道帳密走遮罩變數。",
+      "我知道部署後要逐目標驗證。"
+    ],
+    "handson": "用你的免費 GitLab 專案練 matrix（不用真的部署，看它如何展開成多個 job）。\n\n【第 1 步／練習任務 1】寫一個 matrix job\n.gitlab-ci.yml：\ndeploy_demo:\n  stage: deploy\n  parallel:\n    matrix:\n      - PROG: [JobA, JobB, JobC]\n  script:\n    - echo \"deploying $PROG to target...\"\n推上去 → Pipeline 頁會看到 deploy_demo 展開成三個平行 job：JobA、JobB、JobC。\n這就是 matrix 的威力：一個定義、多個實體，改成三十支也只是清單變長。\n\n【第 2 步】加第二維度（程式 × 環境）\n  matrix:\n    - PROG: [JobA, JobB]\n      ENV: [uat, prod]\n展開成 4 個 job（2×2）。體會 matrix 怎麼組合多維參數。\n\n【第 3 步／練習任務 2、3】對應真實部署\n真實情境把 echo 換成部署腳本，PROG 決定部署哪支、目標路徑，帳密用遮罩變數帶入。\n變數寫法看 runner 的 shell：共享 Runner 是 bash，寫 $PROG；Windows 的 pwsh/powershell runner 要寫 $env:PROG（example 那份就是 pwsh 寫法），混用會取不到值。\n部署後驗證：每個目標檢查檔案版本、程式能不能啟動——matrix 讓「部署」平行，但「驗證」不能省，一支失敗要看得出來是哪一支（job 名稱就是 PROG，一眼定位）。\n\n【收尾觀念】手動部署 30 支排程 = 30 次機會出錯；matrix 讓它變成一份可審查的清單、一次執行、逐一留紀錄。"
+  },
+  "devops-dmz-deploy": {
+    "teachingSteps": [
+      "先理解隔離：DMZ 主機與內網隔離、常屬不同網域，CI 不能像內網主機那樣直接連。",
+      "認識預存認證做法：在 runner 主機的作業系統認證管理員預先存好 DMZ 主機的認證，部署工具直接取用。",
+      "這樣 DMZ 專案能走與一般專案相同的部署流程，不必特別處理。",
+      "理解輪替連動：DMZ 帳號密碼定期輪替，預存的認證要跟著更新，否則部署突然失敗。",
+      "分清網域：DMZ 網域帳號與內網帳號不同，用錯就認證失敗。"
+    ],
+    "example": "# Windows 認證管理員預存 DMZ 主機認證（cmdkey）\ncmdkey /add:dmz-host01 /user:DMZDOMAIN\\deployuser /pass:<密碼>\n\n# 列出已存的認證\ncmdkey /list\n\n# 部署工具連 DMZ 主機時，自動取用這筆預存認證，\n# 走與內網專案相同的部署流程。\n# DMZ 帳號每季輪替 → 這筆 cmdkey 要跟著更新。",
+    "practiceTasks": [
+      "說明 CI 為何用預存認證部署 DMZ 主機。",
+      "說明 DMZ 帳號輪替時要連帶更新什麼。",
+      "說明用錯網域帳號會發生什麼。"
+    ],
+    "beginnerChecklist": [
+      "我知道 DMZ 主機與內網隔離、需特別處理認證。",
+      "我知道預存認證讓 DMZ 走一般部署流程。",
+      "我知道密碼輪替要連帶更新預存認證。",
+      "我知道要用正確的 DMZ 網域帳號。"
+    ],
+    "handson": "這章對象是隔離網段部署，家裡難完整重現，重點是理解機制與能講清楚（有兩台 Windows 可實作 cmdkey）。\n\n【第 1 步／練習任務 1】為何要預存認證\n情境：一般內網主機，runner 帳號本來就有網域信任，部署工具連過去不用再給帳密。\n但 DMZ 主機在隔離網段、屬不同網域，runner 帳號對它沒有信任 → 連過去要另外的帳密。\n每次部署都在腳本裡打帳密 = 明碼外洩風險；預存認證解決這個：在 runner 主機的作業系統認證管理員存一次，之後部署工具自動取用，腳本裡看不到密碼。\n\n【第 2 步（有 Windows 可做）】用 cmdkey 預存\n> cmdkey /add:dmz-host01 /user:DMZDOMAIN\\deployuser /pass:目標密碼\n> cmdkey /list   ← 確認存進去了\n之後對 dmz-host01 的連線（WebDeploy、檔案存取）會自動用這筆認證，部署 yml 就不用帶 DMZ 密碼。\n\n【第 3 步／練習任務 2】輪替連動（最容易踩的雷）\nDMZ 帳號通常有嚴格的密碼政策，每季強制輪替。\n一旦輪替，runner 上那筆 cmdkey 還是舊密碼 → 部署突然開始失敗，而且錯誤訊息是「認證失敗」不會告訴你「因為密碼過期」。\n所以要建立連動流程：DMZ 密碼輪替的同時，更新所有 runner 上的預存認證：\n> cmdkey /delete:dmz-host01\n> cmdkey /add:dmz-host01 /user:DMZDOMAIN\\deployuser /pass:新密碼\n\n【第 4 步／練習任務 3】網域陷阱\nDMZ 帳號要寫成 DMZDOMAIN\\deployuser（DMZ 的網域），寫成內網網域會認證失敗。\n這也是排查 DMZ 部署失敗的第一個檢查點：帳號的網域前綴對不對。\n\n【收尾觀念】DMZ 部署的核心不是技術多難，是「認證的生命週期管理」：預存一次、輪替時連動更新、網域要對。這三點顧好，隔離網段的部署就能自動化。"
+  },
+  "devops-ansible-audit": {
+    "teachingSteps": [
+      "先延伸觀念：Ansible 不只部署，也能盤點——對所有主機收集現況資料。",
+      "盤點對象：本機帳號、群組成員、已安裝軟體（apt/yum 紀錄）。",
+      "把收集結果轉成結構化資料（JSON），打 API 上傳到集中的稽核系統。",
+      "機密（上傳憑證、API 金鑰）放 Ansible Vault 加密，不明碼寫在 playbook。",
+      "Inventory 要與實際主機清單定期對帳，否則盤點有缺漏。"
+    ],
+    "example": "# playbook 片段：收集帳號並上傳\n- hosts: all\n  tasks:\n    - name: 取得本機使用者\n      getent: { database: passwd }\n    - name: 組成 JSON 並上傳稽核 API\n      uri:\n        url: \"https://audit.example.local/api/upload\"\n        method: POST\n        headers: { Authorization: \"Bearer {{ vault_api_token }}\" }\n        body_format: json\n        body: \"{{ account_facts }}\"\n\n# account_facts 是示意變數——實務上要先用 register / set_fact\n# 把 getent 的結果（getent_passwd）整理成要上傳的結構\n# vault_api_token 存在 ansible-vault 加密的 vars 檔",
+    "practiceTasks": [
+      "用 Ansible 收集一台主機的使用者與群組。",
+      "說明為何盤點結果要集中上傳而非留在各主機。",
+      "用 ansible-vault 加密一個含 token 的變數檔。"
+    ],
+    "beginnerChecklist": [
+      "我知道 Ansible 可以用來盤點主機現況。",
+      "我知道要收集帳號、群組、軟體並集中上傳。",
+      "我知道機密要放 Ansible Vault。",
+      "我知道 Inventory 要與實際主機對帳。"
+    ],
+    "handson": "延續 IaC 章的 Ansible 環境（標靶容器 + ansible）。那章收尾把標靶砍了，先重建：\n> docker run -d --name target -p 2222:22 rastasheep/ubuntu-sshd:18.04\nhosts.ini 沿用那章的那份（[web] 群組指向 localhost:2222）。\n\n【第 1 步／練習任務 1】盤點帳號與群組\n建 audit.yml：\n- hosts: web\n  tasks:\n    - name: 取得使用者清單\n      getent:\n        database: passwd\n    - name: 顯示\n      debug:\n        var: getent_passwd\n> ansible-playbook -i hosts.ini audit.yml\n輸出就是那台主機的所有帳號。加一個 getent group 就有群組成員。這就是「帳號盤點」的原料。\n\n【第 2 步】盤點已安裝軟體\n加 task：\n    - name: 已安裝套件\n      package_facts:\n        manager: auto\n    - debug: var=ansible_facts.packages\n這樣連「裝了什麼、什麼版本」都盤出來了——資安要問「哪台有裝到有漏洞的軟體」時，這份資料就是答案。\n\n【第 3 步／練習任務 3】用 Vault 保護 token\n> ansible-vault create secrets.yml\n（設一個密碼，編輯內容放 vault_api_token: \"xxxxx\"）\nplaybook 引用它，執行時加 --ask-vault-pass。\n這樣上傳用的 API token 就不會明碼躺在 playbook 裡——盤點資料本身不敏感，但「上傳的通行證」很敏感。\n\n【第 4 步／練習任務 2】理解為何要集中\n盤點留在各主機 = 稽核時要一台台撈、無法橫向比對（誰同時有多台的 admin？哪些主機都裝了某個危險軟體？）。\n集中上傳到稽核 API/資料庫後，一次查詢就能回答這些跨主機問題——這就是自動化盤點的價值。"
+  },
+  "devops-scap-stig": {
+    "teachingSteps": [
+      "先理解組態基準：主機安全設定的「標準答案」，如 STIG、CIS Benchmark，定義密碼原則、關閉不必要服務、權限設定等。",
+      "認識 SCAP：描述這些基準的標準格式；OpenSCAP 是開源掃描器。",
+      "對主機執行掃描，產出「哪些項目通過/失敗」的合規報告。",
+      "對失敗項目排修補、重掃驗證。",
+      "定期重掃偵測組態漂移（設定被人改回不合規）。"
+    ],
+    "example": "# 先列出這份基準檔提供哪些 profile（ID 以實際列出的為準）\noscap info /usr/share/xml/scap/ssg/content/ssg-ubuntu2204-ds.xml\n\n# 用列出的 profile 掃描（例：CIS Level 1 Server）\noscap xccdf eval \\\n  --profile xccdf_org.ssgproject.content_profile_cis_level1_server \\\n  --results scan-results.xml \\\n  --report scan-report.html \\\n  /usr/share/xml/scap/ssg/content/ssg-ubuntu2204-ds.xml\n\n# 產出 scan-report.html：每個項目 pass/fail 與修補建議",
+    "practiceTasks": [
+      "用 OpenSCAP 對一個 Linux 環境跑一次基準掃描。",
+      "說明 SCAP、STIG、CIS Benchmark 三者的關係。",
+      "說明什麼是組態漂移、為何要定期重掃。"
+    ],
+    "beginnerChecklist": [
+      "我知道組態基準是主機安全設定的標準。",
+      "我知道 OpenSCAP 用來掃描合規。",
+      "我能讀懂掃描報告的 pass/fail。",
+      "我知道要定期重掃偵測漂移。"
+    ],
+    "handson": "用 Docker 跑 OpenSCAP 對一個 Linux 映像掃描（免費、本機可做）。\n\n【第 1 步】準備\n開源的 ComplianceAsCode 提供各 OS 的基準檔（SCAP content）。最簡單的體驗方式：起一個含 openscap 的容器，或在 Ubuntu 容器裝 libopenscap。\n> docker run --rm -it ubuntu:22.04 bash\n# apt-get update && apt-get install -y libopenscap8 ssg-debderived\n（ssg = SCAP Security Guide，含 Ubuntu 的基準檔）\n\n【第 2 步／練習任務 1】跑一次掃描\n先看這份基準檔有哪些 profile（不同版本的內容 profile 名單會變，以列出的為準）：\n# oscap info /usr/share/xml/scap/ssg/content/ssg-ubuntu2204-ds.xml\n輸出的 Profiles 段會列出可用 ID（如 …_profile_cis_level1_server）。挑一個逐字複製來掃：\n# oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_cis_level1_server \\\n    --report /tmp/report.html \\\n    /usr/share/xml/scap/ssg/content/ssg-ubuntu2204-ds.xml\n跑完把 report.html 複製出來（docker cp）用瀏覽器開——一整頁的檢查項目，每項 pass（綠）或 fail（紅），失敗的附修補建議。\n【失敗長相】\n- 找不到 ssg-ubuntu2204-ds.xml → 套件版本沒帶到 22.04 的內容：ls /usr/share/xml/scap/ssg/content/ 看實際有哪些檔；沒有的話到 ComplianceAsCode 的 GitHub Releases 下載 scap-security-guide zip，解壓直接用裡面的 ds.xml。\n- --profile 報 not found → profile ID 要用 oscap info 列出來的逐字複製，不要用背的。\n\n【第 3 步／練習任務 2】搞懂三個名詞\n- CIS Benchmark / STIG：「基準內容」——由誰（CIS 民間、STIG 美國國防部）定義的安全設定標準答案\n- SCAP：「描述格式」——把基準寫成機器可讀的標準格式\n- OpenSCAP：「掃描器」——讀 SCAP 格式的基準、對主機檢查、產報告\n一句話：STIG/CIS 是考卷，SCAP 是考卷格式，OpenSCAP 是閱卷老師。\n\n【第 4 步／練習任務 3】組態漂移\n第一次掃可能一堆 fail——正常，那是「未加固的預設系統 vs 嚴格基準」。\n重點不是一次全過，是：修補關鍵項 → 重掃驗證 → **定期重掃**。因為有人可能為了方便把設定改回不合規（如重開某服務），這種「偷偷變回不合規」就是組態漂移，只有定期重掃抓得到。"
+  },
+  "devops-service-account": {
+    "teachingSteps": [
+      "先立原則：CI/CD 不該用個人帳號執行——人離職權限就斷，且無法區分是人還是自動化在動作。",
+      "改用專屬服務帳號，權限依實際需要最小化。",
+      "存取用的 Token（如 PAT）設最小 scopes：只給需要的權限範圍。",
+      "設到期日並定期輪替；永久不到期的 Token 是稽核破口。",
+      "Token 當機密管理：不進版本庫、外洩立刻撤銷重發。"
+    ],
+    "example": "# GitLab PAT 的 scopes（只勾需要的）\n# - read_repository：只讀程式碼\n# - api：完整 API（權限大，非必要不給）\n# CI 用的 token 通常給 read_repository / write_registry 等最小組合\n\n# 反例（稽核會抓）：\n# - scopes 勾了 api（全開）\n# - 到期日永遠續最長上限、從沒人盤點必要性（新版 GitLab 到期日必填、\n#   gitlab.com 上限 400 天——「設 2099」已經設不出來，但沒人管的長效 token 一樣是破口）\n# - token 值出現在程式碼或 log",
+    "practiceTasks": [
+      "說明 CI/CD 用服務帳號而非個人帳號的理由。",
+      "為一個「只需要拉程式碼」的 CI 設計 Token 的最小 scopes。",
+      "說明永久 Token 的風險與輪替做法。"
+    ],
+    "beginnerChecklist": [
+      "我知道 CI/CD 要用服務帳號。",
+      "我知道 Token 要設最小 scopes。",
+      "我知道 Token 要設到期日並輪替。",
+      "我知道 Token 外洩要立刻撤銷重發。"
+    ],
+    "handson": "用你的免費 GitLab 帳號實際建一個受控的 Token（親手體會 scopes 與到期日）。\n\n【第 1 步／練習任務 2】建一個最小權限 Token\nGitLab → 專案 → Settings → Access Tokens（專案級 token 比個人 PAT 更好，權限綁在專案）。\n建一個：Role 選 Reporter、Scopes 只勾 read_repository、Expiration 設一個月後。\n你剛做了「最小權限 + 有到期日」——CI 只需要拉程式碼的話，這樣就夠，不要給 api 全開。\n\n【第 2 步】對比反例\n想像另一個 token：scopes 勾 api（全開，能改設定、刪專案）、每次到期就無腦續最長期限沒人審查、token 值貼在某個 job log 裡。\n這三個就是稽核必抓的紅線：權限過大、長生不死、明碼外洩。你剛建的那個剛好相反。\n（補充：新版 GitLab 到期日已是必填、gitlab.com 上限 400 天——平台把「永久 token」這條路堵掉了，但「每次都續滿、沒人盤點」的 token 在稽核眼裡一樣是破口。）\n\n【第 3 步／練習任務 1】為何用服務帳號\n情境：CI 用工程師小明的個人 PAT 跑。小明離職 → 帳號停用 → 全公司 Pipeline 掛掉。而且 log 上顯示的操作者是「小明」，但其實是自動化——出事時分不清是人為還是 CI。\n服務帳號解決這兩點：不綁個人、身分清楚（一看就知道是 CI 幹的）。\n\n【第 4 步／練習任務 3】輪替\n到期日到了 token 自動失效——所以要在到期前：建新 token → 更新 CI 變數 → 驗證 → 撤銷舊的。\n外洩時順序相反：先撤銷（止血）→ 再補新的。這和你在網路課學的「Token 撤銷與更新流程」完全一致，跨領域通用。"
+  },
+  "devops-access-audit": {
+    "teachingSteps": [
+      "先立需求：帳號權限要「定期盤點、有紀錄、可稽核」，人工截圖不可靠。",
+      "用平台 API（如 GitLab API）定期抓取所有帳號、群組、專案權限。",
+      "寫進集中的資料庫或資產清冊，供查詢與稽核。",
+      "以查詢找異常：離職未停用、權限過大、外部帳號。",
+      "保留歷史快照，追蹤權限隨時間的變化。"
+    ],
+    "example": "# 用 GitLab API 抓所有成員權限（概念）\ncurl --header \"PRIVATE-TOKEN: $TOKEN\" \\\n  \"https://gitlab.example.local/api/v4/projects/:id/members/all\"\n\n# 回傳每個成員的 access_level（10 Guest ~ 50 Owner）\n# 定期跑 → 寫入資產清冊 DB → 比對在職名單找異常",
+    "practiceTasks": [
+      "用 GitLab API 抓一個專案的成員與權限等級。",
+      "說明權限盤點要抓哪些異常。",
+      "說明為何要保留歷史快照。"
+    ],
+    "beginnerChecklist": [
+      "我知道要用 API 自動盤點權限。",
+      "我知道盤點資料要集中寫入資產清冊。",
+      "我能說出要找的權限異常類型。",
+      "我知道歷史快照能追蹤權限變化。"
+    ],
+    "handson": "用你的免費 GitLab + API 實際抓一次權限（親手體會自動盤點）。\n\n【第 1 步／練習任務 1】用 API 抓成員\n先建一個 read_api scope 的 token。然後：\n> curl --header \"PRIVATE-TOKEN: <你的token>\" \"https://gitlab.com/api/v4/projects/<專案ID>/members/all\"\n回傳 JSON，每個成員有 username 與 access_level（10=Guest、20=Reporter、30=Developer、40=Maintainer、50=Owner）。\n這一行就是「自動盤點」的核心——把人工在網頁上一頁頁看，變成一個 API 呼叫。\n\n【第 2 步】抓群組層級\n> curl --header \"PRIVATE-TOKEN: <token>\" \"https://gitlab.com/api/v4/groups/<群組ID>/members\"\n真實企業會寫一支程式，定期把「所有專案 × 所有成員 × 權限等級」抓下來寫進資料庫。\n\n【第 3 步／練習任務 2】找異常\n有了集中資料，就能用查詢回答稽核問題：\n- 誰是 Owner/Maintainer（高權限）？必要嗎？\n- 比對 HR 在職名單：有沒有離職的人還在清單裡？\n- 有沒有外部/廠商帳號沒設到期？\n這些人工幾乎查不動，有了盤點資料一個查詢就出來。\n\n【第 4 步／練習任務 3】歷史快照\n每次盤點存一份帶時間戳的快照。價值：「這個人的 Owner 權限是什麼時候多出來的？誰給的？」——只有歷史比對答得出來。這也是資安事件調查的重要線索。\n\n【收尾觀念】這章和「合規盤點（Ansible 盤帳號）」是一組：一個盤主機層帳號、一個盤 GitLab 平台權限，都是把「人工盤點」變成「API 自動化 + 集中稽核」。"
+  },
+  "devops-vuln-sla": {
+    "teachingSteps": [
+      "先立觀念：掃出弱點只是開始，治理在於「分級 → 定期限 → 追蹤到關閉」。",
+      "依嚴重度（CVSS）分級，訂修補 SLA：越嚴重期限越短（例如 Critical 立即、High 一定天數內）。",
+      "把弱點記進追蹤台帳：含來源、嚴重度、負責人、期限、狀態。",
+      "修補或升級完成後回填台帳、重掃驗證。",
+      "定期檢視台帳：逾期未修的要升級處理。"
+    ],
+    "example": "# 弱點修補 SLA 範例（依嚴重度）\n# Critical → 立即 / 7 天內\n# High     → 30~90 天\n# Medium   → 90~180 天\n# Low      → 排入例行維護\n\n# 追蹤台帳欄位：\n# 弱點ID | 來源(SCA/DAST/主機掃描) | 嚴重度 | 影響資產 | 負責人 | 期限 | 狀態 | 修補紀錄",
+    "practiceTasks": [
+      "設計一份弱點修補 SLA（依嚴重度分級）。",
+      "設計弱點追蹤台帳的欄位。",
+      "說明修補完成後為何要回填與重掃。"
+    ],
+    "beginnerChecklist": [
+      "我知道弱點要分級並訂修補 SLA。",
+      "我知道要用台帳追蹤到關閉。",
+      "我知道修補後要回填與重掃驗證。",
+      "我知道逾期弱點要升級處理。"
+    ],
+    "handson": "這章是治理流程設計，handson 以「做出可用的台帳與 SLA」為目標（把前面所有掃描的產出收斂成管理）。\n\n【第 1 步／練習任務 1】訂 SLA\n把嚴重度對應到修補期限，寫成一張表（可依組織風險調整）：\nCritical → 7 天 | High → 30 天 | Medium → 90 天 | Low → 下次例行維護\n這張表就是「弱點多久要修好」的白紙黑字依據——沒有它，弱點就會無限拖延。\n\n【第 2 步／練習任務 2】建台帳\n用試算表或 GitLab Issue 建一個追蹤台帳，欄位：\n弱點ID | 來源 | 嚴重度 | 影響資產 | 發現日 | 期限（發現日+SLA） | 負責人 | 狀態 | 修補紀錄\n把前面課程掃出來的真實弱點填幾筆進去（OSV 掃到的 CVE、SCAP 掃到的 fail 項、ZAP 掃到的 High）——你會發現這台帳正好把整個 DevSecOps 路線的產出收斂到一處管理。\n\n【第 3 步】用 GitLab 落地（實作）\n把每個弱點開成一個 Issue，用 Label 標嚴重度、用 Due date 設期限、Assignee 設負責人、Milestone 收攏。\nGitLab 的 Issue Board 就變成弱點看板：一眼看到哪些逾期、哪些在修——這就是可運作的弱點治理。\n\n【第 4 步／練習任務 3】回填與重掃\n修補完成不是把 Issue 關掉就算——要重掃驗證弱點真的消失（升級套件後重跑 OSV、改設定後重跑 SCAP），確認後才回填「已驗證關閉」。\n沒重掃就關閉 = 自我感覺良好，稽核一驗又冒出來。\n\n【收尾觀念】這章是整個 DevSecOps 路線的終點：前面學的 SAST/SCA/DAST/SBOM/OSV/SCAP 都在「找弱點」，這章教「找到之後怎麼有紀律地修完」——工具找得到、制度修得掉，安全才真正落地。"
   }
 }

@@ -45,12 +45,18 @@
       "環境準備",
       "DevOps 與 Git 基礎",
       "Git / GitLab 管控",
+      "GitLab 升級與維運",
       "CI/CD Pipeline",
       "DevSecOps",
+      "供應鏈安全",
       "SonarQube / OWASP ZAP",
+      "SonarQube 自建維運",
       ".NET / Python Pipeline",
+      "企業級部署",
       "Docker / Container 與 AI 平台",
       "IaC / 自動化部署",
+      "合規盤點與組態基準",
+      "CI/CD 身分與弱點治理",
       "監控與營運"
     ]
   }
