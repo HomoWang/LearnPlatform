@@ -1,23 +1,47 @@
 import type { ReactNode } from "react";
-import { learningPaths } from "../lib/catalog";
 
 type LayoutProps = {
   currentPath: string;
   children: ReactNode;
 };
 
-const navItems = [
-  { label: "Dashboard", href: "#/" },
-  { label: "學習路線", href: "#/paths" },
-  { label: "課程", href: "#/courses" },
-  { label: "Lab 實作", href: "#/labs" },
-  { label: "能力檢核", href: "#/skills" },
-  { label: "名詞字典", href: "#/glossary" },
-  { label: "我的筆記", href: "#/notes" },
-  { label: "面試題庫", href: "#/interview" },
-  { label: "職缺對應", href: "#/jobs" },
-  { label: "作品集", href: "#/portfolio" },
-  { label: "設定", href: "#/settings" }
+type NavItem = { label: string; href: string; dotClass: string };
+type NavGroup = { title?: string; items: NavItem[] };
+
+const navGroups: NavGroup[] = [
+  {
+    items: [{ label: "首頁", href: "#/", dotClass: "bg-butter border-[1.5px] border-ink" }]
+  },
+  {
+    title: "學 習",
+    items: [
+      { label: "學習路線", href: "#/paths", dotClass: "bg-net" },
+      { label: "課程", href: "#/courses", dotClass: "bg-dba" },
+      { label: "Lab 實作", href: "#/labs", dotClass: "bg-dev" }
+    ]
+  },
+  {
+    title: "練 功",
+    items: [
+      { label: "能力檢核", href: "#/skills", dotClass: "bg-slate-300" },
+      { label: "面試題庫", href: "#/interview", dotClass: "bg-slate-300" },
+      { label: "名詞字典", href: "#/glossary", dotClass: "bg-slate-300" }
+    ]
+  },
+  {
+    title: "求 職",
+    items: [
+      { label: "職缺對應", href: "#/jobs", dotClass: "bg-slate-300" },
+      { label: "作品集", href: "#/portfolio", dotClass: "bg-slate-300" }
+    ]
+  },
+  {
+    title: "工 具",
+    items: [
+      { label: "我的筆記", href: "#/notes", dotClass: "bg-slate-300" },
+      { label: "設定", href: "#/settings", dotClass: "bg-slate-300" }
+    ]
+  }
 ];
 
 function isActive(currentPath: string, href: string) {
@@ -31,48 +55,54 @@ function isActive(currentPath: string, href: string) {
 
 export default function Layout({ currentPath, children }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-slate-100 lg:flex">
-      <aside className="bg-slate-950 text-white lg:fixed lg:inset-y-0 lg:left-0 lg:w-72">
-        <div className="flex min-h-full flex-col">
-          <div className="border-b border-white/10 px-5 py-5">
-            <a href="#/" className="block">
-              <div className="text-lg font-bold">IT Career Learning</div>
-              <div className="mt-1 text-xs text-slate-300">Personal LMS for enterprise IT practice</div>
-            </a>
-          </div>
-          <nav className="flex-1 space-y-1 px-3 py-4">
-            {navItems.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className={`block rounded-md px-3 py-2 text-sm font-medium transition ${
-                  isActive(currentPath, item.href)
-                    ? "bg-teal-600 text-white"
-                    : "text-slate-300 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                {item.label}
-              </a>
+    <div className="min-h-screen lg:flex">
+      <aside className="relative border-b-2 border-ink bg-slate-50 lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:border-b-0 lg:border-r-2 lg:overflow-y-auto">
+        {/* 活頁筆記本孔環（桌機才顯示） */}
+        <div className="pointer-events-none absolute inset-y-0 right-[-13px] z-10 hidden w-[26px] flex-col justify-evenly lg:flex">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <span
+              key={i}
+              className="h-[22px] w-[22px] rounded-full border-2 border-ink bg-paper shadow-[inset_2px_2px_0_rgba(69,58,47,.15)]"
+            />
+          ))}
+        </div>
+
+        <div className="px-4 pb-6 pt-6 lg:pr-8">
+          <a href="#/" className="mx-1 inline-block -rotate-2 rounded-2xl border-2 border-ink bg-white px-4 py-2.5 shadow-sticker">
+            <div className="font-hn text-lg leading-snug">我的學習手帳</div>
+            <div className="mt-0.5 text-[11px] text-slate-500">企業 IT 轉職修煉中</div>
+          </a>
+
+          <nav className="mt-4">
+            {navGroups.map((group, gi) => (
+              <div key={gi} className="mt-4 first:mt-2">
+                {group.title ? (
+                  <div className="pl-3 text-[11px] tracking-[0.25em] text-slate-500">{group.title}</div>
+                ) : null}
+                {group.items.map((item) => {
+                  const active = isActive(currentPath, item.href);
+                  return (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      className={`mt-1 flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition ${
+                        active
+                          ? "border-2 border-ink bg-white font-hn shadow-sticker-sm lg:-mr-3"
+                          : "border-2 border-transparent text-ink hover:bg-teal-100"
+                      }`}
+                    >
+                      <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${item.dotClass}`} />
+                      {item.label}
+                    </a>
+                  );
+                })}
+              </div>
             ))}
           </nav>
-          <div className="border-t border-white/10 px-4 py-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">快速路線</div>
-            <div className="mt-3 space-y-2">
-              {learningPaths.map((path) => (
-                <a
-                  key={path.id}
-                  href={`#/paths/${path.id}`}
-                  className="block rounded-md border border-white/10 px-3 py-2 text-xs text-slate-300 transition hover:border-teal-400 hover:text-white"
-                >
-                  {path.title}
-                </a>
-              ))}
-            </div>
-          </div>
         </div>
       </aside>
-      <main className="min-w-0 flex-1 lg:pl-72">
-        <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">{children}</div>
+      <main className="min-w-0 flex-1 lg:pl-64">
+        <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-10">{children}</div>
       </main>
     </div>
   );

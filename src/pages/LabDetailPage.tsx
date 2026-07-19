@@ -86,7 +86,7 @@ export default function LabDetailPage({ labId, state, actions }: LabDetailPagePr
               {lab.steps.map((step, index) => (
                 <li key={step} className="rounded-md bg-slate-50 p-3 text-sm text-slate-700">
                   <div className="flex gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-700 text-xs font-bold text-white">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-butter font-hn text-xs text-ink">
                       {index + 1}
                     </span>
                     <span>{step}</span>

@@ -4,19 +4,44 @@
 
 @layer base {
   html {
-    font-family:
-      Inter, "Noto Sans TC", "Microsoft JhengHei", system-ui, -apple-system, BlinkMacSystemFont,
+    font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, -apple-system, BlinkMacSystemFont,
       "Segoe UI", sans-serif;
   }
 
   body {
-    @apply bg-slate-100 text-slate-900 antialiased;
+    @apply bg-paper text-ink antialiased;
+    background-image: linear-gradient(rgba(69, 58, 47, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(69, 58, 47, 0.045) 1px, transparent 1px);
+    background-size: 26px 26px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: "Huninn", "Noto Sans TC", sans-serif;
+    font-weight: 400;
+  }
+
+  :focus-visible {
+    outline: 3px solid #f2b94b;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
 @layer components {
+  /* 貼紙卡片：墨線描邊 + 偏移實心陰影 */
   .card {
-    @apply rounded-lg border border-slate-200 bg-white shadow-sm;
+    @apply rounded-sticker border-2 border-ink bg-card shadow-sticker;
   }
 
   .page-grid {
@@ -24,18 +49,36 @@
   }
 
   .form-input {
-    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100;
+    @apply w-full rounded-xl border-2 border-slate-200 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-ink;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-800;
+    @apply inline-flex items-center justify-center rounded-xl border-2 border-ink bg-butter px-4 py-2 text-sm text-ink shadow-sticker-press transition hover:translate-x-px hover:translate-y-px hover:shadow-sticker-sm;
+    font-family: "Huninn", "Noto Sans TC", sans-serif;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50;
+    @apply inline-flex items-center justify-center rounded-xl border-2 border-ink bg-white px-4 py-2 text-sm text-ink shadow-sticker-sm transition hover:bg-teal-50;
+    font-family: "Huninn", "Noto Sans TC", sans-serif;
   }
 
   .table-head {
     @apply bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500;
+  }
+
+  /* 章節分隔線標題：文字 + 點點延伸線 */
+  .section-title {
+    @apply flex items-center gap-3 text-lg;
+    font-family: "Huninn", "Noto Sans TC", sans-serif;
+  }
+
+  .section-title::after {
+    content: "";
+    @apply flex-1 border-t-2 border-dotted border-slate-300;
+  }
+
+  /* 小貼紙標籤（微傾斜） */
+  .sticker-tag {
+    @apply inline-flex -rotate-2 items-center rounded-md border-2 border-ink px-2 py-0.5 text-[11px];
   }
 }

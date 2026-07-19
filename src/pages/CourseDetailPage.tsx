@@ -108,7 +108,7 @@ export default function CourseDetailPage({ courseId, state, actions }: CourseDet
                           <ol className="mt-2 space-y-2 text-sm leading-6 text-slate-700">
                             {teaching.teachingSteps.map((step, stepIndex) => (
                               <li key={step} className="flex gap-2">
-                                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal-700 text-xs font-bold text-white">
+                                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-butter font-hn text-xs text-ink">
                                   {stepIndex + 1}
                                 </span>
                                 <span>{step}</span>
