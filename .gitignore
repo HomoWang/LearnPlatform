@@ -7,9 +7,9 @@ dist
 *.tsbuildinfo
 .DS_Store
 
-# 個人學習資料與內部看板（不進版控）
-data/
-claude_data/
+# 個人學習資料與內部看板（不進版控；限定根目錄，避免誤傷 src/data）
+/data/
+/claude_data/
 
 # 私人維運 skill（含真實環境資訊，絕不公開；手動移出後可刪此行）
 .claude/skills/gitlab-upgrade/
