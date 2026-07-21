@@ -14,6 +14,7 @@ import PathsPage from "./pages/PathsPage";
 import PortfolioPage from "./pages/PortfolioPage";
 import SettingsPage from "./pages/SettingsPage";
 import SkillsPage from "./pages/SkillsPage";
+import AiToolsPage from "./pages/AiToolsPage";
 import type { AppActions } from "./lib/appActions";
 import { upsertStatus } from "./lib/progress";
 import {
@@ -216,6 +217,10 @@ export default function App() {
 
     if (path === "/settings") {
       return <SettingsPage {...pageProps} />;
+    }
+
+    if (path === "/ai-tools") {
+      return <AiToolsPage />;
     }
 
     return (

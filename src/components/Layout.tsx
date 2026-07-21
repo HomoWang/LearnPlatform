@@ -38,6 +38,7 @@ const navGroups: NavGroup[] = [
   {
     title: "工 具",
     items: [
+      { label: "AI 工具指南", href: "#/ai-tools", dotClass: "bg-butter border-[1.5px] border-ink" },
       { label: "我的筆記", href: "#/notes", dotClass: "bg-slate-300" },
       { label: "設定", href: "#/settings", dotClass: "bg-slate-300" }
     ]
