@@ -694,7 +694,54 @@
       "我知道環境切分的重要性。",
       "我能說明 Rollback 為什麼要先設計。"
     ],
-    "handson": "這是觀念章，手把手的重點是「把流程真的畫出來、把答案寫具體」——以下四題全部給範本，照抄後改成你自己的版本。\n\n【練習任務 1 解答】commit 到 production 的完整流程圖\n開發者 commit → push feature branch\n → 開 Merge Request → 同事 Code Review → 核准\n → 合併進 main → 自動觸發 CI Pipeline：build → test → 安全掃描 → 產出 Artifact\n → 自動部署到 Dev → 冒煙測試\n → 手動核准 → 部署 UAT → 業務驗收簽核\n → 手動核准（維護窗口內）→ 部署 Prod → 監控觀察\n → 出問題 → Rollback 到上一版 Artifact / Tag\n每個箭頭都要留下紀錄（誰、何時、結果）——「可追蹤」就是 DevOps 與「手動搬檔案」的本質差別。\n\n【練習任務 2 解答】哪些步驟適合自動化\n適合自動化：建置、測試、掃描、部署到 Dev、產出報告——重複、規則明確、失敗可重來。\n保留人工：合併核准（Code Review）、部署 UAT/Prod 的按鈕（when: manual）、事故時的 Rollback 決策。\n原則一句話：「機器做重複的事，人做需要判斷的事」。\n\n【練習任務 3 解答】三環境的部署條件\nDev：main 有新 commit 就自動部署。目的＝開發者立刻看到整合結果。\nUAT：Dev 驗證通過＋手動觸發。目的＝給業務一個穩定版本驗收，不被開發中的變動干擾。\nProd：UAT 簽核＋維護窗口＋手動觸發。目的＝把「上錯版」的機率壓到最低。\n\n【練習任務 4 解答】Rollback 要預先保留的四樣東西\n1. 上一版的 Artifact 或 Image Tag——沒有舊版就無版可回。\n2. 資料庫變更的 Rollback Script——程式回舊版、資料表卻是新結構，一樣掛。\n3. 環境設定的版本——環境變數與設定檔要跟著版本走。\n4. 部署紀錄——現在跑的是哪一版？沒有這個，連「要回到哪」都不知道。\n面試被問「Rollback 怎麼設計」：答這四樣＋一句「上線前就要演練過回退」，就是完整答案。"
+    "handson": "這是觀念章，手把手的重點是「把流程真的畫出來、把答案寫具體」——以下四題全部給範本，照抄後改成你自己的版本。\n\n【練習任務 1 解答】commit 到 production 的完整流程圖\n開發者 commit → push feature branch\n → 開 Merge Request → 同事 Code Review → 核准\n → 合併進 main → 自動觸發 CI Pipeline：build → test → 安全掃描 → 產出 Artifact\n → 自動部署到 Dev → 冒煙測試\n → 手動核准 → 部署 UAT → 業務驗收簽核\n → 手動核准（維護窗口內）→ 部署 Prod → 監控觀察\n → 出問題 → Rollback 到上一版 Artifact / Tag\n每個箭頭都要留下紀錄（誰、何時、結果）——「可追蹤」就是 DevOps 與「手動搬檔案」的本質差別。\n\n【練習任務 2 解答】哪些步驟適合自動化\n適合自動化：建置、測試、掃描、部署到 Dev、產出報告——重複、規則明確、失敗可重來。\n保留人工：合併核准（Code Review）、部署 UAT/Prod 的按鈕（when: manual）、事故時的 Rollback 決策。\n原則一句話：「機器做重複的事，人做需要判斷的事」。\n\n【練習任務 3 解答】三環境的部署條件\nDev：main 有新 commit 就自動部署。目的＝開發者立刻看到整合結果。\nUAT：Dev 驗證通過＋手動觸發。目的＝給業務一個穩定版本驗收，不被開發中的變動干擾。\nProd：UAT 簽核＋維護窗口＋手動觸發。目的＝把「上錯版」的機率壓到最低。\n\n【練習任務 4 解答】Rollback 要預先保留的四樣東西\n1. 上一版的 Artifact 或 Image Tag——沒有舊版就無版可回。\n2. 資料庫變更的 Rollback Script——程式回舊版、資料表卻是新結構，一樣掛。\n3. 環境設定的版本——環境變數與設定檔要跟著版本走。\n4. 部署紀錄——現在跑的是哪一版？沒有這個，連「要回到哪」都不知道。\n面試被問「Rollback 怎麼設計」：答這四樣＋一句「上線前就要演練過回退」，就是完整答案。",
+    "extras": [
+      {
+        "title": "Rollback 要準備的四樣東西（速查）",
+        "table": {
+          "columns": [
+            "要準備的東西",
+            "為什麼需要",
+            "沒準備會怎樣"
+          ],
+          "rows": [
+            [
+              "上一版那一包（Artifact 或 Image Tag）",
+              "退回時直接部署它，不必重新打包",
+              "只能從舊的原始碼重新打包，這段時間使用者持續看到錯誤"
+            ],
+            [
+              "資料庫的回復指令（Rollback Script）",
+              "新版改了資料表的話，資料表也要能退回去",
+              "程式回到舊版、資料表卻是新結構，一樣會壞"
+            ],
+            [
+              "跟著版本走的設定",
+              "設定檔與設定值要和那一版的程式對得上",
+              "舊版程式讀到新版的設定，啟動失敗或行為不對"
+            ],
+            [
+              "部署紀錄",
+              "知道現在跑的是哪一版、上一版是哪一包",
+              "連要退回到哪一版都不確定"
+            ]
+          ]
+        },
+        "note": "這四樣都要在上線前準備好。上線後才發現少了哪一樣，就只能邊出事邊補。"
+      },
+      {
+        "title": "分類練習：哪些步驟該交給機器",
+        "body": "把下面每一項分成「交給機器」或「留給人」，先自己想，再看下面的答案。\n1. 每次 push 後重新建置程式\n2. 跑測試\n3. 掃描安全問題\n4. 判斷這段修改寫得好不好（審查）\n5. 部署到 Dev\n6. 業務人員確認功能正確並簽核\n7. 決定什麼時候部署到 Prod\n8. 出事時決定要不要 Rollback\n對答案：\n• 交給機器：1、2、3、5。重複、規則明確、失敗了可以重來。\n• 留給人：4、6、7、8。需要判斷、要有人負責。部署 Prod 的動作本身可以自動執行，但「什麼時候按下去」是人決定的。\n原則一句話：機器做重複的事，人做需要判斷的事。"
+      },
+      {
+        "title": "哪些設定會改變「沒過就停」",
+        "body": "講解裡的流程是常見的設定，實際要看專案怎麼寫。同一條 Pipeline 裡，前一個階段的工作失敗時，後面的階段預設不會執行；下面這些設定會改變它：\n• allow_failure: true：寫在 .gitlab-ci.yml 的某個工作上。這個工作失敗時只顯示警告，後面的階段照樣執行。常用在還在試用、不想擋人的掃描。\n• needs：讓工作只等它指定的那幾個工作，不必等前一個階段全部跑完。\n• when：決定工作什麼時候跑。when: manual 要有人按下才跑（常用在部署 Prod），when: always 前面失敗也照跑（常用在清理、通知）。\n• 合併前是否強制要求檢查通過：這不是 .gitlab-ci.yml 的設定，而是 GitLab 專案的合併檢查（設定頁面上叫 Pipelines must succeed，名稱可能隨 GitLab 版本不同）。沒有啟用的話，測試沒過也按得下合併按鈕。你的專案有沒有啟用，請向負責 GitLab 的同事確認。\n另外，「審查並合併」和「UAT 驗收」本身不是 Pipeline 的階段：一個是同事在 Merge Request 上的審查，一個是業務人員的判斷。"
+      },
+      {
+        "title": "Dev 其實每次合併都會部署一次",
+        "body": "講解卡 1 為了好懂只走了一次。實際上 main 每合併一次，機器就會打包一次、部署到 Dev 一次，所以 Dev 一天可能換好幾版。\n等團隊決定「這一包要發行」，才把它標成 v1.4.0（通常會打上 tag），往 UAT、Prod 送。所以 v1.4.0 不是另外特別做的一包，而是很多包裡被選出來發行的那一包。\n部署到 UAT 和 Prod 的必須是同一包：UAT 驗收過的是哪一包，Prod 就上哪一包，不要重新打包。"
+      }
+    ]
   },
   "devops-gitlab-control": {
     "teachingSteps": [
@@ -1436,7 +1483,122 @@
       "我能說明 merge 與 rebase 的差異。",
       "我知道 tag 在版本管理與回復的角色。"
     ],
-    "handson": "接續 demo 專案，完整走一次分支與衝突（練習任務全解）。\n\n【第 1 步】開分支改東西\n> git checkout -b feature/greeting     ← 建立並切換到新分支\n> echo hello from feature > greeting.txt\n> git add .\n> git commit -m \"Add greeting file\"\n> git push -u origin feature/greeting  ← 第一次推新分支要 -u\n\n【第 2 步】併回 main\n> git checkout main\n> git merge feature/greeting\n> git push\n驗證：git log --oneline --graph 看得到 feature 的 commit 已進入 main。\n\n【第 3 步】親手製造一次衝突（練習任務 2 解答）\n> git checkout -b feature/a\n用編輯器把 greeting.txt 第一行改成「版本 A」，然後 commit：\n> git add . && git commit -m \"Change to version A\"\n> git checkout main\n把 greeting.txt 第一行改成「版本 main」，commit：\n> git add . && git commit -m \"Change to version main\"\n> git merge feature/a\n→ CONFLICT (content): Merge conflict in greeting.txt\n打開 greeting.txt 會看到：\n<<<<<<< HEAD\n版本 main\n=======\n版本 A\n>>>>>>> feature/a\n讀法：<<<< 到 ==== 是你所在分支（main）的內容；==== 到 >>>> 是要併進來的（feature/a）。\n解法：把三行標記全部刪掉，留下你判斷正確的內容（例如「版本 A」），存檔後：\n> git add greeting.txt\n> git commit\n完成。這整段就是面試題「描述一次解衝突的流程」的標準答案：看標記 → 理解兩邊意圖 → 保留正確內容 → add + commit。\n\n【第 4 步】打版本標籤（練習任務 4 解答）\n> git tag v1.0.0\n> git push origin v1.0.0\n用途：部署的就是某個 tag 的版本；上線出問題，回到上一個 tag 重新部署就是 Rollback。\n\n【補充】什麼時候用 rebase？\n自己還沒推出去的分支想跟上 main 最新進度：git rebase main。規則只有一條：推上去給別人看過的分支，永遠不要 rebase。"
+    "handson": "接續 demo 專案，完整走一次分支與衝突（練習任務全解）。\n\n【第 1 步】開分支改東西\n> git checkout -b feature/greeting     ← 建立並切換到新分支\n> echo hello from feature > greeting.txt\n> git add .\n> git commit -m \"Add greeting file\"\n> git push -u origin feature/greeting  ← 第一次推新分支要 -u\n\n【第 2 步】併回 main\n> git checkout main\n> git merge feature/greeting\n> git push\n驗證：git log --oneline --graph 看得到 feature 的 commit 已進入 main。\n\n【第 3 步】親手製造一次衝突（練習任務 2 解答）\n> git checkout -b feature/a\n用編輯器把 greeting.txt 第一行改成「版本 A」，然後 commit：\n> git add . && git commit -m \"Change to version A\"\n> git checkout main\n把 greeting.txt 第一行改成「版本 main」，commit：\n> git add . && git commit -m \"Change to version main\"\n> git merge feature/a\n→ CONFLICT (content): Merge conflict in greeting.txt\n打開 greeting.txt 會看到：\n<<<<<<< HEAD\n版本 main\n=======\n版本 A\n>>>>>>> feature/a\n讀法：<<<< 到 ==== 是你所在分支（main）的內容；==== 到 >>>> 是要併進來的（feature/a）。\n解法：把三行標記全部刪掉，留下你判斷正確的內容（例如「版本 A」），存檔後：\n> git add greeting.txt\n> git commit\n完成。這整段就是面試題「描述一次解衝突的流程」的標準答案：看標記 → 理解兩邊意圖 → 保留正確內容 → add + commit。\n\n【第 4 步】打版本標籤（練習任務 4 解答）\n> git tag v1.0.0\n> git push origin v1.0.0\n用途：部署的就是某個 tag 的版本；上線出問題，回到上一個 tag 重新部署就是 Rollback。\n\n【補充】什麼時候用 rebase？\n自己還沒推出去的分支想跟上 main 最新進度：git rebase main。規則只有一條：推上去給別人看過的分支，永遠不要 rebase。",
+    "extras": [
+      {
+        "title": "git branch 和 git switch -c 的差別",
+        "body": "git branch 分支名稱 只貼一張新標籤，你還站在原本的分支上；git switch -c 分支名稱（舊寫法 git checkout -b）是貼標籤，再站過去。\n> git branch feature/fix-typo\n> git branch\n|   feature/fix-typo\n| * main\n前面有 * 的是你站著的分支——還是 main。這時 commit，往前移的是 main，不是新分支。要站過去：\n> git switch feature/fix-typo\n| Switched to branch 'feature/fix-typo'\n一步到位的寫法：\n> git switch -c feature/fix-typo\n| Switched to a new branch 'feature/fix-typo'"
+      },
+      {
+        "title": "快轉合併（fast-forward）",
+        "body": "如果你開分支之後，main 一直沒有新的存檔（沒有同事的 D），merge 不必產生 M：Git 直接把 main 標籤往前移到 C，這叫快轉。\n> git switch main\n> git merge feature/fix-typo\n| Updating 940634c..d1b43af\n| Fast-forward\n|  index.html | 2 +-\n看到 Fast-forward 就是快轉，歷史還是一條直線。另外兩件事：\n• 在本機想強制留下合併點，用 git merge --no-ff feature/fix-typo。\n• GitLab 的 Merge Request 預設的合併方式，不管能不能快轉，一律產生合併 commit。"
+      },
+      {
+        "title": "merge 與 rebase 的歷史圖對照",
+        "body": "同樣是 B 之後你有 C、main 有 D：\nmerge：產生 M，兩條線都保留。\n| A - B - D - M   <- main\n|      \\     /\n|       C ---'    <- feature/fix-typo\nrebase：把 C 重新接到 D 後面，變成一顆新的 C'。\n| A - B - D - C'  <- feature/fix-typo\n|         ^\n|         main\nrebase 之後歷史是一條直線，但 C' 是新的 commit（內容一樣、編號不同）。所以已經 push 給別人用的分支不要 rebase：別人手上的 C 會和你的 C' 對不起來。"
+      },
+      {
+        "title": "衝突標記在不同情況下的長相",
+        "body": "git merge 時（講解卡 4 的情況）：<<<<<<< HEAD 到 ======= 是你站著的分支，======= 到 >>>>>>> 是被併進來的那一方。\ngit rebase 時兩邊相反：rebase 是把你的 commit 一顆顆重新接到 main 後面，所以 HEAD 那一段變成 main 的內容，下面那一段才是你的 commit。\n> git rebase main\n| <<<<<<< HEAD\n| 確認送出申情\n| =======\n| 送出申請\n| >>>>>>> 7978cbe (修正按鈕錯字)\n設定 merge.conflictStyle=diff3 時，中間會多一段 |||||||，列出兩邊分岔前的原始內容（共同祖先），比較容易看出誰改了什麼：\n| <<<<<<< HEAD\n| 送出申請\n| ||||||| f28c837\n| 送出申情\n| =======\n| 確認送出申情\n| >>>>>>> main\n（編號每個人都不一樣。）設定方式：\n> git config --global merge.conflictStyle diff3"
+      },
+      {
+        "title": "解完衝突之後：git add 與 git commit",
+        "body": "衝突時 Git 停在「合併到一半」的狀態，git status 會告訴你哪些檔案要處理：\n| You have unmerged paths.\n| Unmerged paths:\n|   (use \"git add <file>...\" to mark resolution)\n|         both modified:   index.html\n1. 打開 index.html 改成正確的內容，把 <<<<<<<、=======、>>>>>>> 三行標記刪乾淨，存檔。\n2. 告訴 Git 這個檔案解好了：\n> git add index.html\n3. 完成合併：\n> git commit --no-edit\n| [feature/fix-typo 814d57c] Merge branch 'main' into feature/fix-typo\n--no-edit 是直接用 Git 準備好的合併訊息；不加的話會打開編輯器讓你改。\n做到一半想放棄、回到合併之前：\n> git merge --abort"
+      },
+      {
+        "title": "tag 與版本",
+        "body": "tag 也是一張標籤，但和分支不同：貼上去之後就不會再移動。所以拿來標記「上線的是哪一個 commit」。\n> git tag v1.4.0\n> git push origin v1.4.0\n|  * [new tag]         v1.4.0 -> v1.4.0\ngit push 預設不會把 tag 一起送上去，要像上面那樣指定。之後要 Rollback，就是把上一個 tag（v1.3.0）那一包重新部署。"
+      }
+    ]
+  },
+  "devops-git-sync": {
+    "teachingSteps": [
+      "照手把手做一個假的 GitLab（git init --bare）和兩份 clone（me 是你、coworker 是同事），讓三份 repository 都在自己電腦上。",
+      "讓同事 push 一個新的 commit，你什麼都不做，直接在自己的資料夾執行 git status，記下它說的是 up to date 還是 behind。",
+      "執行 git fetch 後再看一次 git status 和 ls：確認快照（origin/main）更新了，但你的檔案還沒變。",
+      "執行 git pull，確認新檔案出現、git status 回到 up to date，再用 git log --oneline --all 看 main 和 origin/main 指著同一個 commit。",
+      "用同事的資料夾刪掉遠端的 feature/fix-typo，分別執行 git fetch 與 git remote update -p，比較兩次 git branch -r 的差別。",
+      "最後用 git branch -d 刪掉自己本機的舊分支，確認修剪只會清快照裡的標籤，本機分支要自己刪。"
+    ],
+    "example": "# 同事 push 之後，你還沒 fetch\n$ git status\nOn branch main\nYour branch is up to date with 'origin/main'.      ← 只跟快照比，所以說「已是最新」\n\n$ git fetch\n   d1b43af..38876d1  main       -> origin/main     ← 快照更新了\n\n$ git status\nYour branch is behind 'origin/main' by 1 commit, and can be fast-forwarded.\n\n$ git pull\nFast-forward\n help.html | 1 +                                    ← 你的檔案這時才更新\n\n# 遠端刪掉分支之後\n$ git remote update -p\n - [deleted]         (none)     -> origin/feature/fix-typo",
+    "practiceTasks": [
+      "照手把手做一次，把第 6、7、8 步的 git status 輸出整理成一份對照：三段輸出，各配一句你自己的解釋。",
+      "畫三個托盤（遠端、快照、你的本機），分別標出「同事 push 後」「fetch 後」「pull 後」三個時間點各有哪些 commit。",
+      "在練習資料夾製造一次分岔：你和同事各 commit 一次，你 fetch 後看 git status，再 pull，記錄 git status 的輸出與 pull 實際做了什麼。",
+      "用同事的資料夾刪除一個遠端分支，在你的資料夾分別執行 git fetch 與 git remote update -p，寫下兩次 git branch -r 的結果差在哪。"
+    ],
+    "beginnerChecklist": [
+      "我知道 git status 是跟電腦裡的 origin/main 比，不會去問 GitLab。",
+      "我能說出 git fetch 和 git pull 各自更新了哪一份。",
+      "我知道遠端刪掉的分支，要用 git remote update -p（或 git fetch --prune）才會從快照清掉。",
+      "我知道修剪不會刪我自己的本機分支，合併完的舊分支要用 git branch -d 自己清。",
+      "我能在自己電腦用 git init --bare 重現一次 fetch、pull 與修剪。"
+    ],
+    "handson": "這一章不需要 GitLab 帳號：用電腦裡的一個資料夾假裝是 GitLab，再 clone 兩份，一份是你、一份是同事。三份都在自己電腦上，指令和連真的 GitLab 時完全一樣。\n\n【第 1 步】打開 Git Bash，開一個練習資料夾\n開始鍵 → 輸入 Git Bash → 開啟（安裝 Git 時一起裝好的命令列視窗）。下面 > 開頭的是指令，> 本身不用打。\n> cd ~/Desktop\n> mkdir git-sync-lab\n> cd git-sync-lab\n為什麼：所有東西都放在這個資料夾，練習完整個刪掉就好，不會弄亂其他專案。\n\n【第 2 步】做一個假的 GitLab\n> git init --bare -b main gitlab.git\n預期：Initialized empty Git repository in …/git-sync-lab/gitlab.git/\n--bare 的意思是「只放歷史、沒有工作檔案」，GitLab 伺服器上存的就是這種 repository。-b main 讓主線叫 main（Git for Windows 沒指定時會叫 master）。\n\n【第 3 步】你 clone 一份，做第一次存檔並 push\n> git clone gitlab.git me\n預期：warning: You appear to have cloned an empty repository. ——正常，假 GitLab 現在還是空的。\n> cd me\n> echo \"送出申情\" > index.html\n> git add index.html\n> git commit -m \"第一版首頁\"\n> git push\n預期最後一行：* [new branch]      main -> main\nadd 時出現 LF will be replaced by CRLF 的 warning 可以忽略，那只是 Windows 換行字元的提醒。\n失敗長相：commit 時出現 Please tell me who you are → 回到「建立 DevOps 練習環境」那一章，做 git config 設定名字與 email 的步驟。\n\n【第 4 步】開分支修錯字，再併回 main（第 1 課的流程）\n> git switch -c feature/fix-typo\n> echo \"送出申請\" > index.html\n> git add index.html\n> git commit -m \"修正按鈕錯字\"\n> git push -u origin feature/fix-typo\n> git switch main\n> git merge feature/fix-typo\n> git push\nmerge 的輸出有一行 Fast-forward：你開分支之後 main 沒有新的存檔，Git 只要把 main 往前移就好。現在假 GitLab 上有 main 和 feature/fix-typo 兩個分支。\n\n【第 5 步】同事 clone 一份，push 一個新的 commit（講解卡 1）\n> cd ..\n> git clone gitlab.git coworker\n> cd coworker\n> echo \"請假說明\" > help.html\n> git add help.html\n> git commit -m \"加上請假說明頁\"\n> git push\n預期最後一行像：   d1b43af..38876d1  main -> main（編號每個人都不一樣）\n\n【第 6 步】回到你的資料夾，先看 git status（講解卡 2）\n> cd ../me\n> git status\n預期：\nOn branch main\nYour branch is up to date with 'origin/main'.\n為什麼：遠端明明多了同事的 commit，它卻說已是最新。因為 git status 只拿你電腦裡的快照 origin/main 來比，沒有連到遠端。\n\n【第 7 步】git fetch，再看一次（講解卡 3）\n> git fetch\n預期有一行：   d1b43af..38876d1  main       -> origin/main（快照更新了）\n> git status\n預期：Your branch is behind 'origin/main' by 1 commit, and can be fast-forwarded.\n> ls\n預期只有 index.html，還看不到 help.html：fetch 只更新快照，沒有動你的檔案。\n\n【第 8 步】git pull（講解卡 3）\n> git pull\n預期：Fast-forward，下面有一行 create mode 100644 help.html。\n> ls\nhelp.html 出現了。再執行 git status 會回到 up to date。\n> git log --oneline --all\n最上面那行像：38876d1 (HEAD -> main, origin/main, origin/HEAD) 加上請假說明頁——你的 main 和快照的 origin/main 指著同一個 commit。\n\n【第 9 步】同事刪掉遠端分支（講解卡 4）\n在公司裡，Merge Request 合併後 GitLab 通常會順手刪掉分支。這裡用同事的資料夾模擬：\n> cd ../coworker\n> git push origin --delete feature/fix-typo\n預期： - [deleted]         feature/fix-typo\n> cd ../me\n> git fetch\n> git branch -r\n預期三行：origin/HEAD -> origin/main、origin/feature/fix-typo、origin/main。一般的 fetch 不會幫你刪，所以 origin/feature/fix-typo 還在。\n\n【第 10 步】git remote update -p，最後清掉自己的舊分支\n> git remote update -p\n預期： - [deleted]         (none)     -> origin/feature/fix-typo\n> git branch -r\n只剩 origin/HEAD -> origin/main 和 origin/main。\n> git branch\n你自己的 feature/fix-typo 還在：修剪只清快照裡的標籤，不刪你的本機分支。\n> git branch -d feature/fix-typo\n預期：Deleted branch feature/fix-typo (was d1b43af).\n\n【任務 1 解答】三段 git status 對照\n第 6 步 up to date：快照還是舊的，所以「本機＝快照」。第 7 步 behind：fetch 把快照更新了，「快照比本機新」。第 8 步 up to date：pull 把本機也更新了，三邊一樣。\n\n【任務 2 解答】三個托盤\n同事 push 後：遠端多一顆、快照與本機不變。fetch 後：快照也有了、本機不變。pull 後：三個都有。\n\n【任務 3 解答】製造分岔\n在 me 做一次 commit（例如 echo \"我的筆記\" > note.txt 再 add、commit），同時在 coworker 改 help.html 後 commit、push。回到 me：\n> git fetch\n> git status\n預期：Your branch and 'origin/main' have diverged, and have 1 and 1 different commits each, respectively.\n> git pull --no-edit\nGit for Windows 預設會合併，預期：Merge made by the 'ort' strategy.——產生了一個合併 commit，跟第 1 課的 M 一樣。--no-edit 是直接用預設的合併訊息，不打開編輯器。\n如果你用的是 macOS 或 Linux、沒有任何設定，Git 會拒絕：fatal: Need to specify how to reconcile divergent branches.（見下方延伸說明）。\n\n【任務 4 解答】fetch 與 remote update -p 的差別\n第 9 步 fetch 之後，git branch -r 還有 origin/feature/fix-typo；第 10 步 git remote update -p 之後它不見了。兩次之間遠端完全沒變，差別只在有沒有修剪。\n\n【常見卡點】\n- fatal: not a git repository：你不在 me 或 coworker 資料夾裡。用 pwd 看自己在哪，再 cd 進去（不要在 gitlab.git 裡面操作）。\n- git push 被拒絕，出現 rejected … (fetch first)：遠端有你還沒有的 commit，先 git pull 再 push。\n- 想從頭再做一次：cd ~/Desktop 後執行 rm -rf git-sync-lab，從第 1 步重來。",
+    "extras": [
+      {
+        "title": "三個指令的對照速查",
+        "table": {
+          "columns": [
+            "指令",
+            "快照（origin/…）",
+            "你的本機分支與檔案",
+            "遠端已刪除的分支標籤"
+          ],
+          "rows": [
+            [
+              "git status",
+              "不更新，只拿來比較",
+              "不動",
+              "不動"
+            ],
+            [
+              "git fetch",
+              "更新",
+              "不動",
+              "留著（加 --prune 才清）"
+            ],
+            [
+              "git pull",
+              "更新（它會先做 fetch）",
+              "併進你站著的分支，檔案跟著更新",
+              "留著"
+            ],
+            [
+              "git remote update -p",
+              "更新",
+              "不動",
+              "清掉"
+            ]
+          ]
+        },
+        "note": "設定 fetch.prune=true 之後（git config --global fetch.prune true），一般的 git fetch 與 git pull 也會順便修剪。"
+      },
+      {
+        "title": "git status 在三種狀態下的輸出",
+        "body": "已是最新：你的本機和快照指著同一個 commit。\n| On branch main\n| Your branch is up to date with 'origin/main'.\n落後：快照比你新，通常是剛 fetch 過。\n| Your branch is behind 'origin/main' by 1 commit, and can be fast-forwarded.\n|   (use \"git pull\" to update your local branch)\n分岔：兩邊各有對方沒有的 commit。\n| Your branch and 'origin/main' have diverged,\n| and have 1 and 1 different commits each, respectively.\n|   (use \"git pull\" if you want to integrate the remote branch with yours)\n三種都只是「本機和快照」的比較結果。想知道遠端現在的樣子，先 git fetch 再看。"
+      },
+      {
+        "title": "本機也有新存檔時，git pull 會發生什麼",
+        "body": "你在 main 上 commit 了、同事也 push 了，兩邊就分岔了。這時 git pull 怎麼併，要看電腦上的設定：\n• Git for Windows 安裝時，系統設定預設 pull.rebase=false，git pull 會產生一個合併 commit（和第 1 課的 M 一樣），並打開編輯器讓你確認合併訊息。\n| Merge made by the 'ort' strategy.\n• 完全沒有設定時（例如 macOS、Linux 剛裝好的 Git），Git 會停下來要你先決定：\n| hint: You have divergent branches and need to specify how to reconcile them.\n| fatal: Need to specify how to reconcile divergent branches.\n這不是壞掉。可以每次指定：git pull --no-rebase（合併）、git pull --rebase（把你的 commit 接到最新的後面）、git pull --ff-only（只接受快轉，不行就停下來）。團隊通常有規定，先問清楚再設定。\n• 本機沒有自己的新 commit 時，不管怎麼設定都只是快轉（Fast-forward），不會產生合併 commit。\n查自己電腦的設定是從哪裡來的：\n> git config --show-origin pull.rebase\n| file:C:/Program Files/Git/etc/gitconfig    false\n如果 pull 打開的是 Vim：按 Esc，輸入 :wq 再按 Enter 就會完成合併。不想開編輯器時用 git pull --no-edit。"
+      },
+      {
+        "title": "git remote update -p 與 git fetch --all --prune",
+        "body": "在沒有設定 remotes.default 的情況下（一般人都沒設），這兩個指令效果相同：對所有遠端抓新東西，並清掉遠端已經刪除的分支標籤。\n> git remote update -p\n> git fetch --all --prune\n有東西被清掉時會看到：\n| - [deleted]         (none)     -> origin/feature/fix-typo\n沒有新東西、也沒有東西要清時，什麼都不會印出來。\n想讓每次 fetch、pull 都自動修剪：\n> git config --global fetch.prune true\n修剪只移除快照裡的分支標籤：不會刪掉任何 commit，也不會刪你自己的本機分支。"
+      },
+      {
+        "title": "清掉自己本機的舊分支",
+        "body": "修剪不會碰你的本機分支，合併完的 feature/fix-typo 要自己刪。順序是先切回 main 並 pull，再刪：\n> git switch main\n> git pull\n> git branch -d feature/fix-typo\n| Deleted branch feature/fix-typo (was d1b43af).\n為什麼要先 pull：-d 會先確認這個分支的 commit 都已經在你目前的分支裡，才肯刪。main 沒跟上遠端時，它會以為你的修改還沒合併。\n例外是 squash 合併：GitLab 把分支上的 commit 壓成一顆新的 commit 放進 main，Git 認不出你的分支已經合併過，-d 會拒絕：\n| error: the branch 'feature/fix-typo' is not fully merged\n| hint: If you are sure you want to delete it, run 'git branch -D feature/fix-typo'\n這時先到 GitLab 確認 Merge Request 確實已經合併，再用大寫的 -D 強制刪除。"
+      },
+      {
+        "title": "編輯器可能會自動幫你 fetch",
+        "body": "有些編輯器會在背景定期執行 git fetch，例如 VS Code 開啟 git.autofetch 設定時。所以有時候你沒打 fetch，git status 也知道自己落後了——那是編輯器先更新了快照。\ngit status 本身仍然只跟快照比，不會連到 GitLab。沒有開自動 fetch 的時候，git status 說 up to date，不代表遠端沒有新東西。"
+      },
+      {
+        "title": "在自己的分支上跟上 main 的最新進度",
+        "body": "第 1 課卡 4 的「把 main 的最新進度併進自己的分支」，實際操作時通常是先 fetch，再直接併快照裡的 origin/main（不必先切回 main 去 pull）：\n> git fetch\n> git merge origin/main\n這時如果衝突，標記的結尾會是 origin/main，而不是 main：\n| <<<<<<< HEAD\n| 送出申請\n| =======\n| 確認送出申情\n| >>>>>>> origin/main\n讀法不變：上半段是你站著的分支，下半段是被併進來的 origin/main。"
+      }
+    ]
   },
   "devops-artifact-repo": {
     "teachingSteps": [

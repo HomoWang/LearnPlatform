@@ -13,3 +13,6 @@ dist
 
 # 私人維運 skill（含真實環境資訊，絕不公開；手動移出後可刪此行）
 .claude/skills/gitlab-upgrade/
+
+# 參考用的螢幕錄影（檔案大，且畫面含個人瀏覽器分頁，不進版控）
+/Template/

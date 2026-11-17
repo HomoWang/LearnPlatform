@@ -73,7 +73,7 @@ export default function LabDetailPage({ labId, state, actions }: LabDetailPagePr
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="space-y-4">
           <section className="card p-4">
             <h2 className="font-bold text-slate-950">目標</h2>

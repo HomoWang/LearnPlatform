@@ -484,18 +484,9 @@
     "pathId": "devops",
     "title": "DevOps 基礎與 Git 實操",
     "stage": "DevOps 與 Git 基礎",
-    "description": "建立 Git 實際操作（clone、branch、merge、解衝突、tag）、Repository、Release、環境切分、部署、Rollback 與交付流程的基本觀念。",
+    "description": "建立 Git 實際操作（clone、branch、merge、解衝突、tag、fetch 與 pull）、Repository、Release、環境切分、部署、Rollback 與交付流程的基本觀念。",
     "businessUse": "企業 DevOps 工作重點是讓交付流程可追蹤、可自動化、可回復，並把安全掃描納入流程。",
     "lessons": [
-      {
-        "id": "devops-basics-flow",
-        "title": "從程式碼到部署",
-        "objective": "能描述企業軟體交付流程。",
-        "content": "典型流程包含需求、分支、Commit、Merge Request、Code Review、CI Build/Test、Artifact、部署到 Dev/UAT/Prod、監控與 Rollback。",
-        "commonIssues": ["手動部署不可追蹤", "環境設定不一致", "Rollback 無流程"],
-        "troubleshooting": ["檢查 Pipeline 紀錄", "比對 Artifact 版本", "確認部署環境變數"],
-        "interviewPoints": ["說明 CI/CD 的價值", "說明 Rollback 設計"]
-      },
       {
         "id": "devops-git-basics",
         "title": "Git 基礎實操",
@@ -504,6 +495,24 @@
         "commonIssues": ["遇到衝突不會解，直接砍掉重來", "commit 訊息不清楚，日後無法回溯原因", "把大檔案或 Secret commit 進版本庫"],
         "troubleshooting": ["衝突時先看標記區塊，與對方確認保留內容", "用 git log 與 git diff 定位變更來源", "誤 commit 機敏資料時清除歷史並立即輪替金鑰"],
         "interviewPoints": ["說明 merge 與 rebase 的差異", "描述一次解決衝突的完整流程"]
+      },
+      {
+        "id": "devops-git-sync",
+        "title": "本機與遠端：fetch、pull 與 prune",
+        "objective": "能說明 git status、git fetch、git pull、git remote update -p 各自比對或更新了哪一份，並在自己電腦重現一次。",
+        "content": "你的電腦裡其實有兩份東西：自己的分支與檔案，以及一份「上次看到的遠端」（origin/main）；GitLab 上的才是真正的遠端。git status 只拿這兩份互相比較，不會連線；git fetch 更新快照，git pull 再把它併進目前所在的分支。遠端刪掉的分支，要用 git remote update -p（或 git fetch --prune）才會從快照清掉。",
+        "commonIssues": ["同事說已經 push 了，自己的 git status 卻顯示 up to date", "git pull 出現 Need to specify how to reconcile divergent branches，不知道該怎麼辦", "git branch -r 列出一堆早就合併、遠端也刪掉的分支"],
+        "troubleshooting": ["先 git fetch 再看 git status，確認快照是不是舊的", "用 git log --oneline --all 或 git branch -r 比對本機與快照差在哪裡", "執行 git remote update -p 清掉過期的遠端分支標籤，再用 git branch -d 清自己本機的舊分支"],
+        "interviewPoints": ["說明 git fetch 與 git pull 的差異", "說明 origin/main（遠端追蹤分支）是什麼，以及 git status 為什麼可能看不到遠端的新 commit"]
+      },
+      {
+        "id": "devops-basics-flow",
+        "title": "從程式碼到部署",
+        "objective": "能描述企業軟體交付流程。",
+        "content": "典型流程包含需求、分支、Commit、Merge Request、Code Review、CI Build/Test、Artifact、部署到 Dev/UAT/Prod、監控與 Rollback。",
+        "commonIssues": ["手動部署不可追蹤", "環境設定不一致", "Rollback 無流程"],
+        "troubleshooting": ["檢查 Pipeline 紀錄", "比對 Artifact 版本", "確認部署環境變數"],
+        "interviewPoints": ["說明 CI/CD 的價值", "說明 Rollback 設計"]
       }
     ],
     "tags": ["DevOps", "Git", "CI/CD", "Rollback"],

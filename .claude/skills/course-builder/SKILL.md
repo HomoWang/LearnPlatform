@@ -36,7 +36,7 @@ description: 為 LearnPlatform（單人企業 IT 實務學習平台）產出或�
 
 ### 第 3 步：填內容
 依 content-standards.md 為每個 lesson 寫 lessonTeachings（teachingSteps、example、practiceTasks、beginnerChecklist），
-入門段課程**必須**附 handson（手把手解答）；補齊 labs（含 stepGuides）、skills、interviewQuestions（含 relatedCourses/relatedLabs）、jobMappings、glossary 新名詞。
+入門段課程**必須**附 handson（手把手解答）；講機制或流程的課可另外寫 lessonExplainers（互動講解：一課一頁、一課只回答一個問題，3～4 張「一句結論＋一個舞台」的卡＋重點回顧＋隨堂檢測；腳本先給使用者確認），講解刻意不講的速查與延伸說明寫在 lessonTeachings 的 extras（顯示在動手做分頁）；補齊 labs（含 stepGuides）、skills、interviewQuestions（含 relatedCourses/relatedLabs）、jobMappings、glossary 新名詞。
 
 ### 第 4 步：驗證
 ```

@@ -82,3 +82,33 @@
     @apply inline-flex -rotate-2 items-center rounded-md border-2 border-ink px-2 py-0.5 text-[11px];
   }
 }
+
+/* 課頁（講解／動手做）：安靜版面，焦點框用深墨色而不是強調色 */
+.lesson-quiet :focus-visible {
+  outline: 2px solid #453a2f;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 舞台裡新出現的物件：淡入放大；被移除的標籤：淡出 */
+.explainer-pop {
+  animation: explainer-pop 0.35s ease-out both;
+}
+
+.explainer-out {
+  animation: explainer-out 0.4s ease-in forwards;
+}
+
+@keyframes explainer-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+@keyframes explainer-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}

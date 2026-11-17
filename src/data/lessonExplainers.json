@@ -1,0 +1,633 @@
+{
+  "devops-git-basics": {
+    "question": "branch 到底是什麼？為什麼不直接改 main？",
+    "outcome": "看懂一張 Git 歷史圖，並說出開分支、合併、衝突各是什麼。",
+    "minutes": 5,
+    "cards": [
+      {
+        "id": "commit",
+        "title": "commit 是一次存檔，一顆接一顆串成歷史",
+        "text": "Git 把每一次存檔（commit）串成一條線。`main` 是一張標籤，標出這條線目前的最新位置。",
+        "stage": {
+          "scene": "graph",
+          "layout": {
+            "A": { "col": 0, "lane": 0, "parents": [] },
+            "B": { "col": 1, "lane": 0, "parents": ["A"] }
+          },
+          "initial": {
+            "view": { "commits": ["A"], "refs": [{ "name": "main", "at": "A" }], "here": "main" },
+            "caption": "現在只有一次存檔 A。"
+          },
+          "controls": {
+            "kind": "sequence",
+            "buttons": [
+              {
+                "label": "commit",
+                "result": {
+                  "view": {
+                    "commits": ["A", "B"],
+                    "refs": [{ "name": "main", "at": "B" }],
+                    "here": "main",
+                    "focus": ["B"]
+                  },
+                  "caption": "多了一次存檔 B。main 跟著往前移。"
+                }
+              }
+            ]
+          }
+        },
+        "bridge": "如果每個人都直接在 main 上存檔，改到一半的東西會互相影響。"
+      },
+      {
+        "id": "branch",
+        "title": "開分支是多貼一張標籤，再站到它上面",
+        "text": "分支（branch）也是一張標籤。`git switch -c` 會貼上新標籤，並把「你在這裡」移過去；之後的存檔只會推動你站著的那張。",
+        "stage": {
+          "scene": "graph",
+          "layout": {
+            "A": { "col": 0, "lane": 0, "parents": [] },
+            "B": { "col": 1, "lane": 0, "parents": ["A"] },
+            "C": { "col": 2, "lane": 1, "parents": ["B"] }
+          },
+          "initial": {
+            "view": { "commits": ["A", "B"], "refs": [{ "name": "main", "at": "B" }], "here": "main" },
+            "caption": "你現在站在 main 上。"
+          },
+          "controls": {
+            "kind": "sequence",
+            "buttons": [
+              {
+                "label": "git switch -c feature/fix-typo",
+                "result": {
+                  "view": {
+                    "commits": ["A", "B"],
+                    "refs": [
+                      { "name": "main", "at": "B" },
+                      { "name": "feature/fix-typo", "at": "B" }
+                    ],
+                    "here": "feature/fix-typo",
+                    "focus": ["feature/fix-typo"]
+                  },
+                  "caption": "多了一張標籤，沒有複製任何檔案。你現在站在 feature/fix-typo 上。"
+                }
+              },
+              {
+                "label": "commit 修錯字",
+                "result": {
+                  "view": {
+                    "commits": ["A", "B", "C"],
+                    "refs": [
+                      { "name": "main", "at": "B" },
+                      { "name": "feature/fix-typo", "at": "C" }
+                    ],
+                    "here": "feature/fix-typo",
+                    "focus": ["C"]
+                  },
+                  "caption": "新的存檔只推動你站著的那張標籤。main 沒有動。"
+                }
+              }
+            ]
+          }
+        },
+        "bridge": "改好了，怎麼讓 C 回到 main？"
+      },
+      {
+        "id": "merge",
+        "title": "merge 用一個新的 commit 把分岔的兩條線接起來",
+        "text": "你改錯字的期間，同事的修改也進了 main，兩條線分岔了。合併（merge）會產生一個新的 commit，同時接上兩邊。",
+        "stage": {
+          "scene": "graph",
+          "layout": {
+            "A": { "col": 0, "lane": 0, "parents": [] },
+            "B": { "col": 1, "lane": 0, "parents": ["A"] },
+            "C": { "col": 2, "lane": 1, "parents": ["B"] },
+            "D": { "col": 2, "lane": 0, "parents": ["B"] },
+            "M": { "col": 3, "lane": 0, "parents": ["D", "C"] }
+          },
+          "initial": {
+            "view": {
+              "commits": ["A", "B", "C"],
+              "refs": [
+                { "name": "main", "at": "B" },
+                { "name": "feature/fix-typo", "at": "C" }
+              ]
+            },
+            "caption": "你的 C 在分支上，main 還在 B。"
+          },
+          "controls": {
+            "kind": "sequence",
+            "buttons": [
+              {
+                "label": "同事的修改進了 main",
+                "result": {
+                  "view": {
+                    "commits": ["A", "B", "C", "D"],
+                    "refs": [
+                      { "name": "main", "at": "D" },
+                      { "name": "feature/fix-typo", "at": "C" }
+                    ],
+                    "focus": ["D"]
+                  },
+                  "caption": "main 多了同事的 D。現在兩條線分岔了。"
+                }
+              },
+              {
+                "label": "merge",
+                "result": {
+                  "view": {
+                    "commits": ["A", "B", "C", "D", "M"],
+                    "refs": [
+                      { "name": "main", "at": "M" },
+                      { "name": "feature/fix-typo", "at": "C" }
+                    ],
+                    "focus": ["M"]
+                  },
+                  "caption": "M 同時接上 D 和 C。在公司裡，這一步通常是在 GitLab（公司放程式碼的網站）上按下合併按鈕完成的。"
+                }
+              }
+            ]
+          }
+        },
+        "bridge": "這次很順利，因為同事沒有碰那顆按鈕。假設他也改了呢？"
+      },
+      {
+        "id": "conflict",
+        "title": "兩邊改到同一行，Git 會停下來讓你決定",
+        "text": "這叫衝突。**假設**同事的 D 也把那顆按鈕改成「確認送出申情」。合併之前，你先把 main 的最新進度併進自己的分支（方向和上一張卡相反），Git 不知道要留誰的，就把兩個版本都寫進檔案。",
+        "stage": {
+          "scene": "file",
+          "initial": {
+            "view": { "lines": ["<<<<<<< HEAD", "送出申請", "=======", "確認送出申情", ">>>>>>> main"] },
+            "caption": "你在 feature/fix-typo 上執行 git merge main，Git 停下來了。"
+          },
+          "controls": {
+            "kind": "choice",
+            "label": "看檔案的哪一部分",
+            "options": [
+              {
+                "label": "你這邊的版本",
+                "result": {
+                  "view": {
+                    "lines": ["<<<<<<< HEAD", "送出申請", "=======", "確認送出申情", ">>>>>>> main"],
+                    "marked": [0, 1]
+                  },
+                  "caption": "HEAD 就是「你現在站著的分支」。這是你的修改。"
+                }
+              },
+              {
+                "label": "併進來的版本",
+                "result": {
+                  "view": {
+                    "lines": ["<<<<<<< HEAD", "送出申請", "=======", "確認送出申情", ">>>>>>> main"],
+                    "marked": [3, 4]
+                  },
+                  "caption": "這是 main 上同事的修改。"
+                }
+              },
+              {
+                "label": "解完之後",
+                "result": {
+                  "view": { "lines": ["確認送出申請"] },
+                  "caption": "兩邊的修改都保留，改成正確的一句。標記那幾行要刪掉。"
+                }
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "recap": [
+      "commit 是存檔；main 和分支都是標籤，標出某一顆 commit。",
+      "新的存檔只推動你站著的那張標籤，所以在分支上改不會影響 main。",
+      "merge 把分岔的兩條線接起來；兩邊改到同一行時會衝突，要由人決定留什麼。"
+    ],
+    "quiz": {
+      "question": "你執行了 `git switch -c feature/fix-typo`，接著 commit 一次。這時 `main` 在哪裡？",
+      "options": [
+        {
+          "text": "移到你剛剛的新 commit",
+          "explanation": "新的存檔只推動你站著的那張標籤，而你已經站到 feature/fix-typo 上了。"
+        },
+        {
+          "text": "留在原本的位置",
+          "correct": true,
+          "explanation": "對。你站在 feature/fix-typo 上，所以只有它往前移。"
+        },
+        {
+          "text": "被刪掉了，merge 之後才會回來",
+          "explanation": "開分支只是多貼一張標籤，原本的標籤不會消失。"
+        }
+      ]
+    }
+  },
+  "devops-git-sync": {
+    "question": "我電腦裡的 Git，和 GitLab 上的是同一份嗎？",
+    "outcome": "說出 `git fetch`、`git pull`、`git remote update -p` 各自動到哪裡。",
+    "minutes": 5,
+    "cards": [
+      {
+        "id": "two-copies",
+        "title": "GitLab 上有一份，你電腦裡有一份，兩邊不會自動同步",
+        "text": "公司 GitLab 上那一份稱為遠端。把你的存檔送上去叫 push。別人 push 之後，你的電腦不會自己知道。",
+        "stage": {
+          "scene": "trays",
+          "initial": {
+            "view": {
+              "trays": [
+                { "label": "遠端（GitLab）", "commits": ["A", "B", "C", "D", "M"] },
+                { "label": "你的本機", "commits": ["A", "B", "C", "D", "M"] }
+              ]
+            },
+            "caption": "兩邊現在一樣。"
+          },
+          "controls": {
+            "kind": "sequence",
+            "buttons": [
+              {
+                "label": "同事 push 新的 commit",
+                "result": {
+                  "view": {
+                    "trays": [
+                      { "label": "遠端（GitLab）", "commits": ["A", "B", "C", "D", "M", "E"], "focus": ["E"] },
+                      { "label": "你的本機", "commits": ["A", "B", "C", "D", "M"] }
+                    ]
+                  },
+                  "caption": "遠端多了 E。你的電腦還不知道。"
+                }
+              }
+            ]
+          }
+        },
+        "bridge": "那你的電腦怎麼知道遠端長什麼樣子？"
+      },
+      {
+        "id": "snapshot",
+        "title": "你的電腦裡還有一份「上次看到的遠端」",
+        "text": "Git 在你電腦裡另外記了一份遠端的樣子，叫 `origin/main`（origin 是遠端的代稱）。`git status` 是跟這一份比，不會去問 GitLab。",
+        "stage": {
+          "scene": "trays",
+          "initial": {
+            "view": {
+              "trays": [
+                { "label": "遠端（GitLab）", "commits": ["A", "B", "C", "D", "M", "E"] },
+                { "label": "快照（origin/main）", "commits": ["A", "B", "C", "D", "M"] },
+                { "label": "你的本機", "commits": ["A", "B", "C", "D", "M"] }
+              ]
+            },
+            "caption": "中間這一份是你電腦裡記得的遠端。它還停在上次看到的樣子。"
+          },
+          "controls": {
+            "kind": "sequence",
+            "buttons": [
+              {
+                "label": "git status",
+                "result": {
+                  "view": {
+                    "trays": [
+                      { "label": "遠端（GitLab）", "commits": ["A", "B", "C", "D", "M", "E"], "state": "dim" },
+                      { "label": "快照（origin/main）", "commits": ["A", "B", "C", "D", "M"], "state": "framed" },
+                      { "label": "你的本機", "commits": ["A", "B", "C", "D", "M"], "state": "framed" }
+                    ]
+                  },
+                  "caption": "它說 up to date（已是最新）。因為它只比中間和右邊，沒有看到左邊的 E。"
+                }
+              }
+            ]
+          }
+        },
+        "bridge": "要更新中間這一份，就是 fetch。"
+      },
+      {
+        "id": "fetch-pull",
+        "title": "fetch 只更新快照，pull 還會更新你的本機",
+        "text": "`git fetch` 把遠端的新東西複製到快照，不動你的本機。`git pull` 先做 fetch，再把快照的內容併進你站著的分支，檔案也跟著更新。",
+        "stage": {
+          "scene": "trays",
+          "initial": {
+            "view": {
+              "trays": [
+                { "label": "遠端（GitLab）", "commits": ["A", "B", "C", "D", "M", "E"] },
+                { "label": "快照（origin/main）", "commits": ["A", "B", "C", "D", "M"] },
+                { "label": "你的本機", "commits": ["A", "B", "C", "D", "M"] }
+              ]
+            },
+            "caption": "遠端有 E，另外兩邊還沒有。"
+          },
+          "controls": {
+            "kind": "either",
+            "buttons": [
+              {
+                "label": "git fetch",
+                "result": {
+                  "view": {
+                    "trays": [
+                      { "label": "遠端（GitLab）", "commits": ["A", "B", "C", "D", "M", "E"] },
+                      { "label": "快照（origin/main）", "commits": ["A", "B", "C", "D", "M", "E"], "focus": ["E"] },
+                      { "label": "你的本機", "commits": ["A", "B", "C", "D", "M"] }
+                    ]
+                  },
+                  "caption": "E 被複製到快照。你的本機沒有動，所以檔案還是舊的。"
+                }
+              },
+              {
+                "label": "git pull",
+                "result": {
+                  "view": {
+                    "trays": [
+                      { "label": "遠端（GitLab）", "commits": ["A", "B", "C", "D", "M", "E"] },
+                      { "label": "快照（origin/main）", "commits": ["A", "B", "C", "D", "M", "E"], "focus": ["E"] },
+                      { "label": "你的本機", "commits": ["A", "B", "C", "D", "M", "E"], "focus": ["E"] }
+                    ]
+                  },
+                  "caption": "先更新快照，再更新你的本機。現在三邊一樣了。"
+                }
+              }
+            ]
+          }
+        },
+        "bridge": "還有一種情況：遠端的分支被刪掉了。"
+      },
+      {
+        "id": "prune",
+        "title": "遠端刪掉的分支，快照裡的標籤還會留著",
+        "text": "你的修正合併之後，GitLab 上的 `feature/fix-typo` 通常會被刪除。一般的 fetch 只會新增和更新，不會幫你刪。`git remote update -p` 會更新快照，並清掉遠端已經刪除的分支標籤（-p 是 prune，修剪的意思）。",
+        "stage": {
+          "scene": "trays",
+          "initial": {
+            "view": {
+              "trays": [
+                {
+                  "label": "遠端（GitLab）",
+                  "commits": ["A", "B", "C", "D", "M"],
+                  "tags": [{ "at": "C", "name": "feature/fix-typo" }]
+                },
+                {
+                  "label": "快照",
+                  "commits": ["A", "B", "C", "D", "M"],
+                  "tags": [{ "at": "C", "name": "origin/feature/fix-typo" }]
+                },
+                { "label": "你的本機", "commits": ["A", "B", "C", "D", "M"] }
+              ]
+            },
+            "caption": "遠端和快照都還有這張分支標籤。"
+          },
+          "controls": {
+            "kind": "sequence",
+            "buttons": [
+              {
+                "label": "GitLab 刪除 feature/fix-typo",
+                "result": {
+                  "view": {
+                    "trays": [
+                      { "label": "遠端（GitLab）", "commits": ["A", "B", "C", "D", "M"] },
+                      {
+                        "label": "快照",
+                        "commits": ["A", "B", "C", "D", "M"],
+                        "tags": [{ "at": "C", "name": "origin/feature/fix-typo" }]
+                      },
+                      { "label": "你的本機", "commits": ["A", "B", "C", "D", "M"] }
+                    ]
+                  },
+                  "caption": "遠端的標籤被撕掉了，存檔一個都沒少。快照那張還留著。"
+                }
+              },
+              {
+                "label": "git remote update -p",
+                "result": {
+                  "view": {
+                    "trays": [
+                      { "label": "遠端（GitLab）", "commits": ["A", "B", "C", "D", "M"] },
+                      { "label": "快照", "commits": ["A", "B", "C", "D", "M"] },
+                      { "label": "你的本機", "commits": ["A", "B", "C", "D", "M"] }
+                    ]
+                  },
+                  "caption": "-p 把快照裡已經過期的標籤清掉了。"
+                }
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "recap": [
+      "有三份：遠端（GitLab）、你電腦裡的遠端快照（origin/main）、你的本機。",
+      "`git status` 只比快照和本機；fetch 更新快照；pull 再多更新你的本機。",
+      "刪分支只是撕掉標籤；`git remote update -p` 會更新快照，並清掉遠端已刪除的標籤。"
+    ],
+    "quiz": {
+      "question": "你執行了 `git fetch`，打開檔案卻沒看到同事剛 push 的修改。為什麼？",
+      "options": [
+        { "text": "fetch 失敗了，要再執行一次", "explanation": "fetch 有成功，新的存檔已經在快照裡了。" },
+        {
+          "text": "fetch 只更新快照，你的本機要再 pull 才會跟上",
+          "correct": true,
+          "explanation": "對。fetch 是「先抓回來放著，不動我的東西」。"
+        },
+        { "text": "同事的修改在遠端，fetch 抓不到", "explanation": "fetch 抓的就是遠端的新東西。" }
+      ]
+    }
+  },
+  "devops-basics-flow": {
+    "question": "我的修改，是怎麼從我的電腦跑到使用者面前的？",
+    "outcome": "說出程式從 push 到上線會經過哪些關卡，以及出事時怎麼退回。",
+    "note": "這一課回到你剛 commit 完 C、還沒合併的時候，把整條路從頭走一次。",
+    "minutes": 5,
+    "cards": [
+      {
+        "id": "gates",
+        "title": "push 之後，要過七道關卡才會到使用者面前",
+        "text": "你把 C push 上去之後，不是「把檔案複製到伺服器」，而是要依序通過七道關卡。其中機器自動做的部分，稱為 Pipeline。",
+        "stage": {
+          "scene": "gates",
+          "gates": ["push", "自動檢查", "審查並合併", "打包", "Dev", "UAT 驗收", "Prod"],
+          "initial": {
+            "view": { "status": ["idle", "idle", "idle", "idle", "idle", "idle", "idle"] },
+            "caption": "按「下一關」，一關一關往前走。"
+          },
+          "controls": {
+            "kind": "stepper",
+            "label": "下一關",
+            "steps": [
+              {
+                "view": { "status": ["pass", "idle", "idle", "idle", "idle", "idle", "idle"], "focus": 0 },
+                "caption": "你把 C 送到 GitLab。"
+              },
+              {
+                "view": { "status": ["pass", "pass", "idle", "idle", "idle", "idle", "idle"], "focus": 1 },
+                "caption": "機器把原始碼重新組成可以執行的程式（建置）、跑測試、掃描安全問題。"
+              },
+              {
+                "view": { "status": ["pass", "pass", "pass", "idle", "idle", "idle", "idle"], "focus": 2 },
+                "caption": "同事看過你的修改，按下合併。機器確認能跑，人確認寫得對。"
+              },
+              {
+                "view": { "status": ["pass", "pass", "pass", "pass", "idle", "idle", "idle"], "focus": 3 },
+                "caption": "機器把合併後的程式做成一包可以部署的東西，這一包就是 v1.4.0。"
+              },
+              {
+                "view": { "status": ["pass", "pass", "pass", "pass", "pass", "idle", "idle"], "focus": 4 },
+                "caption": "自動部署到開發環境，開發者先看結果。"
+              },
+              {
+                "view": { "status": ["pass", "pass", "pass", "pass", "pass", "pass", "idle"], "focus": 5 },
+                "caption": "部署到 UAT（給業務驗收用的環境），業務人員確認功能正確後簽核。"
+              },
+              {
+                "view": { "status": ["pass", "pass", "pass", "pass", "pass", "pass", "pass"], "focus": 6 },
+                "caption": "在維護時段，由人按下按鈕，部署到正式環境。使用者看到修好的按鈕了。"
+              }
+            ]
+          }
+        },
+        "bridge": "如果其中一關沒過呢？"
+      },
+      {
+        "id": "stop",
+        "title": "有一關沒過，後面的關卡就不會執行",
+        "text": "這條流程的價值是把有問題的程式擋下來。（哪些關卡會擋、擋得多嚴，是每個專案自己設定的；這裡是常見的設定。）",
+        "stage": {
+          "scene": "gates",
+          "gates": ["push", "自動檢查", "審查並合併", "打包", "Dev", "UAT 驗收", "Prod"],
+          "initial": {
+            "view": { "status": ["idle", "idle", "idle", "idle", "idle", "idle", "idle"] },
+            "caption": "選一個情況，看流程停在哪裡。"
+          },
+          "controls": {
+            "kind": "choice",
+            "label": "選一個情況",
+            "options": [
+              {
+                "label": "測試沒過",
+                "result": {
+                  "view": { "status": ["pass", "fail", "idle", "idle", "idle", "idle", "idle"], "focus": 1 },
+                  "caption": "停在自動檢查。打開紀錄看哪個測試失敗，修好再 push，流程會重跑。"
+                }
+              },
+              {
+                "label": "審查被退回",
+                "result": {
+                  "view": { "status": ["pass", "pass", "fail", "idle", "idle", "idle", "idle"], "focus": 2 },
+                  "caption": "停在審查。依同事的意見修改後再 push。"
+                }
+              },
+              {
+                "label": "驗收沒過",
+                "result": {
+                  "view": { "status": ["pass", "pass", "pass", "pass", "pass", "fail", "idle"], "focus": 5 },
+                  "caption": "停在 UAT。這一包不會上 Prod，使用者不受影響。"
+                }
+              }
+            ]
+          }
+        },
+        "bridge": "最後三格 Dev、UAT、Prod 都是「環境」，差在哪？"
+      },
+      {
+        "id": "environments",
+        "title": "三個環境給三種人用，越後面換版越謹慎",
+        "text": "同一包 v1.4.0 依序部署到三個環境。每個環境服務的對象不同，所以換版的條件也不同。",
+        "stage": {
+          "scene": "gates",
+          "gates": ["push", "自動檢查", "審查並合併", "打包", "Dev", "UAT 驗收", "Prod"],
+          "initial": {
+            "view": {
+              "emphasize": [4, 5, 6],
+              "focus": 4,
+              "detail": { "at": 4, "lines": ["誰在用：開發者", "誰決定換版：自動，main 一有新東西就換"] }
+            },
+            "caption": "Dev 求快：越早看到整合後的結果越好。"
+          },
+          "controls": {
+            "kind": "choice",
+            "label": "選一個環境",
+            "selected": 0,
+            "options": [
+              {
+                "label": "Dev",
+                "result": {
+                  "view": {
+                    "emphasize": [4, 5, 6],
+                    "focus": 4,
+                    "detail": { "at": 4, "lines": ["誰在用：開發者", "誰決定換版：自動，main 一有新東西就換"] }
+                  },
+                  "caption": "Dev 求快：越早看到整合後的結果越好。"
+                }
+              },
+              {
+                "label": "UAT",
+                "result": {
+                  "view": {
+                    "emphasize": [4, 5, 6],
+                    "focus": 5,
+                    "detail": { "at": 5, "lines": ["誰在用：業務與測試人員", "誰決定換版：有人按下按鈕才換"] }
+                  },
+                  "caption": "UAT 求穩：驗收到一半不能被換版。"
+                }
+              },
+              {
+                "label": "Prod",
+                "result": {
+                  "view": {
+                    "emphasize": [4, 5, 6],
+                    "focus": 6,
+                    "detail": { "at": 6, "lines": ["誰在用：真正的使用者", "誰決定換版：驗收簽核後，在維護時段由人按下"] }
+                  },
+                  "caption": "Prod 求不出錯：壞了客戶直接受影響。"
+                }
+              }
+            ]
+          }
+        },
+        "bridge": "萬一上了 Prod 才發現問題？"
+      },
+      {
+        "id": "rollback",
+        "title": "出事時先退回上一版，再慢慢查原因",
+        "text": "退回上一版叫 Rollback。能不能退，取決於上線前有沒有把上一版那一包留著。",
+        "stage": {
+          "scene": "prod",
+          "initial": {
+            "view": { "title": "Prod", "version": "v1.4.0", "ok": false, "text": "使用者看到錯誤" },
+            "caption": "正式環境出事了。"
+          },
+          "controls": {
+            "kind": "choiceAction",
+            "label": "上線前有沒有留著上一版",
+            "options": ["有留著 v1.3.0", "沒留 v1.3.0"],
+            "selected": 0,
+            "action": {
+              "label": "Rollback",
+              "results": [
+                {
+                  "view": { "title": "Prod", "version": "v1.3.0", "ok": true, "text": "恢復正常", "focus": true },
+                  "caption": "幾分鐘內恢復。原因可以之後慢慢查。"
+                },
+                {
+                  "view": { "title": "Prod", "version": "v1.4.0", "ok": false, "text": "使用者看到錯誤", "focus": true },
+                  "caption": "沒有現成的那一包，只能從舊的原始碼重新打包，這段時間使用者持續看到錯誤。"
+                }
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "recap": [
+      "程式上線要依序通過七道關卡；有一關沒過，後面就不會執行。",
+      "Dev、UAT、Prod 給不同的人用，越後面換版越謹慎。",
+      "出事先 Rollback 再查原因，前提是上一版那一包有留著。"
+    ],
+    "quiz": {
+      "question": "在這一課的流程裡（檢查沒過就不能合併），「自動檢查」的測試沒過，接下來會怎樣？",
+      "options": [
+        { "text": "流程繼續，先部署到 Dev 再請人看", "explanation": "沒過的關卡後面都不會執行，包含部署到 Dev。" },
+        {
+          "text": "流程停在這一關，不會打包，也不會部署到任何環境",
+          "correct": true,
+          "explanation": "對。有問題的程式被擋在最前面。"
+        },
+        { "text": "系統自動 Rollback 到上一版", "explanation": "Rollback 是已經部署出去之後的事，這裡還沒部署。" }
+      ]
+    }
+  }
+}

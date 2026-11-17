@@ -8,6 +8,7 @@ import InterviewPage from "./pages/InterviewPage";
 import JobsPage from "./pages/JobsPage";
 import LabDetailPage from "./pages/LabDetailPage";
 import LabsPage from "./pages/LabsPage";
+import LessonPage from "./pages/LessonPage";
 import NotesPage from "./pages/NotesPage";
 import PathDetailPage from "./pages/PathDetailPage";
 import PathsPage from "./pages/PathsPage";
@@ -69,6 +70,11 @@ function makeFreshEmptyState(): AppState {
 export default function App() {
   const path = useHashPath();
   const [state, setState] = useState<AppState>(() => loadAppState());
+
+  // 換頁（hash 路徑改變）時回到頁面頂端
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [path]);
 
   useEffect(() => {
     saveAppState(state);
@@ -179,8 +185,14 @@ export default function App() {
       return <CoursesPage {...pageProps} />;
     }
 
-    if (route[0] === "courses" && route[1]) {
-      return <CourseDetailPage {...pageProps} courseId={route[1]} />;
+    if (route[0] === "courses" && route[1] && route[2] && (!route[3] || (route[3] === "practice" && !route[4]))) {
+      return (
+        <LessonPage courseId={route[1]} lessonId={route[2]} tab={route[3] === "practice" ? "practice" : "explain"} />
+      );
+    }
+
+    if (route[0] === "courses" && route[1] && !route[2]) {
+      return <CourseDetailPage courseId={route[1]} />;
     }
 
     if (path === "/labs") {
